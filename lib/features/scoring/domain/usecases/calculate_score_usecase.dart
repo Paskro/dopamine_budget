@@ -1,35 +1,50 @@
-import 'package:drift/drift.dart';
-import 'package:dopamine_budget/data/db/app_database.dart';
+import '../repositories/scoring_repository.dart';
 
 class CalculateScoreUseCase {
-  final AppDatabase _db;
+  final ScoringRepository _repository;
 
-  CalculateScoreUseCase(this._db);
+  CalculateScoreUseCase(this._repository);
 
+  // ==========================================
+  // БЛОК 1: БИЗНЕС-ЛОГИКА РАСЧЕТА БЮДЖЕТА
+  // ==========================================
+
+  /// Основной метод расчета оставшегося дофаминового бюджета (калибровка)
   Future<int> call() async {
-    const int startBudget = 100; // Стартовый бюджет
-
+    const int startBudget = 100; // Базовый дефолт для режима калибровки
     try {
-      // Читаем честные логи срывов из правильной таблицы действий
-      final allActions = await _db.select(_db.actionsTable).get();
-
       final now = DateTime.now();
-      final todayActions = allActions.where((action) {
-        final date = action.timestamp;
-        return date.year == now.year &&
-               date.month == now.month &&
-               date.day == now.day;
-      });
-
-      int totalPenalty = 0;
-      for (var action in todayActions) {
-        totalPenalty += action.scoreValue; // Суммируем штрафы
-      }
-
-      return startBudget - totalPenalty;
+      final int todayPenalty = await _repository.getScoreForDay(now);
+      return startBudget - todayPenalty;
     } catch (e) {
       print('Ошибка при расчете баланса в UseCase: $e');
       return startBudget;
     }
+  }
+
+  /// Метод получения чистой суммы потраченных очков за день (для режима контроля)
+  Future<int> getScoreForDay(DateTime date) async {
+    return await _repository.getScoreForDay(date);
+  }
+
+  // ==========================================
+  // БЛОК 2: УПРАВЛЕНИЕ ДЕЙСТВИЯМИ И СТАТИСТИКОЙ
+  // ==========================================
+
+  /// Запись нового нажатия (штрафа) через репозиторий
+  Future<void> registerAction({
+    required String habitType,
+    required int scoreValue,
+  }) async {
+    await _repository.saveAction(
+      habitType: habitType,
+      scoreValue: scoreValue,
+      timestamp: DateTime.now(),
+    );
+  }
+
+  /// Получение статистики кликов за сегодня (для UI)
+  Future<Map<String, int>> getTodayHabitClicks() async {
+    return await _repository.getHabitClicksForDay(DateTime.now());
   }
 }

@@ -40,8 +40,8 @@ class StartControlSessionUseCase {
         phase: 1,
         avgScore: manualLimit,
         shouldDecrease: shouldDecrease,
-        decreasePercentage: decreasePercentage,
-        decreaseInterval: decreaseInterval,
+        decreasePercentage: decreasePercentage?.toInt(),
+        decreaseInterval: decreaseInterval != null ? (int.tryParse(decreaseInterval!) ?? 0) : null,
       );
     } catch (e) {
       print('Ошибка при создании сессии контроля: $e');

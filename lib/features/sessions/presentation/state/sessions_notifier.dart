@@ -37,7 +37,32 @@ class SessionsNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Обновили: теперь принимаем гибкое количество дней для калибровки
+  /// Проверка смены календарного дня
+  Future<void> checkForNewDay() async {
+    final session = _state.currentSession;
+    if (session == null) return;
+
+    final DateTime now = DateTime.now();
+
+    // Подстраиваемся под архитектуру сущности Session.
+    // Если в классе Session поле называется по-другому, замени .createdAt на него
+    final DateTime lastOpened = session.createdAt;
+
+    final bool isNewDay = DateTime(now.year, now.month, now.day).isAfter(
+      DateTime(lastOpened.year, lastOpened.month, lastOpened.day),
+    );
+
+    if (isNewDay) {
+      _state = SessionsState(currentSession: _state.currentSession, isLoading: true);
+      notifyListeners();
+
+      final updatedSession = await initializeSessionUseCase.execute();
+
+      _state = SessionsState(currentSession: updatedSession, isLoading: false);
+      notifyListeners();
+    }
+  }
+
   Future<void> restartCalibration({int durationDays = 7}) async {
     _state = const SessionsState(isLoading: true);
     notifyListeners();
@@ -51,7 +76,6 @@ class SessionsNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Обновили: теперь прокидываем все параметры усыхания лимита в UseCase
   Future<void> startManualControl({
     required double limit,
     required bool shouldDecrease,

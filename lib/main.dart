@@ -6,10 +6,11 @@ import 'package:dopamine_budget/features/sessions/data/repositories/session_repo
 import 'package:dopamine_budget/features/sessions/domain/usecases/add_session_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/get_sessions_by_day_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/initialize_session_usecase.dart';
-import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_usecase.dart'; // НАШ НОВЫЙ КИРПИЧИК
+import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_usecase.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/sessions_notifier.dart';
-
 // Импорты фичи Скоринга
+import 'package:dopamine_budget/features/scoring/data/repositories/scoring_repository_impl.dart';
+import 'package:dopamine_budget/features/scoring/domain/repositories/scoring_repository.dart';
 import 'package:dopamine_budget/features/scoring/presentation/state/scoring_notifier.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/calculate_score_usecase.dart';
 
@@ -27,13 +28,12 @@ import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usec
 import 'package:dopamine_budget/presentation/root_gate.dart';
 
 void main() async {
-  // Гарантируем стабильную инициализацию плагинов Flutter перед стартом БД
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Создаем ОДИН экземпляр SQL базы данных для всего приложения
+  // 1. Создаем ОДИН экземпляр SQL базы данных
   final database = AppDatabase();
 
-  // 2. Настраиваем фичу Сессий и наш новый SessionsNotifier
+  // 2. Настраиваем фичу Сессий
   final initializeSessionUseCase = InitializeSessionUseCase(database);
   final startControlSessionUseCase = StartControlSessionUseCase(database);
 
@@ -56,22 +56,24 @@ void main() async {
     deleteHabitUseCase: deleteHabitUseCase,
   );
 
-  // 4. Настраиваем логику действий и подсчета баллов
-  final addActionUseCase = AddActionUseCase(database);
-  final calculateScoreUseCase = CalculateScoreUseCase(database);
+  // 4. Настраиваем фичу Скоринга через Репозиторий
+  final sessionRepository = SessionRepositoryImpl(database);
+  final scoringRepository = ScoringRepositoryImpl(database);
+  final calculateScoreUseCase = CalculateScoreUseCase(scoringRepository);
 
   final scoringNotifier = ScoringNotifier(
-    addActionUseCase: addActionUseCase,
     calculateScoreUseCase: calculateScoreUseCase,
+    sessionRepository: sessionRepository,
   );
 
-  // Старые UseCase сессий (сохраняем, чтобы не ругался остальной код, если они где-то используются)
-  final sessionRepository = SessionRepositoryImpl(database);
+  // Старые UseCase сессий сохраняем для совместимости, если нужны UI
   final addSessionUseCase = AddSessionUseCase(sessionRepository);
   final getSessionsByDayUseCase = GetSessionsByDayUseCase(sessionRepository);
+  final addActionUseCase = AddActionUseCase(database);
 
-  // 5. Запускаем приложение и передаем готовые нотифайеры внутрь
+  // 5. Запускаем приложение
   runApp(MyApp(
+    database: database,
     sessionsNotifier: sessionsNotifier,
     habitsNotifier: habitsNotifier,
     scoringNotifier: scoringNotifier,
@@ -79,12 +81,14 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  final AppDatabase database;
   final SessionsNotifier sessionsNotifier;
   final HabitsNotifier habitsNotifier;
   final ScoringNotifier scoringNotifier;
 
   const MyApp({
     super.key,
+    required this.database,
     required this.sessionsNotifier,
     required this.habitsNotifier,
     required this.scoringNotifier,
@@ -96,8 +100,8 @@ class MyApp extends StatelessWidget {
       title: 'Dopamine Budget',
       theme: ThemeData(primarySwatch: Colors.blue),
       debugShowCheckedModeBanner: false,
-      // На входе теперь стоит RootGate, который решит: показать Onboarding или HomePage
       home: RootGate(
+        database: database,
         sessionsNotifier: sessionsNotifier,
         habitsNotifier: habitsNotifier,
         scoringNotifier: scoringNotifier,
@@ -106,13 +110,14 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// Твой экран HomePage остался без изменений, но теперь он вызывается внутри RootGate
 class HomePage extends StatefulWidget {
+  final AppDatabase database;
   final ScoringNotifier scoringNotifier;
   final HabitsNotifier habitsNotifier;
 
   const HomePage({
     super.key,
+    required this.database,
     required this.scoringNotifier,
     required this.habitsNotifier,
   });
@@ -122,24 +127,25 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  AppDatabase? db;
-  String dbStatus = 'Инициализация...';
+  String dbStatus = 'Подключено к единой БД';
   int rowsInDbCount = 0;
 
   @override
-  void initState() {
-    super.initState();
-    widget.scoringNotifier.addListener(_update);
-    widget.habitsNotifier.addListener(_update);
-    _initDatabaseSafe();
-    widget.habitsNotifier.loadHabits();
-  }
+    void initState() {
+      super.initState();
+      widget.scoringNotifier.addListener(_update);
+      widget.habitsNotifier.addListener(_update);
+
+      // ПРИНУДИТЕЛЬНО заставляем скоринг проснуться и прочитать базу данных
+      widget.scoringNotifier.refreshTodayState();
+      _refreshDbCount();
+      widget.habitsNotifier.loadHabits();
+    }
 
   @override
   void dispose() {
     widget.scoringNotifier.removeListener(_update);
     widget.habitsNotifier.removeListener(_update);
-    db?.close();
     super.dispose();
   }
 
@@ -148,30 +154,14 @@ class _HomePageState extends State<HomePage> {
     _refreshDbCount();
   }
 
-  Future<void> _initDatabaseSafe() async {
-    try {
-      final database = AppDatabase();
-      db = database;
-      await _refreshDbCount();
-      setState(() {
-        dbStatus = 'База подключена успешно!';
-      });
-    } catch (e) {
-      setState(() {
-        dbStatus = 'Ошибка БД: $e';
-      });
-    }
-  }
-
   Future<void> _refreshDbCount() async {
-    if (db == null) return;
     try {
-      final allRows = await db!.select(db!.actionsTable).get();
+      final allRows = await widget.database.select(widget.database.actionsTable).get();
       setState(() {
         rowsInDbCount = allRows.length;
       });
     } catch (e) {
-      print('Не удалось прочитать данные: $e');
+      print('Не удалось прочитать данные из единой БД: $e');
     }
   }
 
@@ -188,24 +178,21 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('Дофаминовый бюджет на сегодня:', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              const Text('Дофаминовый бюджет потрачен сегодня:', style: TextStyle(fontSize: 16, color: Colors.grey)),
               const SizedBox(height: 5),
-              scoringState.isLoading
-                ? const SizedBox(
-                    height: 48,
-                    width: 48,
-                    child: CircularProgressIndicator(strokeWidth: 3),
-                  )
-                : Text(
-                    '${scoringState.score} XP',
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: scoringState.score > 50 ? Colors.green : Colors.orange
-                    )
-                  ),
+              // Выводим сколько потрачено из общего лимита
+              Text(
+                '${scoringState.pointsSpentToday} / ${scoringState.dailyLimit} XP',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: scoringState.isOverLimit ? Colors.red : Colors.green,
+                ),
+              ),
               const SizedBox(height: 10),
-              Text('Записей в SQL-базе: $rowsInDbCount', style: const TextStyle(fontSize: 14, color: Colors.blue)),
+              Text('Копилка геймификации: ${scoringState.gamificationPoints} XP', style: const TextStyle(fontSize: 14, color: Colors.purple, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 5),
+              Text('Записей в SQL-базе: $rowsInDbCount', style: const TextStyle(fontSize: 12, color: Colors.blue)),
               const SizedBox(height: 30),
               const Text(
                 'Нажмите на привычку при срыве:',
@@ -247,7 +234,8 @@ class _HomePageState extends State<HomePage> {
                                       foregroundColor: Colors.white
                                     ),
                                     onPressed: () {
-                                      widget.scoringNotifier.SpendDopamine(habit);
+                                      // Вызываем метод с маленькой буквы, как он объявлен в Notifier
+                                      widget.scoringNotifier.spendDopamine(habit.title, habit.scoreValue);
                                     },
                                     child: const Text('Клац'),
                                   ),

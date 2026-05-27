@@ -23,9 +23,9 @@ class InitializeSessionUseCase {
               phase: latestRow.phase,
               avgScore: latestRow.avgScore,
               shouldDecrease: latestRow.shouldDecrease,
-              decreasePercentage: latestRow.decreasePercentage,
-              decreaseInterval: latestRow.decreaseInterval,
-            );
+              decreasePercentage: latestRow.decreasePercentage?.toInt(),
+              decreaseInterval: latestRow.decreaseInterval != null ? (int.tryParse(latestRow.decreaseInterval!) ?? 0) : null,
+              );
           } else {
             // ЕСЛИ В БАЗЕ ПУСТО — возвращаем null, чтобы включился Онбординг!
             return null;

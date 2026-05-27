@@ -8,18 +8,15 @@ class SessionRepositoryImpl implements SessionRepository {
 
   SessionRepositoryImpl(this._db);
 
-  // === 1. РЕАЛИЗАЦИЯ СТАРЫХ МЕТОДОВ ДЛЯ ИНТЕРФЕЙСА ===
+  // === 1. РЕАЛИЗАЦИЯ МЕТОДОВ ДЛЯ ИНТЕРФЕЙСА ===
 
   @override
   Future<void> addSession(Session session) async {
-    // Вызываем наш метод сохранения, удовлетворяя контракт интерфейса
     await saveSession(session);
   }
 
   @override
   Future<List<Session>> getSessionsByDay(DateTime date) async {
-    // Старая логика просила сессии за конкретный день.
-    // Фильтруем записи в SQL по дате создания (createdAt)
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
@@ -35,15 +32,14 @@ class SessionRepositoryImpl implements SessionRepository {
         phase: row.phase,
         avgScore: row.avgScore,
         shouldDecrease: row.shouldDecrease,
-        decreasePercentage: row.decreasePercentage,
-        decreaseInterval: row.decreaseInterval,
+        decreasePercentage: row.decreasePercentage?.toInt(),
+        decreaseInterval: row.decreaseInterval != null ? (int.tryParse(row.decreaseInterval!) ?? 0) : null,
       );
     }).toList();
   }
 
-  // === 2. НАШИ НОВЫЕ МЕТОДЫ УПРАВЛЕНИЯ СЕССИЯМИ ===
+  // === 2. МЕТОДЫ УПРАВЛЕНИЯ СЕССИЯМИ ===
 
-  // Сохранение/обновление сессии в базу данных
   Future<void> saveSession(Session session) async {
     final companion = SessionsTableCompanion(
       id: Value(session.id),
@@ -51,14 +47,13 @@ class SessionRepositoryImpl implements SessionRepository {
       phase: Value(session.phase),
       avgScore: Value(session.avgScore),
       shouldDecrease: Value(session.shouldDecrease),
-      decreasePercentage: Value(session.decreasePercentage),
-      decreaseInterval: Value(session.decreaseInterval),
+      decreasePercentage: Value(session.decreasePercentage?.toDouble()),
+      decreaseInterval: Value(session.decreaseInterval?.toString()),
     );
 
     await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
   }
 
-  // Получение вообще всех сессий из базы
   Future<List<Session>> getAllSessions() async {
     final rows = await _db.select(_db.sessionsTable).get();
 
@@ -69,8 +64,8 @@ class SessionRepositoryImpl implements SessionRepository {
         phase: row.phase,
         avgScore: row.avgScore,
         shouldDecrease: row.shouldDecrease,
-        decreasePercentage: row.decreasePercentage,
-        decreaseInterval: row.decreaseInterval,
+        decreasePercentage: row.decreasePercentage?.toInt() ?? 0,
+        decreaseInterval: row.decreaseInterval != null ? (int.tryParse(row.decreaseInterval!) ?? 0) : 0,
       );
     }).toList();
   }
