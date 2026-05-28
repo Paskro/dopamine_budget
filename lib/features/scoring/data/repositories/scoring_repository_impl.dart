@@ -24,8 +24,8 @@ class ScoringRepositoryImpl implements ScoringRepository {
 
   @override
   Future<int> getScoreForDay(DateTime date) async {
-    final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
-    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
 
     final query = _db.selectOnly(_db.actionsTable)
       ..addColumns([_db.actionsTable.scoreValue.sum()])
@@ -37,26 +37,54 @@ class ScoringRepositoryImpl implements ScoringRepository {
 
   @override
   Future<Map<String, int>> getHabitClicksForDay(DateTime date) async {
-    final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
-    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
 
-    final amountOfClicks = _db.actionsTable.id.count();
-
-    final query = _db.selectOnly(_db.actionsTable)
-      ..addColumns([_db.actionsTable.habitType, amountOfClicks])
-      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
-      ..groupBy([_db.actionsTable.habitType]);
+    final query = _db.select(_db.actionsTable)
+      ..where((tbl) => tbl.timestamp.isBetweenValues(startOfDay, endOfDay));
 
     final rows = await query.get();
 
     final Map<String, int> result = {};
     for (final row in rows) {
-      final type = row.read(_db.actionsTable.habitType);
-      final count = row.read(amountOfClicks);
-      if (type != null && count != null) {
-        result[type] = count;
-      }
+      final key = row.habitType.toString();
+      result[key] = (result[key] ?? 0) + 1;
     }
+
     return result;
+  }
+
+  // ==========================================
+  // ВЫБОРКА УНИКАЛЬНЫХ КАЛЕНДАРНЫХ ДНЕЙ
+  // ==========================================
+  @override
+  Future<List<DateTime>> getUniqueRecordedDays() async {
+    try {
+      // Используем функцию SQLite 'date', чтобы отсечь время (оставить YYYY-MM-DD)
+      final dateFunction = CustomExpression<String>(
+        "date(datetime(timestamp, 'unixepoch', 'localtime'))"
+      );
+
+      // Строим запрос: берем только эту вычисляемую колонку дат
+      final query = _db.selectOnly(_db.actionsTable)
+        ..addColumns([dateFunction])
+        ..groupBy([dateFunction]); // Группируем, чтобы исключить дубли
+
+      final rows = await query.get();
+
+      // Маппим строки обратно в объекты DateTime
+      final List<DateTime> uniqueDays = rows.map((row) {
+        final dateString = row.read(dateFunction);
+        return DateTime.parse(dateString!);
+      }).toList();
+
+      // Сортируем даты от старых к новым (для порядка)
+      uniqueDays.sort((a, b) => a.compareTo(b));
+      return uniqueDays;
+
+    } catch (e) {
+      print('Ошибка при выборке уникальных дней в репозитории: $e');
+      return [];
+    }
   }
 }

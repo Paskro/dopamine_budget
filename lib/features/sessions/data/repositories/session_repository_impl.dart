@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
+import '../mappers/session_mapper.dart';
 
 class SessionRepositoryImpl implements SessionRepository {
   final AppDatabase _db;
@@ -36,6 +37,23 @@ class SessionRepositoryImpl implements SessionRepository {
         decreaseInterval: row.decreaseInterval != null ? (int.tryParse(row.decreaseInterval!) ?? 0) : null,
       );
     }).toList();
+  }
+  @override
+  Future<void> updateSession(Session session) async {
+    try {
+      // 1. Конвертируем доменную модель в Companion для Drift
+      final companion = SessionMapper.toDb(session);
+
+      // 2. Обновляем строку в таблице базы данных по ID
+      await (_db.update(_db.sessionsTable)
+            ..where((t) => t.id.equals(session.id)))
+          .write(companion);
+
+      print('Сессия ${session.id} успешно обновлена в СУБД (фаза: ${session.phase})');
+    } catch (e) {
+      print('Ошибка выполнения updateSession в репозитории: $e');
+      rethrow;
+    }
   }
 
   // === 2. МЕТОДЫ УПРАВЛЕНИЯ СЕССИЯМИ ===

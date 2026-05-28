@@ -11,4 +11,7 @@ abstract class ScoringRepository {
 
   /// Получить мапу "Привычка -> Количество кликов" за конкретный день
   Future<Map<String, int>> getHabitClicksForDay(DateTime date);
+
+  /// возвращаем количество реальных дней с записями
+  Future<List<DateTime>> getUniqueRecordedDays();
 }

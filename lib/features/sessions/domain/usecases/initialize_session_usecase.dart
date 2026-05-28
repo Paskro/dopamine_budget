@@ -7,11 +7,8 @@ class InitializeSessionUseCase {
 
   InitializeSessionUseCase(this._db);
 
-  // forceRestart — для сброса сессии
-  // durationDays — для гибкой калибровки (по умолчанию 7 дней)
   Future<Session?> execute({bool forceRestart = false, int durationDays = 7}) async {
       try {
-        // 1. Если это НЕ принудительный сброс, проверяем, есть ли что-то в базе
         if (!forceRestart) {
           final allSessions = await _db.select(_db.sessionsTable).get();
 
@@ -24,18 +21,26 @@ class InitializeSessionUseCase {
               avgScore: latestRow.avgScore,
               shouldDecrease: latestRow.shouldDecrease,
               decreasePercentage: latestRow.decreasePercentage?.toInt(),
-              decreaseInterval: latestRow.decreaseInterval != null ? (int.tryParse(latestRow.decreaseInterval!) ?? 0) : null,
+              // Читаем как строку, парсим в int. Если не распарсилось — отдаем durationDays
+              decreaseInterval: latestRow.decreaseInterval != null
+                  ? (int.tryParse(latestRow.decreaseInterval!) ?? durationDays)
+                  : durationDays,
               );
           } else {
-            // ЕСЛИ В БАЗЕ ПУСТО — возвращаем null, чтобы включился Онбординг!
             return null;
           }
         }
 
-        // 2. Сюда мы попадем ТОЛЬКО если forceRestart == true (пользователь нажал кнопку на онбординге)
-        final newId = DateTime.now().millisecondsSinceEpoch.toString();
         final now = DateTime.now();
+        final year = now.year;
+        final month = now.month.toString().padLeft(2, '0');
+        final day = now.day.toString().padLeft(2, '0');
+        final hour = now.hour.toString().padLeft(2, '0');
+        final minute = now.minute.toString().padLeft(2, '0');
 
+        final newId = 'S_$year$month$day\_$hour$minute';
+
+        // ТЕПЕРЬ МЫ ЧЕСТНО ПИШЕМ СЮДА ПАРАМЕТР durationDays
         final companion = SessionsTableCompanion(
           id: Value(newId),
           createdAt: Value(now),
@@ -43,7 +48,7 @@ class InitializeSessionUseCase {
           avgScore: const Value(null),
           shouldDecrease: const Value(false),
           decreasePercentage: const Value(null),
-          decreaseInterval: const Value(null),
+          decreaseInterval: Value(durationDays.toString()), // <-- Сохраняем в базу как строку
         );
 
         await _db.into(_db.sessionsTable).insert(companion);
@@ -57,7 +62,7 @@ class InitializeSessionUseCase {
           avgScore: null,
           shouldDecrease: false,
           decreasePercentage: null,
-          decreaseInterval: null,
+          decreaseInterval: durationDays, // <-- Возвращаем в объект реальное число
         );
       } catch (e) {
         print('Ошибка при инициализации сессии: $e');

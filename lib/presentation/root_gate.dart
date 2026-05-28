@@ -5,6 +5,10 @@ import 'package:dopamine_budget/features/sessions/presentation/pages/session_onb
 import 'package:dopamine_budget/main.dart';
 import 'package:dopamine_budget/features/habits/presentation/state/habits_notifier.dart';
 import 'package:dopamine_budget/features/scoring/presentation/state/scoring_notifier.dart';
+// ==========================================
+// БЛОК ИМПОРТОВ СЛОЯ ПРЕЗЕНТАЦИИ
+// ==========================================
+import 'package:dopamine_budget/features/scoring/presentation/pages/home_page.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -64,7 +68,6 @@ class _RootGateState extends State<RootGate> {
 
         // Прокидываем базу данных и нотифайеры на главный экран
         return HomePage(
-          database: widget.database,
           scoringNotifier: widget.scoringNotifier,
           habitsNotifier: widget.habitsNotifier,
         );

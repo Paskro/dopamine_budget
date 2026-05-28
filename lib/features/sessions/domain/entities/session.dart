@@ -17,6 +17,26 @@ class Session {
     this.decreaseInterval,
   });
 
+Session copyWith({
+    String? id,
+    DateTime? createdAt,
+    int? phase,
+    double? avgScore,
+    bool? shouldDecrease,
+    int? decreasePercentage,
+    int? decreaseInterval,
+  }) {
+    return Session(
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      phase: phase ?? this.phase,
+      avgScore: avgScore ?? this.avgScore,
+      shouldDecrease: shouldDecrease ?? this.shouldDecrease,
+      decreasePercentage: decreasePercentage ?? this.decreasePercentage,
+      decreaseInterval: decreaseInterval ?? this.decreaseInterval,
+    );
+  }
+
   /// Бизнес-логика: Вычисляем текущий дневной лимит дофамина
   /// Если фаза калибровки (0) или AVG еще не посчитан — лимита нет (возвращаем null)
   double? get dailyLimit {
