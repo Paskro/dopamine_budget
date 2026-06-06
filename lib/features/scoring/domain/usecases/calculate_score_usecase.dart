@@ -101,4 +101,27 @@ class CalculateScoreUseCase {
     }
     return typedClicks;
   }
+  /// Расчет текущего баланса Score на лету по логам из базы данных за выбранную дату
+    Future<double> execute({DateTime? forDate}) async {
+      // 1. Берем дату (используем виртуальное "сегодня" через TimeProvider)
+      final targetDate = forDate ?? TimeProvider.now;
+
+      // 2. Получаем текущую активную сессию через единый репозиторий
+      final currentSession = await _repository.getActiveSession();
+      if (currentSession == null) return 0.0;
+
+      // 3. Запрашиваем из базы сумму стоимости всех штрафных действий за эти сутки
+      final totalSpentInt = await _repository.getTotalScoreCostForDate(targetDate);
+      final totalSpent = totalSpentInt.toDouble();
+
+      // 4. Бизнес-логика расчета в зависимости от фазы сессии
+      if (currentSession.phase == 0) {
+        // На этапе калибровки лимита нет — показываем чистый расход со знаком минус
+        return -totalSpent;
+      } else {
+        // На этапе контроля вычитаем расход из доступного динамического лимита дня
+        final limit = currentSession.dailyLimit ?? 0.0;
+        return limit - totalSpent;
+      }
+    }
 }

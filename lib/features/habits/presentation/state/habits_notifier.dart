@@ -1,96 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
-import 'package:dopamine_budget/features/habits/domain/usecases/get_habits_usecase.dart';
-import 'package:dopamine_budget/features/habits/domain/usecases/add_habit_usecase.dart';
-import 'package:dopamine_budget/features/habits/domain/usecases/update_habit_use_case.dart';
-import 'package:dopamine_budget/features/habits/domain/usecases/delete_habit_use_case.dart';
-
-// Возвращаем класс состояния, который требует твой habits_page.dart!
-class HabitsState {
-  final List<Habit> habits;
-  final bool isLoading;
-
-  const HabitsState({
-    this.habits = const [],
-    this.isLoading = false,
-  });
-
-  HabitsState copyWith({
-    List<Habit>? habits,
-    bool? isLoading,
-  }) {
-    return HabitsState(
-      habits: habits ?? this.habits,
-      isLoading: isLoading ?? this.isLoading,
-    );
-  }
-}
+import 'package:dopamine_budget/features/habits/domain/repositories/habit_repository.dart';
+import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
 
 class HabitsNotifier extends ChangeNotifier {
-  final GetHabitsUseCase getHabitsUseCase;
-  final AddHabitUseCase addHabitUseCase;
-  final UpdateHabitUseCase updateHabitUseCase;
-  final DeleteHabitUseCase deleteHabitUseCase;
-
-  HabitsState _state = const HabitsState();
-  HabitsState get state => _state;
+  final HabitRepository _habitRepository;
+  final AddActionUseCase _addActionUseCase;
 
   HabitsNotifier({
-    required this.getHabitsUseCase,
-    required this.addHabitUseCase,
-    required this.updateHabitUseCase,
-    required this.deleteHabitUseCase,
-  });
+    required HabitRepository habitRepository,
+    required AddActionUseCase addActionUseCase,
+  })  : _habitRepository = habitRepository,
+        _addActionUseCase = addActionUseCase {
+    loadHabits();
+  }
 
-  Future<void> loadHabits() async {
-    _state = _state.copyWith(isLoading: true);
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  List<Habit> _habits = [];
+  List<Habit> get habits => _habits;
+
+  List<int> _selectedHabitIds = [];
+  List<int> get selectedHabitIds => _selectedHabitIds;
+
+  String? _currentSessionId;
+
+  Future<void> loadHabits({String? currentSessionId}) async {
+    if (currentSessionId != null) {
+      _currentSessionId = currentSessionId;
+    }
+
+    _isLoading = true;
     notifyListeners();
 
     try {
-      final list = await getHabitsUseCase.execute();
-      _state = _state.copyWith(habits: list, isLoading: false);
-    } catch (e) {
-      _state = _state.copyWith(isLoading: false);
-      print('Ошибка Notifier при загрузке: $e');
-    }
-    notifyListeners();
-  }
+      _habits = await _habitRepository.getHabits();
 
-  Future<void> createHabit(String title, int score) async {
-      final newHabit = Habit(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: title,
-        scoreValue: score,
-      );
-
-      try {
-        // 1. Сначала сохраняем в базу данных
-        await addHabitUseCase.execute(newHabit);
-
-        // 2. Локально добавляем в текущее состояние, чтобы UI обновился мгновенно
-        final updatedList = List<Habit>.from(_state.habits)..add(newHabit);
-        _state = _state.copyWith(habits: updatedList);
-        notifyListeners(); // Громко говорим экрану обновиться!
-
-        // 3. На всякий случай синхронизируем с базой данных
-        await loadHabits();
-      } catch (e) {
-        print('Ошибка при создании привычки в Notifier: $e');
+      if (_currentSessionId != null) {
+        _selectedHabitIds = await _habitRepository
+            .getSelectedHabitIdsForSession(_currentSessionId!);
       }
+    } catch (e) {
+      debugPrint('Ошибка загрузки привычек: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-
-  // Для обратной совместимости со старым кодом страницы
-  Future<void> addHabit(String title, int score) async {
-    await createHabit(title, score);
   }
 
-  Future<void> deleteHabit(String id) async {
-    await deleteHabitUseCase.execute(id);
+  Future<void> toggleHabitSelection(String sessionId, int habitId) async {
+    await _habitRepository.toggleHabitSelection(sessionId, habitId);
+    await loadHabits(currentSessionId: sessionId);
+  }
+
+  Future<void> addHabit(String title, int scoreValue) async {
+    final newHabit = Habit(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      scoreValue: scoreValue,
+    );
+    await _habitRepository.addHabit(newHabit);
     await loadHabits();
   }
 
   Future<void> updateHabit(Habit habit) async {
-    await updateHabitUseCase.execute(habit);
+    await _habitRepository.updateHabit(habit);
     await loadHabits();
   }
+
+  Future<void> deleteHabit(int habitId, {String? sessionId}) async {
+    await _habitRepository.deleteHabit(habitId);
+    await loadHabits(currentSessionId: sessionId);
+  }
+
+  /// Старый метод фиксации (оставляем для обратной совместимости)
+  Future<void> hitHabit(Habit habit, {dynamic scoringNotifier}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _addActionUseCase.execute(habit);
+
+      if (scoringNotifier != null) {
+        await scoringNotifier.refreshScore();
+      }
+    } catch (e) {
+      debugPrint('Ошибка при записи срыва (hitHabit): $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// 🎯 НОВЫЙ МЕТОД: Специально для интерактивной кнопки удержания на HomePage.
+
+   Future<void> addActionLog({
+     required String habitId,
+     required int points,
+     required DateTime timestamp,
+   }) async {
+     _isLoading = true;
+     notifyListeners();
+
+     try {
+       // Собираем объект Habit, так как execute ждет именно его
+       // (поля сверяем с твоим методом addHabit: title и scoreValue)
+       final habitToRecord = Habit(
+         id: habitId,
+         title: '', // Для логирования срыва название можно оставить пустым
+         scoreValue: points,
+       );
+
+       // Передаем как ОДИН позиционный аргумент
+       await _addActionUseCase.execute(habitToRecord);
+
+     } catch (e) {
+       debugPrint('Ошибка при записи действия в addActionLog: $e');
+     } finally {
+       _isLoading = false;
+       notifyListeners();
+     }
+   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'scoring_state.dart';
-import 'package:dopamine_budget/features/scoring/presentation/pages/home_page.dart';
+
 import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 class ScoringNotifier extends ValueNotifier<ScoringState> {
@@ -128,6 +128,12 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
   // БЛОК 3: ОБРАБОТКА ПОЛЬЗОВАТЕЛЬСКИХ СОБЫТИЙ
   // ==========================================
 
+  /// Явный перерасчет баланса очков «на лету» — вызывается из HabitsNotifier
+  /// сразу после фиксации срыва, чтобы HomePage обновился мгновенно
+  Future<void> refreshScore() async {
+    await refreshTodayState();
+  }
+
   Future<void> spendDopamine(String habitType, int scoreValue) async {
     try {
       await _calculateScoreUseCase.registerAction(
@@ -148,4 +154,7 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
   // ==========================================
   ScoringState get state => value;
   set state(ScoringState newState) => value = newState;
+
+  // Текущий ID сессии — берётся из стейта, нужен для передачи в HabitManagementPage
+  String get currentSessionId => state.currentSessionId ?? '';
 }

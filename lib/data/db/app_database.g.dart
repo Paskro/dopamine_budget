@@ -1045,12 +1045,271 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
   }
 }
 
+class $SessionHabitsTableTable extends SessionHabitsTable
+    with TableInfo<$SessionHabitsTableTable, SessionHabitsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SessionHabitsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _habitIdMeta = const VerificationMeta(
+    'habitId',
+  );
+  @override
+  late final GeneratedColumn<int> habitId = GeneratedColumn<int>(
+    'habit_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, sessionId, habitId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'session_habits_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SessionHabitsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('habit_id')) {
+      context.handle(
+        _habitIdMeta,
+        habitId.isAcceptableOrUnknown(data['habit_id']!, _habitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_habitIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {sessionId, habitId},
+  ];
+  @override
+  SessionHabitsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SessionHabitsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      habitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}habit_id'],
+      )!,
+    );
+  }
+
+  @override
+  $SessionHabitsTableTable createAlias(String alias) {
+    return $SessionHabitsTableTable(attachedDatabase, alias);
+  }
+}
+
+class SessionHabitsTableData extends DataClass
+    implements Insertable<SessionHabitsTableData> {
+  final int id;
+  final String sessionId;
+  final int habitId;
+  const SessionHabitsTableData({
+    required this.id,
+    required this.sessionId,
+    required this.habitId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['habit_id'] = Variable<int>(habitId);
+    return map;
+  }
+
+  SessionHabitsTableCompanion toCompanion(bool nullToAbsent) {
+    return SessionHabitsTableCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      habitId: Value(habitId),
+    );
+  }
+
+  factory SessionHabitsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SessionHabitsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      habitId: serializer.fromJson<int>(json['habitId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'habitId': serializer.toJson<int>(habitId),
+    };
+  }
+
+  SessionHabitsTableData copyWith({int? id, String? sessionId, int? habitId}) =>
+      SessionHabitsTableData(
+        id: id ?? this.id,
+        sessionId: sessionId ?? this.sessionId,
+        habitId: habitId ?? this.habitId,
+      );
+  SessionHabitsTableData copyWithCompanion(SessionHabitsTableCompanion data) {
+    return SessionHabitsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      habitId: data.habitId.present ? data.habitId.value : this.habitId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SessionHabitsTableData(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('habitId: $habitId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, sessionId, habitId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SessionHabitsTableData &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.habitId == this.habitId);
+}
+
+class SessionHabitsTableCompanion
+    extends UpdateCompanion<SessionHabitsTableData> {
+  final Value<int> id;
+  final Value<String> sessionId;
+  final Value<int> habitId;
+  const SessionHabitsTableCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.habitId = const Value.absent(),
+  });
+  SessionHabitsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String sessionId,
+    required int habitId,
+  }) : sessionId = Value(sessionId),
+       habitId = Value(habitId);
+  static Insertable<SessionHabitsTableData> custom({
+    Expression<int>? id,
+    Expression<String>? sessionId,
+    Expression<int>? habitId,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (habitId != null) 'habit_id': habitId,
+    });
+  }
+
+  SessionHabitsTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? sessionId,
+    Value<int>? habitId,
+  }) {
+    return SessionHabitsTableCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      habitId: habitId ?? this.habitId,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (habitId.present) {
+      map['habit_id'] = Variable<int>(habitId.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SessionHabitsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('habitId: $habitId')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $SessionsTableTable sessionsTable = $SessionsTableTable(this);
   late final $ActionsTableTable actionsTable = $ActionsTableTable(this);
   late final $HabitsTableTable habitsTable = $HabitsTableTable(this);
+  late final $SessionHabitsTableTable sessionHabitsTable =
+      $SessionHabitsTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1059,6 +1318,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sessionsTable,
     actionsTable,
     habitsTable,
+    sessionHabitsTable,
   ];
 }
 
@@ -1645,6 +1905,175 @@ typedef $$HabitsTableTableProcessedTableManager =
       HabitsTableData,
       PrefetchHooks Function()
     >;
+typedef $$SessionHabitsTableTableCreateCompanionBuilder =
+    SessionHabitsTableCompanion Function({
+      Value<int> id,
+      required String sessionId,
+      required int habitId,
+    });
+typedef $$SessionHabitsTableTableUpdateCompanionBuilder =
+    SessionHabitsTableCompanion Function({
+      Value<int> id,
+      Value<String> sessionId,
+      Value<int> habitId,
+    });
+
+class $$SessionHabitsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SessionHabitsTableTable> {
+  $$SessionHabitsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get habitId => $composableBuilder(
+    column: $table.habitId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SessionHabitsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SessionHabitsTableTable> {
+  $$SessionHabitsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get habitId => $composableBuilder(
+    column: $table.habitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SessionHabitsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SessionHabitsTableTable> {
+  $$SessionHabitsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<int> get habitId =>
+      $composableBuilder(column: $table.habitId, builder: (column) => column);
+}
+
+class $$SessionHabitsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SessionHabitsTableTable,
+          SessionHabitsTableData,
+          $$SessionHabitsTableTableFilterComposer,
+          $$SessionHabitsTableTableOrderingComposer,
+          $$SessionHabitsTableTableAnnotationComposer,
+          $$SessionHabitsTableTableCreateCompanionBuilder,
+          $$SessionHabitsTableTableUpdateCompanionBuilder,
+          (
+            SessionHabitsTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $SessionHabitsTableTable,
+              SessionHabitsTableData
+            >,
+          ),
+          SessionHabitsTableData,
+          PrefetchHooks Function()
+        > {
+  $$SessionHabitsTableTableTableManager(
+    _$AppDatabase db,
+    $SessionHabitsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SessionHabitsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SessionHabitsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SessionHabitsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<int> habitId = const Value.absent(),
+              }) => SessionHabitsTableCompanion(
+                id: id,
+                sessionId: sessionId,
+                habitId: habitId,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String sessionId,
+                required int habitId,
+              }) => SessionHabitsTableCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                habitId: habitId,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SessionHabitsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SessionHabitsTableTable,
+      SessionHabitsTableData,
+      $$SessionHabitsTableTableFilterComposer,
+      $$SessionHabitsTableTableOrderingComposer,
+      $$SessionHabitsTableTableAnnotationComposer,
+      $$SessionHabitsTableTableCreateCompanionBuilder,
+      $$SessionHabitsTableTableUpdateCompanionBuilder,
+      (
+        SessionHabitsTableData,
+        BaseReferences<
+          _$AppDatabase,
+          $SessionHabitsTableTable,
+          SessionHabitsTableData
+        >,
+      ),
+      SessionHabitsTableData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1655,4 +2084,6 @@ class $AppDatabaseManager {
       $$ActionsTableTableTableManager(_db, _db.actionsTable);
   $$HabitsTableTableTableManager get habitsTable =>
       $$HabitsTableTableTableManager(_db, _db.habitsTable);
+  $$SessionHabitsTableTableTableManager get sessionHabitsTable =>
+      $$SessionHabitsTableTableTableManager(_db, _db.sessionHabitsTable);
 }

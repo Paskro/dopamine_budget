@@ -6,6 +6,6 @@ class DeleteHabitUseCase {
   DeleteHabitUseCase(this.repository);
 
   Future<void> execute(String id) async {
-    return await repository.deleteHabit(id);
+    return await repository.deleteHabit(int.parse(id));
   }
 }

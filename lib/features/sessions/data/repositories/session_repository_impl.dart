@@ -56,6 +56,43 @@ class SessionRepositoryImpl implements SessionRepository {
     }
   }
 
+
+    Future<Session?> getActiveSession() async {
+      // Пишем Drift SQL-запрос: выбираем сессию, где нет даты окончания (активная)
+      // или по бизнес-логике фаз берем первую запись, так как в MVP сессия одна активная.
+      final query = _db.select(_db.sessionsTable)
+        ..where((tbl) => tbl.id.isNotNull()) // Или твой специфичный флаг активности
+        ..limit(1);
+
+      final row = await query.getSingleOrNull();
+      if (row == null) return null;
+
+      // Маппим из Drift-строки в нашу доменную сущность Session
+      return SessionMapper.fromDb(row);
+    }
+
+
+    Future<int> getTotalScoreCostForDate(DateTime date) async {
+      // Нам нужно посчитать сумму баллов за конкретные сутки.
+      // Так как в БД timestamps хранятся с часами/минутами/секундами,
+      // мы фильтруем логи в диапазоне: от 00:00:00 выбранного дня до 23:59:59.
+
+      final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+      // Создаем переменную для агрегирующей функции SUM(score_value)
+      final totalCostExpression = _db.actionsTable.scoreValue.sum();
+
+      final query = _db.selectOnly(_db.actionsTable)
+        ..addColumns([totalCostExpression])
+        ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
+
+      final row = await query.getSingle();
+
+      // Возвращаем результат суммы. Если логов за день нет, Drift вернет null, тогда отдаем 0.
+      return row.read(totalCostExpression) ?? 0;
+    }
+
   // === 2. МЕТОДЫ УПРАВЛЕНИЯ СЕССИЯМИ ===
 
   Future<void> saveSession(Session session) async {
@@ -87,4 +124,33 @@ class SessionRepositoryImpl implements SessionRepository {
       );
     }).toList();
   }
+  @override
+    Future<int> getTotalScoreSpentByDay(DateTime date) async {
+      final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+      final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+      final totalCostExpression = _db.actionsTable.scoreValue.sum();
+
+      final query = _db.selectOnly(_db.actionsTable)
+        ..addColumns([totalCostExpression])
+        ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
+
+      final row = await query.getSingle();
+      return row.read(totalCostExpression) ?? 0;
+    }
+
+    @override
+    Future<void> recordActionLog({
+      required String habitId,
+      required int scoreCost,
+      required DateTime createdAt,
+    }) async {
+      await _db.into(_db.actionsTable).insert(
+        ActionsTableCompanion.insert(
+          habitType: habitId,
+          scoreValue: scoreCost,
+          timestamp: createdAt, // 👈 используем переданное время
+        ),
+      );
+    }
 }

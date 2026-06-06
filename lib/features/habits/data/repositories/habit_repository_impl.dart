@@ -4,63 +4,86 @@ import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/features/habits/domain/repositories/habit_repository.dart';
 
 class HabitRepositoryImpl implements HabitRepository {
-  // Подключаем базу данных
   final AppDatabase _db;
 
   HabitRepositoryImpl(this._db);
 
   @override
   Future<List<Habit>> getHabits() async {
-    // Получаем все строчки из таблицы habitsTable
     final rows = await _db.select(_db.habitsTable).get();
-
-    // Превращаем их в список привычек для нашего интерфейса
     return rows.map<Habit>((row) {
       return Habit(
         id: row.id.toString(),
         title: row.title,
-        scoreValue: row.scoreValue, // Получаем баллы из базы данных
+        scoreValue: row.scoreValue,
       );
     }).toList();
   }
 
   @override
   Future<void> saveHabit(Habit habit) async {
-    // Проверяем: если ID пустой, равен "0" или содержит временный/случайный маркер новой привычки
-    // (Например, если на UI при создании новой привычки ты передаешь id: "" или id: "0")
-    final isNewHabit = habit.id.isEmpty || habit.id == '0' || habit.id.length > 5;
+    final isNew = habit.id.isEmpty || habit.id == '0' || habit.id.length > 10;
 
     final companion = HabitsTableCompanion(
-      // Если привычка новая — пишем Value.absent(), и Drift сам выдаст ей красивый ID (1, 2, 3...)
-      // Если старая — парсим и сохраняем её родной ID
-      id: isNewHabit ? const Value.absent() : Value(int.parse(habit.id)),
+      id: isNew ? const Value.absent() : Value(int.parse(habit.id)),
       title: Value(habit.title),
       scoreValue: Value(habit.scoreValue),
     );
 
-    // Insert or Update
     await _db.into(_db.habitsTable).insertOnConflictUpdate(companion);
   }
 
   @override
-  Future<void> deleteHabit(String id) async {
-    // Удаляем из базы по ID
-    await (_db.delete(_db.habitsTable)
-          ..where((t) => t.id.equals(int.parse(id))))
-        .go();
+  Future<void> addHabit(Habit habit) async {
+    await saveHabit(habit);
   }
 
   @override
-  Future<void> addHabit(dynamic habit) async {
-    if (habit is Habit) {
-      await saveHabit(habit);
-    }
+  Future<void> updateHabit(Habit habit) async {
+    await saveHabit(habit);
   }
 
   @override
-  Future<void> updateHabit(dynamic habit) async {
-    if (habit is Habit) {
-      await saveHabit(habit);
-    }
+  Future<void> deleteHabit(int habitId) async {
+    await _db.transaction(() async {
+      await (_db.delete(_db.habitsTable)
+            ..where((t) => t.id.equals(habitId)))
+          .go();
+      await (_db.delete(_db.sessionHabitsTable)
+            ..where((t) => t.habitId.equals(habitId)))
+          .go();
+    });
+  }
+
+  @override
+  Future<void> toggleHabitSelection(String sessionId, int habitId) async {
+    await _db.transaction(() async {
+      final query = _db.select(_db.sessionHabitsTable)
+        ..where((t) =>
+            t.sessionId.equals(sessionId) & t.habitId.equals(habitId));
+      final existing = await query.getSingleOrNull();
+
+      if (existing != null) {
+        await (_db.delete(_db.sessionHabitsTable)
+              ..where((t) => t.id.equals(existing.id)))
+            .go();
+      } else {
+        await _db.into(_db.sessionHabitsTable).insert(
+          SessionHabitsTableCompanion.insert(
+            sessionId: sessionId,
+            habitId: habitId,
+          ),
+        );
+      }
+    });
+  }
+
+  @override
+  Future<List<int>> getSelectedHabitIdsForSession(String sessionId) async {
+    final query = _db.select(_db.sessionHabitsTable)
+      ..where((t) => t.sessionId.equals(sessionId));
+    final rows = await query.get();
+    // явное приведение к List<int> чтобы не было return_of_invalid_type
+    return rows.map<int>((row) => row.habitId).toList();
   }
 }

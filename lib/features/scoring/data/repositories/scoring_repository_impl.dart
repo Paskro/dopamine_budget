@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import '../../domain/repositories/scoring_repository.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 
 class ScoringRepositoryImpl implements ScoringRepository {
   final AppDatabase _db;
@@ -87,4 +88,20 @@ class ScoringRepositoryImpl implements ScoringRepository {
       return [];
     }
   }
+  @override
+    Future<int> getSpentScoreByDay(DateTime date) async {
+      return await getScoreForDay(date); // логика уже есть в getScoreForDay
+    }
+
+    @override
+    Future<Session?> getActiveSession() async {
+      // ScoringRepository не работает с сессиями напрямую —
+      // делегируем через SessionRepositoryImpl или возвращаем null
+      return null;
+    }
+
+    @override
+    Future<int> getTotalScoreCostForDate(DateTime date) async {
+      return await getScoreForDay(date); // та же логика
+    }
 }

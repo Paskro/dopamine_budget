@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class ScoringState {
   final int dailyLimit;
   final int pointsSpentToday;
@@ -8,7 +6,8 @@ class ScoringState {
   final bool isLoading;
   final String phase;
   final Map<String, int> habitClicksToday;
-  final DateTime? lastUpdateDate; // Наше новое поле для фиксации дней
+  final DateTime? lastUpdateDate;
+  final String? currentSessionId;
 
   const ScoringState({
     required this.dailyLimit,
@@ -19,9 +18,9 @@ class ScoringState {
     required this.phase,
     required this.habitClicksToday,
     this.lastUpdateDate,
+    this.currentSessionId,
   });
 
-  // Возвращаем factory на место, чтобы super(ScoringState.initial()) завелся
   factory ScoringState.initial() {
     return const ScoringState(
       dailyLimit: 0,
@@ -32,6 +31,7 @@ class ScoringState {
       phase: 'control',
       habitClicksToday: {},
       lastUpdateDate: null,
+      currentSessionId: null,
     );
   }
 
@@ -44,6 +44,7 @@ class ScoringState {
     String? phase,
     Map<String, int>? habitClicksToday,
     DateTime? lastUpdateDate,
+    String? currentSessionId,
   }) {
     return ScoringState(
       dailyLimit: dailyLimit ?? this.dailyLimit,
@@ -54,6 +55,7 @@ class ScoringState {
       phase: phase ?? this.phase,
       habitClicksToday: habitClicksToday ?? this.habitClicksToday,
       lastUpdateDate: lastUpdateDate ?? this.lastUpdateDate,
+      currentSessionId: currentSessionId ?? this.currentSessionId,
     );
   }
 }
