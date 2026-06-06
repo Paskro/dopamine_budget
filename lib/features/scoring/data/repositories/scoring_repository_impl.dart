@@ -104,4 +104,16 @@ class ScoringRepositoryImpl implements ScoringRepository {
     Future<int> getTotalScoreCostForDate(DateTime date) async {
       return await getScoreForDay(date); // та же логика
     }
+
+    @override
+    Future<void> updateSessionToControl({required String sessionId}) async {
+      await (_db.update(_db.sessionsTable)
+            ..where((t) => t.id.equals(sessionId)))
+          .write(
+        SessionsTableCompanion(
+          phase: const Value(1),
+          isReviewed: const Value(false), // false = пользователь ещё не ознакомился → триггер показа CalibrationResultPage
+        ),
+      );
+    }
 }

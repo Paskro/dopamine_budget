@@ -6,6 +6,7 @@ class Session {
   final bool shouldDecrease; // Нужно ли снижать лимит каждую неделю
   final int? decreasePercentage; // На сколько процентов снижать (например, 20)
   final int? decreaseInterval; // Интервал в днях
+  final bool isReviewed; // Пользователь ознакомился с итогами калибровки
 
   const Session({
     required this.id,
@@ -15,6 +16,7 @@ class Session {
     this.shouldDecrease = false,
     this.decreasePercentage,
     this.decreaseInterval,
+    this.isReviewed = false,
   });
 
 Session copyWith({
@@ -25,6 +27,7 @@ Session copyWith({
     bool? shouldDecrease,
     int? decreasePercentage,
     int? decreaseInterval,
+    bool? isReviewed,
   }) {
     return Session(
       id: id ?? this.id,
@@ -34,6 +37,7 @@ Session copyWith({
       shouldDecrease: shouldDecrease ?? this.shouldDecrease,
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseInterval: decreaseInterval ?? this.decreaseInterval,
+      isReviewed: isReviewed ?? this.isReviewed,
     );
   }
 

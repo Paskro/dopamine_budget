@@ -6,6 +6,9 @@ class SessionsTable extends Table {
   IntColumn get phase => integer()(); // 0 = stats (калибровка), 1 = control (контроль)
   RealColumn get avgScore => real().nullable()(); // Базовый лимит XP
 
+  // Добавляем флаг ознакомления (дефолт false)
+  BoolColumn get isReviewed => boolean().withDefault(const Constant(false))();
+
   // === НОВЫЕ ПОЛЯ ДЛЯ ГИБКИХ НАСТРОЕК СЕЙЧАС И НА БУДУЩЕЕ ===
 
   // Нужно ли автоматически снижать лимит со временем

@@ -8,6 +8,8 @@ class ScoringState {
   final Map<String, int> habitClicksToday;
   final DateTime? lastUpdateDate;
   final String? currentSessionId;
+  final dynamic currentSession;         // активная Session-сущность (или null)
+  final List<double>? historicalScores; // баллы за дни калибровки для графика
 
   const ScoringState({
     required this.dailyLimit,
@@ -19,6 +21,8 @@ class ScoringState {
     required this.habitClicksToday,
     this.lastUpdateDate,
     this.currentSessionId,
+    this.currentSession,
+    this.historicalScores,
   });
 
   factory ScoringState.initial() {
@@ -32,6 +36,8 @@ class ScoringState {
       habitClicksToday: {},
       lastUpdateDate: null,
       currentSessionId: null,
+      currentSession: null,
+      historicalScores: null,
     );
   }
 
@@ -45,6 +51,8 @@ class ScoringState {
     Map<String, int>? habitClicksToday,
     DateTime? lastUpdateDate,
     String? currentSessionId,
+    dynamic currentSession,
+    List<double>? historicalScores,
   }) {
     return ScoringState(
       dailyLimit: dailyLimit ?? this.dailyLimit,
@@ -56,6 +64,8 @@ class ScoringState {
       habitClicksToday: habitClicksToday ?? this.habitClicksToday,
       lastUpdateDate: lastUpdateDate ?? this.lastUpdateDate,
       currentSessionId: currentSessionId ?? this.currentSessionId,
+      currentSession: currentSession ?? this.currentSession,
+      historicalScores: historicalScores ?? this.historicalScores,
     );
   }
 }

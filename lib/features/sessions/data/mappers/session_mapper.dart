@@ -15,6 +15,7 @@ class SessionMapper {
       decreaseInterval: data.decreaseInterval != null
           ? (double.tryParse(data.decreaseInterval!)?.toInt() ?? int.tryParse(data.decreaseInterval!))
           : null,
+      isReviewed: data.isReviewed,
     );
   }
 
@@ -27,7 +28,8 @@ class SessionMapper {
       avgScore: Value(session.avgScore),
       shouldDecrease: Value(session.shouldDecrease),
       decreasePercentage: Value(session.decreasePercentage?.toDouble()), // Из int? в double?
-      decreaseInterval: Value(session.decreaseInterval?.toString()),   // Из int? в String?
+      decreaseInterval: Value(session.decreaseInterval?.toString()),
+      isReviewed: Value(session.isReviewed),
     );
   }
 }

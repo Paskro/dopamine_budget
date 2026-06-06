@@ -107,6 +107,14 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
         currentPhase = rawPhase.toString();
       }
 
+      // Собираем исторические баллы для графика калибровки
+      List<double> historicalScores = [];
+      try {
+        historicalScores = await _sessionRepository.getScoresPerDaySince(currentSession.createdAt);
+      } catch (_) {
+        // Граф недоступен — не блокируем основной поток
+      }
+
       state = state.copyWith(
         dailyLimit: currentLimit,
         pointsSpentToday: totalSpentToday,
@@ -115,6 +123,9 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
         isLoading: false,
         phase: currentPhase,
         habitClicksToday: clicksToday,
+        currentSession: currentSession,
+        currentSessionId: currentSession.id?.toString(),
+        historicalScores: historicalScores,
       );
 
       print('Стейт успешно обновлен! Потрачено: $totalSpentToday, Лимит: $currentLimit, Фаза: $currentPhase');
@@ -150,11 +161,44 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
   }
 
   // ==========================================
-  // БЛОК 4: ВСПОМОГАТЕЛЬНЫЕ ГЕТТЕРЫ / СЕТТЕРЫ
+    // БЛОК 4: УПРАВЛЕНИЕ ФАЗАМИ СЕССИИ (КОНТРОЛЬ)
+    // ==========================================
+
+    /// Логика кнопки «Быстрый старт» на экране итогов калибровки.
+    /// Переводит текущую сессию в фазу Контроля и фиксирует ознакомление.
+    Future<void> applyDefaultControlSettings() async {
+      final currentSession = state.currentSession;
+      if (currentSession == null) return;
+
+      try {
+        // 1. Вызываем метод репозитория для обновления только phase и isReviewed в БД.
+        // Имя метода должно совпадать с тем, что вы напишете в вашем sessionRepository.
+        await _sessionRepository.updateSessionToControl(sessionId: currentSession.id);
+
+        // 2. Обязательно перечитываем состояние из БД, чтобы сбросить UI стейт.
+        // Метод refreshTodayState подтянет обновленную сессию, и экран итогов закроется.
+        await refreshTodayState();
+      } catch (e) {
+        // Здесь можно добавить логирование ошибок или прокинуть ошибку дальше в UI
+        print('Ошибка при активации быстрого старта: $e');
+      }
+    }
+
+  // ==========================================
+  // БЛОК 5: ВСПОМОГАТЕЛЬНЫЕ ГЕТТЕРЫ / СЕТТЕРЫ
   // ==========================================
   ScoringState get state => value;
   set state(ScoringState newState) => value = newState;
 
   // Текущий ID сессии — берётся из стейта, нужен для передачи в HabitManagementPage
   String get currentSessionId => state.currentSessionId ?? '';
+
+  /// Топ-1 привычка по количеству срабатываний за период калибровки
+  Future<String?> getMostFrequentHabit(DateTime sessionStartDate) async {
+    try {
+      return await _sessionRepository.getMostFrequentHabitSince(sessionStartDate);
+    } catch (_) {
+      return null;
+    }
+  }
 }

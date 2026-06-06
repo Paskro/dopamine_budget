@@ -13,4 +13,12 @@ Future<void> recordActionLog({
   required DateTime createdAt,
 });
 
+  /// Баллы за каждый день начиная с даты старта сессии до сегодня
+  Future<List<double>> getScoresPerDaySince(DateTime startDate);
+
+  /// Топ-1 привычка по количеству срабатываний за период (COUNT по habitType)
+  Future<String?> getMostFrequentHabitSince(DateTime startDate);
+
+  /// Переводит сессию в фазу Контроля и сбрасывает флаг ознакомления
+  Future<void> updateSessionToControl({required String sessionId});
 }

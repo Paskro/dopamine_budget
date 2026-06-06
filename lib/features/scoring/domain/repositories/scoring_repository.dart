@@ -12,7 +12,7 @@ abstract class ScoringRepository {
   Future<int> getScoreForDay(DateTime date);
 
   /// Получить сумму потраченных дофаминовых баллов за конкретную дату
-    Future<int> getSpentScoreByDay(DateTime date);
+  Future<int> getSpentScoreByDay(DateTime date);
 
   /// Получить мапу "Привычка -> Количество кликов" за конкретный день
   Future<Map<String, int>> getHabitClicksForDay(DateTime date);
@@ -21,8 +21,11 @@ abstract class ScoringRepository {
   Future<List<DateTime>> getUniqueRecordedDays();
 
   /// Получить текущую активную сессию пользователя
-    Future<Session?> getActiveSession();
+  Future<Session?> getActiveSession();
 
-    /// Получить суммарную стоимость деструктивных действий за конкретные сутки
-    Future<int> getTotalScoreCostForDate(DateTime date);
+  /// Получить суммарную стоимость деструктивных действий за конкретные сутки
+  Future<int> getTotalScoreCostForDate(DateTime date);
+
+  /// Обновляет фазу сессии на Контроль и фиксирует прочтение итогов
+  Future<void> updateSessionToControl({required String sessionId});
 }

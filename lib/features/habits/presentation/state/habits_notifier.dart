@@ -106,14 +106,11 @@ class HabitsNotifier extends ChangeNotifier {
      try {
        // Собираем объект Habit, так как execute ждет именно его
        // (поля сверяем с твоим методом addHabit: title и scoreValue)
-       final habitToRecord = Habit(
-         id: habitId,
-         title: '', // Для логирования срыва название можно оставить пустым
-         scoreValue: points,
+       final habit = _habits.firstWhere(
+         (h) => h.id == habitId,
+         orElse: () => Habit(id: habitId, title: habitId, scoreValue: points),
        );
-
-       // Передаем как ОДИН позиционный аргумент
-       await _addActionUseCase.execute(habitToRecord);
+       await _addActionUseCase.execute(habit);
 
      } catch (e) {
        debugPrint('Ошибка при записи действия в addActionLog: $e');

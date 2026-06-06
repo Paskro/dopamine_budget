@@ -35,6 +35,7 @@ class SessionRepositoryImpl implements SessionRepository {
         shouldDecrease: row.shouldDecrease,
         decreasePercentage: row.decreasePercentage?.toInt(),
         decreaseInterval: row.decreaseInterval != null ? (int.tryParse(row.decreaseInterval!) ?? 0) : null,
+        isReviewed: row.isReviewed,
       );
     }).toList();
   }
@@ -104,6 +105,7 @@ class SessionRepositoryImpl implements SessionRepository {
       shouldDecrease: Value(session.shouldDecrease),
       decreasePercentage: Value(session.decreasePercentage?.toDouble()),
       decreaseInterval: Value(session.decreaseInterval?.toString()),
+      isReviewed: Value(session.isReviewed),
     );
 
     await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
@@ -121,6 +123,7 @@ class SessionRepositoryImpl implements SessionRepository {
         shouldDecrease: row.shouldDecrease,
         decreasePercentage: row.decreasePercentage?.toInt() ?? 0,
         decreaseInterval: row.decreaseInterval != null ? (int.tryParse(row.decreaseInterval!) ?? 0) : 0,
+        isReviewed: row.isReviewed,
       );
     }).toList();
   }
@@ -149,8 +152,54 @@ class SessionRepositoryImpl implements SessionRepository {
         ActionsTableCompanion.insert(
           habitType: habitId,
           scoreValue: scoreCost,
-          timestamp: createdAt, // 👈 используем переданное время
+          timestamp: createdAt,
         ),
       );
     }
+
+  /// Возвращает список суммарных баллов за каждый день начиная с [startDate] до сегодня
+  @override
+  Future<List<double>> getScoresPerDaySince(DateTime startDate) async {
+    final results = <double>[];
+    final now = DateTime.now();
+    var current = DateTime(startDate.year, startDate.month, startDate.day);
+
+    while (!current.isAfter(DateTime(now.year, now.month, now.day))) {
+      final score = await getTotalScoreSpentByDay(current);
+      results.add(score.toDouble());
+      current = current.add(const Duration(days: 1));
+    }
+
+    return results;
+  }
+
+  /// Топ-1 привычка по COUNT(id) GROUP BY habitType за период с [startDate]
+  @override
+  Future<String?> getMostFrequentHabitSince(DateTime startDate) async {
+    final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
+    final endOfDay = DateTime.now();
+
+    final countExpr = _db.actionsTable.id.count();
+
+    final query = _db.selectOnly(_db.actionsTable)
+      ..addColumns([_db.actionsTable.habitType, countExpr])
+      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
+      ..groupBy([_db.actionsTable.habitType])
+      ..orderBy([OrderingTerm.desc(countExpr)])
+      ..limit(1);
+
+    final row = await query.getSingleOrNull();
+    return row?.read(_db.actionsTable.habitType);
+  }
+
+  /// Переводит сессию в фазу Контроля (phase=1) и помечает как ознакомленную (isReviewed=true)
+  @override
+  Future<void> updateSessionToControl({required String sessionId}) async {
+    await (_db.update(_db.sessionsTable)
+          ..where((t) => t.id.equals(sessionId)))
+        .write(const SessionsTableCompanion(
+          phase: Value(1),
+          isReviewed: Value(true),
+        ));
+  }
 }

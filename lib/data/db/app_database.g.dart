@@ -49,6 +49,21 @@ class $SessionsTableTable extends SessionsTable
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isReviewedMeta = const VerificationMeta(
+    'isReviewed',
+  );
+  @override
+  late final GeneratedColumn<bool> isReviewed = GeneratedColumn<bool>(
+    'is_reviewed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_reviewed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _shouldDecreaseMeta = const VerificationMeta(
     'shouldDecrease',
   );
@@ -92,6 +107,7 @@ class $SessionsTableTable extends SessionsTable
     createdAt,
     phase,
     avgScore,
+    isReviewed,
     shouldDecrease,
     decreasePercentage,
     decreaseInterval,
@@ -133,6 +149,12 @@ class $SessionsTableTable extends SessionsTable
       context.handle(
         _avgScoreMeta,
         avgScore.isAcceptableOrUnknown(data['avg_score']!, _avgScoreMeta),
+      );
+    }
+    if (data.containsKey('is_reviewed')) {
+      context.handle(
+        _isReviewedMeta,
+        isReviewed.isAcceptableOrUnknown(data['is_reviewed']!, _isReviewedMeta),
       );
     }
     if (data.containsKey('should_decrease')) {
@@ -187,6 +209,10 @@ class $SessionsTableTable extends SessionsTable
         DriftSqlType.double,
         data['${effectivePrefix}avg_score'],
       ),
+      isReviewed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_reviewed'],
+      )!,
       shouldDecrease: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}should_decrease'],
@@ -214,6 +240,7 @@ class SessionsTableData extends DataClass
   final DateTime createdAt;
   final int phase;
   final double? avgScore;
+  final bool isReviewed;
   final bool shouldDecrease;
   final double? decreasePercentage;
   final String? decreaseInterval;
@@ -222,6 +249,7 @@ class SessionsTableData extends DataClass
     required this.createdAt,
     required this.phase,
     this.avgScore,
+    required this.isReviewed,
     required this.shouldDecrease,
     this.decreasePercentage,
     this.decreaseInterval,
@@ -235,6 +263,7 @@ class SessionsTableData extends DataClass
     if (!nullToAbsent || avgScore != null) {
       map['avg_score'] = Variable<double>(avgScore);
     }
+    map['is_reviewed'] = Variable<bool>(isReviewed);
     map['should_decrease'] = Variable<bool>(shouldDecrease);
     if (!nullToAbsent || decreasePercentage != null) {
       map['decrease_percentage'] = Variable<double>(decreasePercentage);
@@ -253,6 +282,7 @@ class SessionsTableData extends DataClass
       avgScore: avgScore == null && nullToAbsent
           ? const Value.absent()
           : Value(avgScore),
+      isReviewed: Value(isReviewed),
       shouldDecrease: Value(shouldDecrease),
       decreasePercentage: decreasePercentage == null && nullToAbsent
           ? const Value.absent()
@@ -273,6 +303,7 @@ class SessionsTableData extends DataClass
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       phase: serializer.fromJson<int>(json['phase']),
       avgScore: serializer.fromJson<double?>(json['avgScore']),
+      isReviewed: serializer.fromJson<bool>(json['isReviewed']),
       shouldDecrease: serializer.fromJson<bool>(json['shouldDecrease']),
       decreasePercentage: serializer.fromJson<double?>(
         json['decreasePercentage'],
@@ -288,6 +319,7 @@ class SessionsTableData extends DataClass
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'phase': serializer.toJson<int>(phase),
       'avgScore': serializer.toJson<double?>(avgScore),
+      'isReviewed': serializer.toJson<bool>(isReviewed),
       'shouldDecrease': serializer.toJson<bool>(shouldDecrease),
       'decreasePercentage': serializer.toJson<double?>(decreasePercentage),
       'decreaseInterval': serializer.toJson<String?>(decreaseInterval),
@@ -299,6 +331,7 @@ class SessionsTableData extends DataClass
     DateTime? createdAt,
     int? phase,
     Value<double?> avgScore = const Value.absent(),
+    bool? isReviewed,
     bool? shouldDecrease,
     Value<double?> decreasePercentage = const Value.absent(),
     Value<String?> decreaseInterval = const Value.absent(),
@@ -307,6 +340,7 @@ class SessionsTableData extends DataClass
     createdAt: createdAt ?? this.createdAt,
     phase: phase ?? this.phase,
     avgScore: avgScore.present ? avgScore.value : this.avgScore,
+    isReviewed: isReviewed ?? this.isReviewed,
     shouldDecrease: shouldDecrease ?? this.shouldDecrease,
     decreasePercentage: decreasePercentage.present
         ? decreasePercentage.value
@@ -321,6 +355,9 @@ class SessionsTableData extends DataClass
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       phase: data.phase.present ? data.phase.value : this.phase,
       avgScore: data.avgScore.present ? data.avgScore.value : this.avgScore,
+      isReviewed: data.isReviewed.present
+          ? data.isReviewed.value
+          : this.isReviewed,
       shouldDecrease: data.shouldDecrease.present
           ? data.shouldDecrease.value
           : this.shouldDecrease,
@@ -340,6 +377,7 @@ class SessionsTableData extends DataClass
           ..write('createdAt: $createdAt, ')
           ..write('phase: $phase, ')
           ..write('avgScore: $avgScore, ')
+          ..write('isReviewed: $isReviewed, ')
           ..write('shouldDecrease: $shouldDecrease, ')
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseInterval: $decreaseInterval')
@@ -353,6 +391,7 @@ class SessionsTableData extends DataClass
     createdAt,
     phase,
     avgScore,
+    isReviewed,
     shouldDecrease,
     decreasePercentage,
     decreaseInterval,
@@ -365,6 +404,7 @@ class SessionsTableData extends DataClass
           other.createdAt == this.createdAt &&
           other.phase == this.phase &&
           other.avgScore == this.avgScore &&
+          other.isReviewed == this.isReviewed &&
           other.shouldDecrease == this.shouldDecrease &&
           other.decreasePercentage == this.decreasePercentage &&
           other.decreaseInterval == this.decreaseInterval);
@@ -375,6 +415,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
   final Value<DateTime> createdAt;
   final Value<int> phase;
   final Value<double?> avgScore;
+  final Value<bool> isReviewed;
   final Value<bool> shouldDecrease;
   final Value<double?> decreasePercentage;
   final Value<String?> decreaseInterval;
@@ -384,6 +425,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.createdAt = const Value.absent(),
     this.phase = const Value.absent(),
     this.avgScore = const Value.absent(),
+    this.isReviewed = const Value.absent(),
     this.shouldDecrease = const Value.absent(),
     this.decreasePercentage = const Value.absent(),
     this.decreaseInterval = const Value.absent(),
@@ -394,6 +436,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     required DateTime createdAt,
     required int phase,
     this.avgScore = const Value.absent(),
+    this.isReviewed = const Value.absent(),
     this.shouldDecrease = const Value.absent(),
     this.decreasePercentage = const Value.absent(),
     this.decreaseInterval = const Value.absent(),
@@ -406,6 +449,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Expression<DateTime>? createdAt,
     Expression<int>? phase,
     Expression<double>? avgScore,
+    Expression<bool>? isReviewed,
     Expression<bool>? shouldDecrease,
     Expression<double>? decreasePercentage,
     Expression<String>? decreaseInterval,
@@ -416,6 +460,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       if (createdAt != null) 'created_at': createdAt,
       if (phase != null) 'phase': phase,
       if (avgScore != null) 'avg_score': avgScore,
+      if (isReviewed != null) 'is_reviewed': isReviewed,
       if (shouldDecrease != null) 'should_decrease': shouldDecrease,
       if (decreasePercentage != null) 'decrease_percentage': decreasePercentage,
       if (decreaseInterval != null) 'decrease_interval': decreaseInterval,
@@ -428,6 +473,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Value<DateTime>? createdAt,
     Value<int>? phase,
     Value<double?>? avgScore,
+    Value<bool>? isReviewed,
     Value<bool>? shouldDecrease,
     Value<double?>? decreasePercentage,
     Value<String?>? decreaseInterval,
@@ -438,6 +484,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       createdAt: createdAt ?? this.createdAt,
       phase: phase ?? this.phase,
       avgScore: avgScore ?? this.avgScore,
+      isReviewed: isReviewed ?? this.isReviewed,
       shouldDecrease: shouldDecrease ?? this.shouldDecrease,
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseInterval: decreaseInterval ?? this.decreaseInterval,
@@ -459,6 +506,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     }
     if (avgScore.present) {
       map['avg_score'] = Variable<double>(avgScore.value);
+    }
+    if (isReviewed.present) {
+      map['is_reviewed'] = Variable<bool>(isReviewed.value);
     }
     if (shouldDecrease.present) {
       map['should_decrease'] = Variable<bool>(shouldDecrease.value);
@@ -482,6 +532,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
           ..write('createdAt: $createdAt, ')
           ..write('phase: $phase, ')
           ..write('avgScore: $avgScore, ')
+          ..write('isReviewed: $isReviewed, ')
           ..write('shouldDecrease: $shouldDecrease, ')
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseInterval: $decreaseInterval, ')
@@ -1328,6 +1379,7 @@ typedef $$SessionsTableTableCreateCompanionBuilder =
       required DateTime createdAt,
       required int phase,
       Value<double?> avgScore,
+      Value<bool> isReviewed,
       Value<bool> shouldDecrease,
       Value<double?> decreasePercentage,
       Value<String?> decreaseInterval,
@@ -1339,6 +1391,7 @@ typedef $$SessionsTableTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<int> phase,
       Value<double?> avgScore,
+      Value<bool> isReviewed,
       Value<bool> shouldDecrease,
       Value<double?> decreasePercentage,
       Value<String?> decreaseInterval,
@@ -1371,6 +1424,11 @@ class $$SessionsTableTableFilterComposer
 
   ColumnFilters<double> get avgScore => $composableBuilder(
     column: $table.avgScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1419,6 +1477,11 @@ class $$SessionsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get shouldDecrease => $composableBuilder(
     column: $table.shouldDecrease,
     builder: (column) => ColumnOrderings(column),
@@ -1455,6 +1518,11 @@ class $$SessionsTableTableAnnotationComposer
 
   GeneratedColumn<double> get avgScore =>
       $composableBuilder(column: $table.avgScore, builder: (column) => column);
+
+  GeneratedColumn<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get shouldDecrease => $composableBuilder(
     column: $table.shouldDecrease,
@@ -1511,6 +1579,7 @@ class $$SessionsTableTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> phase = const Value.absent(),
                 Value<double?> avgScore = const Value.absent(),
+                Value<bool> isReviewed = const Value.absent(),
                 Value<bool> shouldDecrease = const Value.absent(),
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<String?> decreaseInterval = const Value.absent(),
@@ -1520,6 +1589,7 @@ class $$SessionsTableTableTableManager
                 createdAt: createdAt,
                 phase: phase,
                 avgScore: avgScore,
+                isReviewed: isReviewed,
                 shouldDecrease: shouldDecrease,
                 decreasePercentage: decreasePercentage,
                 decreaseInterval: decreaseInterval,
@@ -1531,6 +1601,7 @@ class $$SessionsTableTableTableManager
                 required DateTime createdAt,
                 required int phase,
                 Value<double?> avgScore = const Value.absent(),
+                Value<bool> isReviewed = const Value.absent(),
                 Value<bool> shouldDecrease = const Value.absent(),
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<String?> decreaseInterval = const Value.absent(),
@@ -1540,6 +1611,7 @@ class $$SessionsTableTableTableManager
                 createdAt: createdAt,
                 phase: phase,
                 avgScore: avgScore,
+                isReviewed: isReviewed,
                 shouldDecrease: shouldDecrease,
                 decreasePercentage: decreasePercentage,
                 decreaseInterval: decreaseInterval,
