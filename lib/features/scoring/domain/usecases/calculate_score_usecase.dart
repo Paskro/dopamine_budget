@@ -22,9 +22,7 @@ class CalculateScoreUseCase {
         final List<DateTime> recordedDays = await _repository.getUniqueRecordedDays();
         recordedDays.sort((a, b) => a.compareTo(b));
 
-        final int targetCalibrationDays = (session.decreaseInterval != null && session.decreaseInterval! > 0)
-            ? session.decreaseInterval!
-            : 3;
+        final int targetCalibrationDays = session.calibrationDays;
 
         // ИСПРАВЛЕНИЕ: Убрали скобки (), так как это геттер, возвращающий DateTime
         final virtualNow = TimeProvider.now;

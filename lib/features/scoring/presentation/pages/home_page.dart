@@ -34,7 +34,6 @@ class HomePage extends StatelessWidget {
             !currentSession.isReviewed) {
           return CalibrationResultPage(
             session: currentSession,
-            historicalScores: scoringNotifier.state.historicalScores ?? [],
             scoringNotifier: scoringNotifier,
           );
         }

@@ -655,6 +655,18 @@ class $SessionsTableTable extends SessionsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _calibrationDaysMeta = const VerificationMeta(
+    'calibrationDays',
+  );
+  @override
+  late final GeneratedColumn<int> calibrationDays = GeneratedColumn<int>(
+    'calibration_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(3),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -665,6 +677,7 @@ class $SessionsTableTable extends SessionsTable
     shouldDecrease,
     decreasePercentage,
     decreaseInterval,
+    calibrationDays,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -738,6 +751,15 @@ class $SessionsTableTable extends SessionsTable
         ),
       );
     }
+    if (data.containsKey('calibration_days')) {
+      context.handle(
+        _calibrationDaysMeta,
+        calibrationDays.isAcceptableOrUnknown(
+          data['calibration_days']!,
+          _calibrationDaysMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -779,6 +801,10 @@ class $SessionsTableTable extends SessionsTable
         DriftSqlType.string,
         data['${effectivePrefix}decrease_interval'],
       ),
+      calibrationDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}calibration_days'],
+      )!,
     );
   }
 
@@ -798,6 +824,7 @@ class SessionsTableData extends DataClass
   final bool shouldDecrease;
   final double? decreasePercentage;
   final String? decreaseInterval;
+  final int calibrationDays;
   const SessionsTableData({
     required this.id,
     required this.createdAt,
@@ -807,6 +834,7 @@ class SessionsTableData extends DataClass
     required this.shouldDecrease,
     this.decreasePercentage,
     this.decreaseInterval,
+    required this.calibrationDays,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -825,6 +853,7 @@ class SessionsTableData extends DataClass
     if (!nullToAbsent || decreaseInterval != null) {
       map['decrease_interval'] = Variable<String>(decreaseInterval);
     }
+    map['calibration_days'] = Variable<int>(calibrationDays);
     return map;
   }
 
@@ -844,6 +873,7 @@ class SessionsTableData extends DataClass
       decreaseInterval: decreaseInterval == null && nullToAbsent
           ? const Value.absent()
           : Value(decreaseInterval),
+      calibrationDays: Value(calibrationDays),
     );
   }
 
@@ -863,6 +893,7 @@ class SessionsTableData extends DataClass
         json['decreasePercentage'],
       ),
       decreaseInterval: serializer.fromJson<String?>(json['decreaseInterval']),
+      calibrationDays: serializer.fromJson<int>(json['calibrationDays']),
     );
   }
   @override
@@ -877,6 +908,7 @@ class SessionsTableData extends DataClass
       'shouldDecrease': serializer.toJson<bool>(shouldDecrease),
       'decreasePercentage': serializer.toJson<double?>(decreasePercentage),
       'decreaseInterval': serializer.toJson<String?>(decreaseInterval),
+      'calibrationDays': serializer.toJson<int>(calibrationDays),
     };
   }
 
@@ -889,6 +921,7 @@ class SessionsTableData extends DataClass
     bool? shouldDecrease,
     Value<double?> decreasePercentage = const Value.absent(),
     Value<String?> decreaseInterval = const Value.absent(),
+    int? calibrationDays,
   }) => SessionsTableData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -902,6 +935,7 @@ class SessionsTableData extends DataClass
     decreaseInterval: decreaseInterval.present
         ? decreaseInterval.value
         : this.decreaseInterval,
+    calibrationDays: calibrationDays ?? this.calibrationDays,
   );
   SessionsTableData copyWithCompanion(SessionsTableCompanion data) {
     return SessionsTableData(
@@ -921,6 +955,9 @@ class SessionsTableData extends DataClass
       decreaseInterval: data.decreaseInterval.present
           ? data.decreaseInterval.value
           : this.decreaseInterval,
+      calibrationDays: data.calibrationDays.present
+          ? data.calibrationDays.value
+          : this.calibrationDays,
     );
   }
 
@@ -934,7 +971,8 @@ class SessionsTableData extends DataClass
           ..write('isReviewed: $isReviewed, ')
           ..write('shouldDecrease: $shouldDecrease, ')
           ..write('decreasePercentage: $decreasePercentage, ')
-          ..write('decreaseInterval: $decreaseInterval')
+          ..write('decreaseInterval: $decreaseInterval, ')
+          ..write('calibrationDays: $calibrationDays')
           ..write(')'))
         .toString();
   }
@@ -949,6 +987,7 @@ class SessionsTableData extends DataClass
     shouldDecrease,
     decreasePercentage,
     decreaseInterval,
+    calibrationDays,
   );
   @override
   bool operator ==(Object other) =>
@@ -961,7 +1000,8 @@ class SessionsTableData extends DataClass
           other.isReviewed == this.isReviewed &&
           other.shouldDecrease == this.shouldDecrease &&
           other.decreasePercentage == this.decreasePercentage &&
-          other.decreaseInterval == this.decreaseInterval);
+          other.decreaseInterval == this.decreaseInterval &&
+          other.calibrationDays == this.calibrationDays);
 }
 
 class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
@@ -973,6 +1013,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
   final Value<bool> shouldDecrease;
   final Value<double?> decreasePercentage;
   final Value<String?> decreaseInterval;
+  final Value<int> calibrationDays;
   final Value<int> rowid;
   const SessionsTableCompanion({
     this.id = const Value.absent(),
@@ -983,6 +1024,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.shouldDecrease = const Value.absent(),
     this.decreasePercentage = const Value.absent(),
     this.decreaseInterval = const Value.absent(),
+    this.calibrationDays = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SessionsTableCompanion.insert({
@@ -994,6 +1036,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.shouldDecrease = const Value.absent(),
     this.decreasePercentage = const Value.absent(),
     this.decreaseInterval = const Value.absent(),
+    this.calibrationDays = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -1007,6 +1050,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Expression<bool>? shouldDecrease,
     Expression<double>? decreasePercentage,
     Expression<String>? decreaseInterval,
+    Expression<int>? calibrationDays,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1018,6 +1062,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       if (shouldDecrease != null) 'should_decrease': shouldDecrease,
       if (decreasePercentage != null) 'decrease_percentage': decreasePercentage,
       if (decreaseInterval != null) 'decrease_interval': decreaseInterval,
+      if (calibrationDays != null) 'calibration_days': calibrationDays,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1031,6 +1076,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Value<bool>? shouldDecrease,
     Value<double?>? decreasePercentage,
     Value<String?>? decreaseInterval,
+    Value<int>? calibrationDays,
     Value<int>? rowid,
   }) {
     return SessionsTableCompanion(
@@ -1042,6 +1088,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       shouldDecrease: shouldDecrease ?? this.shouldDecrease,
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseInterval: decreaseInterval ?? this.decreaseInterval,
+      calibrationDays: calibrationDays ?? this.calibrationDays,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1073,6 +1120,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     if (decreaseInterval.present) {
       map['decrease_interval'] = Variable<String>(decreaseInterval.value);
     }
+    if (calibrationDays.present) {
+      map['calibration_days'] = Variable<int>(calibrationDays.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1090,6 +1140,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
           ..write('shouldDecrease: $shouldDecrease, ')
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseInterval: $decreaseInterval, ')
+          ..write('calibrationDays: $calibrationDays, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1718,6 +1769,7 @@ typedef $$SessionsTableTableCreateCompanionBuilder =
       Value<bool> shouldDecrease,
       Value<double?> decreasePercentage,
       Value<String?> decreaseInterval,
+      Value<int> calibrationDays,
       Value<int> rowid,
     });
 typedef $$SessionsTableTableUpdateCompanionBuilder =
@@ -1730,6 +1782,7 @@ typedef $$SessionsTableTableUpdateCompanionBuilder =
       Value<bool> shouldDecrease,
       Value<double?> decreasePercentage,
       Value<String?> decreaseInterval,
+      Value<int> calibrationDays,
       Value<int> rowid,
     });
 
@@ -1779,6 +1832,11 @@ class $$SessionsTableTableFilterComposer
 
   ColumnFilters<String> get decreaseInterval => $composableBuilder(
     column: $table.decreaseInterval,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get calibrationDays => $composableBuilder(
+    column: $table.calibrationDays,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1831,6 +1889,11 @@ class $$SessionsTableTableOrderingComposer
     column: $table.decreaseInterval,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get calibrationDays => $composableBuilder(
+    column: $table.calibrationDays,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SessionsTableTableAnnotationComposer
@@ -1871,6 +1934,11 @@ class $$SessionsTableTableAnnotationComposer
 
   GeneratedColumn<String> get decreaseInterval => $composableBuilder(
     column: $table.decreaseInterval,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get calibrationDays => $composableBuilder(
+    column: $table.calibrationDays,
     builder: (column) => column,
   );
 }
@@ -1918,6 +1986,7 @@ class $$SessionsTableTableTableManager
                 Value<bool> shouldDecrease = const Value.absent(),
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<String?> decreaseInterval = const Value.absent(),
+                Value<int> calibrationDays = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion(
                 id: id,
@@ -1928,6 +1997,7 @@ class $$SessionsTableTableTableManager
                 shouldDecrease: shouldDecrease,
                 decreasePercentage: decreasePercentage,
                 decreaseInterval: decreaseInterval,
+                calibrationDays: calibrationDays,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1940,6 +2010,7 @@ class $$SessionsTableTableTableManager
                 Value<bool> shouldDecrease = const Value.absent(),
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<String?> decreaseInterval = const Value.absent(),
+                Value<int> calibrationDays = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion.insert(
                 id: id,
@@ -1950,6 +2021,7 @@ class $$SessionsTableTableTableManager
                 shouldDecrease: shouldDecrease,
                 decreasePercentage: decreasePercentage,
                 decreaseInterval: decreaseInterval,
+                calibrationDays: calibrationDays,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

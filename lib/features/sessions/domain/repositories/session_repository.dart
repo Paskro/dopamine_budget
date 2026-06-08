@@ -13,12 +13,15 @@ Future<void> recordActionLog({
   required DateTime createdAt,
 });
 
-  /// Баллы за каждый день начиная с даты старта сессии до сегодня
-  Future<List<double>> getScoresPerDaySince(DateTime startDate);
+  /// Баллы за каждый день начиная с даты старта сессии (maxDays дней)
+  Future<List<double>> getScoresPerDaySince(DateTime startDate, int maxDays);
 
   /// Топ-1 привычка по количеству срабатываний за период (COUNT по habitType)
   Future<String?> getMostFrequentHabitSince(DateTime startDate);
 
   /// Переводит сессию в фазу Контроля и сбрасывает флаг ознакомления
   Future<void> updateSessionToControl({required String sessionId});
+
+  /// Баллы по каждой привычке за каждый день — ровно maxDays дней
+  Future<List<Map<String, int>>> getScoresPerHabitPerDay(DateTime startDate, int maxDays);
 }

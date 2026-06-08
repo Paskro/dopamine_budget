@@ -3,13 +3,11 @@ import 'package:dopamine_budget/features/scoring/presentation/state/scoring_noti
 
 class CalibrationResultPage extends StatelessWidget {
   final dynamic session;
-  final List<double> historicalScores;
-  final ScoringNotifier scoringNotifier; // передаём явно — без Provider
+  final ScoringNotifier scoringNotifier;
 
   const CalibrationResultPage({
     Key? key,
     required this.session,
-    required this.historicalScores,
     required this.scoringNotifier,
   }) : super(key: key);
 
@@ -90,7 +88,16 @@ class CalibrationResultPage extends StatelessWidget {
                 style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 12),
-              _buildSimpleBarChart(historicalScores),
+              FutureBuilder<List<Map<String, int>>>(
+                future: scoringNotifier.getHabitScoresPerDay(session.createdAt, session.calibrationDays as int),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox(height: 130, child: Center(child: CircularProgressIndicator(color: Colors.amber)));
+                  }
+                  final data = snapshot.data ?? [];
+                  return _buildColoredBarChart(data);
+                },
+              ),
 
               const Spacer(),
 
@@ -165,46 +172,95 @@ class CalibrationResultPage extends StatelessWidget {
     );
   }
 
-  // Простой декларативный мини-график на контейнерах без внешних библиотек
-  Widget _buildSimpleBarChart(List<double> scores) {
-    if (scores.isEmpty) return const SizedBox(height: 100, child: Center(child: Text('Нет данных', style: TextStyle(color: Colors.grey))));
+  // Палитра цветов для привычек (по порядку появления)
+  static const _habitColors = [
+    Color(0xFFFF6B6B), Color(0xFF4ECDC4), Color(0xFFFFE66D),
+    Color(0xFF6C5CE7), Color(0xFFFF8B64), Color(0xFF81ECEC),
+  ];
 
-    final maxScore = scores.reduce((a, b) => a > b ? a : b);
+  Widget _buildColoredBarChart(List<Map<String, int>> dayData) {
+    if (dayData.isEmpty || dayData.every((d) => d.isEmpty)) {
+      return const SizedBox(height: 130, child: Center(child: Text('Нет данных', style: TextStyle(color: Colors.grey))));
+    }
 
-    return Container(
-      height: 130,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.02),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(scores.length, (index) {
-          final score = scores[index];
-          // Рассчитываем пропорциональную высоту столбца
-          final heightFactor = maxScore > 0 ? (score / maxScore) : 0.0;
+    // Собираем все уникальные привычки и назначаем им цвета
+    final allHabits = <String>{};
+    for (final day in dayData) allHabits.addAll(day.keys);
+    final habitList = allHabits.toList();
+    final colorMap = <String, Color>{};
+    for (int i = 0; i < habitList.length; i++) {
+      colorMap[habitList[i]] = _habitColors[i % _habitColors.length];
+    }
 
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.end,
+    // Максимальная сумма за день — для нормализации высоты
+    final maxScore = dayData.map((d) => d.values.fold(0, (a, b) => a + b)).reduce((a, b) => a > b ? a : b).toDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 130,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.02),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(dayData.length, (index) {
+              final day = dayData[index];
+              final total = day.values.fold(0, (a, b) => a + b);
+              final totalHeight = maxScore > 0 ? ((total / maxScore) * 70).clamp(4.0, 70.0) : 4.0;
+
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(total.toString(), style: const TextStyle(color: Colors.white60, fontSize: 11)),
+                  const SizedBox(height: 4),
+                  // Стек сегментов по привычкам снизу вверх
+                  SizedBox(
+                    width: 28,
+                    height: totalHeight,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: habitList.reversed.where((h) => day.containsKey(h)).map((habit) {
+                        final segHeight = maxScore > 0 ? ((day[habit]! / maxScore) * 70).clamp(2.0, 70.0) : 2.0;
+                        return Container(
+                          width: 28,
+                          height: segHeight,
+                          decoration: BoxDecoration(
+                            color: colorMap[habit],
+                            borderRadius: habit == habitList.first
+                                ? const BorderRadius.vertical(top: Radius.circular(4))
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text('День ${index + 1}', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                ],
+              );
+            }),
+          ),
+        ),
+        // Легенда
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 4,
+          children: habitList.map((habit) => Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Text(score.toStringAsFixed(0), style: const TextStyle(color: Colors.white60, fontSize: 11)),
-              const SizedBox(height: 4),
-              Container(
-                width: 32,
-                height: (heightFactor * 70).clamp(4.0, 70.0), // Ограничиваем высоту от 4 до 70 пикселей
-                decoration: BoxDecoration(
-                  color: Colors.amber.withOpacity(0.7),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text('День ${index + 1}', style: const TextStyle(color: Colors.grey, fontSize: 10)),
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: colorMap[habit], borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 4),
+              Text(habit, style: const TextStyle(color: Colors.white54, fontSize: 11)),
             ],
-          );
-        }),
-      ),
+          )).toList(),
+        ),
+      ],
     );
   }
 }

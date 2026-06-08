@@ -63,7 +63,8 @@ void main() async {
   final scoringNotifier = ScoringNotifier(
     calculateScoreUseCase: calculateScoreUseCase,
     sessionRepository: sessionRepository,
-    getSessionsUseCase: getSessionsByDayUseCase, // Используется для фильтрации сессий по дням
+    scoringRepository: scoringRepository,
+    getSessionsUseCase: getSessionsByDayUseCase,
   );
 
   // 5. Запускаем приложение

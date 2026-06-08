@@ -21,10 +21,9 @@ class InitializeSessionUseCase {
               avgScore: latestRow.avgScore,
               shouldDecrease: latestRow.shouldDecrease,
               decreasePercentage: latestRow.decreasePercentage?.toInt(),
-              // Читаем как строку, парсим в int. Если не распарсилось — отдаем durationDays
-              decreaseInterval: latestRow.decreaseInterval != null
-                  ? (int.tryParse(latestRow.decreaseInterval!) ?? durationDays)
-                  : durationDays,
+              decreaseInterval: latestRow.decreaseInterval, // String? как есть
+              isReviewed: latestRow.isReviewed,
+              calibrationDays: latestRow.calibrationDays,
               );
           } else {
             return null;
@@ -48,7 +47,8 @@ class InitializeSessionUseCase {
           avgScore: const Value(null),
           shouldDecrease: const Value(false),
           decreasePercentage: const Value(null),
-          decreaseInterval: Value(durationDays.toString()), // <-- Сохраняем в базу как строку
+          decreaseInterval: const Value(null),
+          calibrationDays: Value(durationDays), // <-- теперь в правильном поле
         );
 
         await _db.into(_db.sessionsTable).insert(companion);
@@ -62,7 +62,8 @@ class InitializeSessionUseCase {
           avgScore: null,
           shouldDecrease: false,
           decreasePercentage: null,
-          decreaseInterval: durationDays, // <-- Возвращаем в объект реальное число
+          decreaseInterval: null,
+          calibrationDays: durationDays,
         );
       } catch (e) {
         print('Ошибка при инициализации сессии: $e');

@@ -6,14 +6,17 @@ import 'package:dopamine_budget/core/utils/time_provider.dart';
 class ScoringNotifier extends ValueNotifier<ScoringState> {
   final dynamic _calculateScoreUseCase;
   final dynamic _sessionRepository;
-  final dynamic _getSessionsUseCase; // <-- 1. Добавили поле для юзкейса сессий
+  final dynamic _scoringRepository;
+  final dynamic _getSessionsUseCase;
 
   ScoringNotifier({
     required dynamic calculateScoreUseCase,
     required dynamic sessionRepository,
-    required dynamic getSessionsUseCase, // <-- 2. Добавили в конструктор
+    required dynamic scoringRepository,
+    required dynamic getSessionsUseCase,
   })  : _calculateScoreUseCase = calculateScoreUseCase,
         _sessionRepository = sessionRepository,
+        _scoringRepository = scoringRepository,
         _getSessionsUseCase = getSessionsUseCase,
         super(ScoringState.initial()) {
     refreshTodayState();
@@ -50,7 +53,6 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
 
   Future<void> refreshTodayState() async {
     try {
-      // Подтягиваем сессии через переданный UseCase или репозиторий
       final sessions = await _sessionRepository.getAllSessions();
 
       if (sessions.isEmpty) {
@@ -61,59 +63,52 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
       var currentSession = sessions.first;
 
       // --------------------------------------------------
-      // МАГИЯ АВТОМАТИЧЕСКОГО ПЕРЕКЛЮЧЕНИЯ ФАЗ СТАРТ
+      // АВТОМАТИЧЕСКОЕ ПЕРЕКЛЮЧЕНИЕ ФАЗ
+      // Если сессия в фазе калибровки (phase == 0) — проверяем
+      // набрала ли она нужное количество дней с записями.
       // --------------------------------------------------
-      // Вызываем наш обновленный UseCase с кортежем (Record) на выходе
-      final (isPhaseChanged, updatedSession) =
-          await _calculateScoreUseCase.checkAndProcessCalibration(currentSession);
+      if (currentSession.phase == 0) {
+        final uniqueDays = await _scoringRepository.getUniqueRecordedDays();
+        final completedDays = uniqueDays.length;
+        final targetDays = currentSession.calibrationDays;
 
-      if (isPhaseChanged) {
-        print('🚀 Калибровка завершена! Переключаем фазу на control.');
-        // Сохраняем обновленную сессию (с посчитанными avg и limit) в базу данных
-        await _sessionRepository.updateSession(updatedSession);
-        // Переприсваиваем локальную переменную, чтобы UI сразу взял новые цифры
-        currentSession = updatedSession;
-      }
-      // --------------------------------------------------
-      // МАГИЯ АВТОМАТИЧЕСКОГО ПЕРЕКЛЮЧЕНИЯ ФАЗ КОНЕЦ
+        final today = DateTime(TimeProvider.now.year, TimeProvider.now.month, TimeProvider.now.day);
+        final lastCalibrationDay = uniqueDays.isNotEmpty
+            ? DateTime(uniqueDays.last.year, uniqueDays.last.month, uniqueDays.last.day)
+            : null;
+        final lastDayIsComplete = lastCalibrationDay != null && lastCalibrationDay.isBefore(today);
 
-      // Получаем лимит строго из активной сессии
-      int currentLimit = (currentSession.dailyLimit ?? 100).toInt();
+        if (completedDays >= targetDays && lastDayIsComplete) {
+          // Считаем средний балл за дни калибровки
+          double totalScore = 0;
+          for (final day in uniqueDays.take(targetDays)) {
+            totalScore += await _scoringRepository.getScoreForDay(day);
+          }
+          final avgScore = totalScore / targetDays;
 
-      // Если мы все еще в фазе статистики, лимита быть не должно (или он равен дефолту)
-      if (currentSession.phase == 'stats' || currentSession.phase == 0) {
-        currentLimit = (currentSession.avgScore ?? 100).toInt();
-      }
-
-      final dynamic rawClicks = await _calculateScoreUseCase.getTodayHabitClicks(TimeProvider.now);
-
-      final Map<String, int> clicksToday = {};
-      if (rawClicks != null) {
-        final Map<dynamic, dynamic> safeMap = rawClicks as Map<dynamic, dynamic>;
-        for (final entry in safeMap.entries) {
-          final String keyString = entry.key.toString();
-          final int valueInt = (entry.value as num).toInt();
-          clicksToday[keyString] = valueInt;
+          // Обновляем сессию в БД — переводим в фазу контроля
+          final updatedSession = currentSession.copyWith(
+            phase: 1,
+            avgScore: avgScore,
+          );
+          await _sessionRepository.updateSession(updatedSession);
+          currentSession = updatedSession;
+          print('🚀 Калибровка завершена! avg=$avgScore, переключаем на control.');
         }
       }
 
-      final int totalSpentToday = await _calculateScoreUseCase.getScoreForDay(TimeProvider.now);
-
-      String currentPhase = 'control';
-      final rawPhase = currentSession.phase;
-      if (rawPhase is int) {
-        currentPhase = rawPhase == 0 ? 'stats' : 'control';
-      } else {
-        currentPhase = rawPhase.toString();
+      // Лимит берём из сессии
+      int currentLimit = (currentSession.dailyLimit ?? 100).toInt();
+      if (currentSession.phase == 0) {
+        currentLimit = (currentSession.avgScore ?? 0).toInt();
       }
 
-      // Собираем исторические баллы для графика калибровки
-      List<double> historicalScores = [];
-      try {
-        historicalScores = await _sessionRepository.getScoresPerDaySince(currentSession.createdAt);
-      } catch (_) {
-        // Граф недоступен — не блокируем основной поток
-      }
+      // Баллы и клики за сегодня
+      final int totalSpentToday = await _scoringRepository.getScoreForDay(TimeProvider.now);
+      final Map<String, int> clicksToday =
+          await _scoringRepository.getHabitClicksForDay(TimeProvider.now);
+
+      final String currentPhase = currentSession.phase == 0 ? 'stats' : 'control';
 
       state = state.copyWith(
         dailyLimit: currentLimit,
@@ -124,11 +119,10 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
         phase: currentPhase,
         habitClicksToday: clicksToday,
         currentSession: currentSession,
-        currentSessionId: currentSession.id?.toString(),
-        historicalScores: historicalScores,
+        currentSessionId: currentSession.id,
       );
 
-      print('Стейт успешно обновлен! Потрачено: $totalSpentToday, Лимит: $currentLimit, Фаза: $currentPhase');
+      print('Стейт обновлён. Потрачено: $totalSpentToday, Лимит: $currentLimit, Фаза: $currentPhase');
     } catch (e, stack) {
       print('Ошибка обновления состояния скоринга: $e');
       print(stack);
@@ -147,16 +141,15 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
 
   Future<void> spendDopamine(String habitType, int scoreValue) async {
     try {
-      await _calculateScoreUseCase.registerAction(
+      await _scoringRepository.saveAction(
         habitType: habitType,
         scoreValue: scoreValue,
         timestamp: TimeProvider.now,
       );
-      print('Действие "$habitType" успешно записано в виртуальный день!');
+      print('Действие "$habitType" записано.');
     } catch (e) {
-      print('Ошибка при вызове registerAction: $e');
+      print('Ошибка при вызове saveAction: $e');
     }
-
     await refreshTodayState();
   }
 
@@ -199,6 +192,15 @@ class ScoringNotifier extends ValueNotifier<ScoringState> {
       return await _sessionRepository.getMostFrequentHabitSince(sessionStartDate);
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Баллы по привычкам за каждый день калибровки — для цветного графика
+  Future<List<Map<String, int>>> getHabitScoresPerDay(DateTime sessionStartDate, int calibrationDays) async {
+    try {
+      return await _sessionRepository.getScoresPerHabitPerDay(sessionStartDate, calibrationDays);
+    } catch (_) {
+      return [];
     }
   }
 }

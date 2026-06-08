@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
-import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
-import '../mappers/session_mapper.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 
 class SessionRepositoryImpl implements SessionRepository {
   final AppDatabase _db;
@@ -34,22 +34,29 @@ class SessionRepositoryImpl implements SessionRepository {
         avgScore: row.avgScore,
         shouldDecrease: row.shouldDecrease,
         decreasePercentage: row.decreasePercentage?.toInt(),
-        decreaseInterval: row.decreaseInterval != null ? (int.tryParse(row.decreaseInterval!) ?? 0) : null,
+        decreaseInterval: row.decreaseInterval,
         isReviewed: row.isReviewed,
+        calibrationDays: row.calibrationDays,
       );
     }).toList();
   }
   @override
   Future<void> updateSession(Session session) async {
     try {
-      // 1. Конвертируем доменную модель в Companion для Drift
-      final companion = SessionMapper.toDb(session);
-
-      // 2. Обновляем строку в таблице базы данных по ID
+      final companion = SessionsTableCompanion(
+        id: Value(session.id),
+        createdAt: Value(session.createdAt),
+        phase: Value(session.phase),
+        avgScore: Value(session.avgScore),
+        shouldDecrease: Value(session.shouldDecrease),
+        decreasePercentage: Value(session.decreasePercentage?.toDouble()),
+        decreaseInterval: Value(session.decreaseInterval),
+        isReviewed: Value(session.isReviewed),
+        calibrationDays: Value(session.calibrationDays),
+      );
       await (_db.update(_db.sessionsTable)
             ..where((t) => t.id.equals(session.id)))
           .write(companion);
-
       print('Сессия ${session.id} успешно обновлена в СУБД (фаза: ${session.phase})');
     } catch (e) {
       print('Ошибка выполнения updateSession в репозитории: $e');
@@ -59,17 +66,22 @@ class SessionRepositoryImpl implements SessionRepository {
 
 
     Future<Session?> getActiveSession() async {
-      // Пишем Drift SQL-запрос: выбираем сессию, где нет даты окончания (активная)
-      // или по бизнес-логике фаз берем первую запись, так как в MVP сессия одна активная.
       final query = _db.select(_db.sessionsTable)
-        ..where((tbl) => tbl.id.isNotNull()) // Или твой специфичный флаг активности
+        ..where((tbl) => tbl.id.isNotNull())
         ..limit(1);
-
       final row = await query.getSingleOrNull();
       if (row == null) return null;
-
-      // Маппим из Drift-строки в нашу доменную сущность Session
-      return SessionMapper.fromDb(row);
+      return Session(
+        id: row.id,
+        createdAt: row.createdAt,
+        phase: row.phase,
+        avgScore: row.avgScore,
+        shouldDecrease: row.shouldDecrease,
+        decreasePercentage: row.decreasePercentage?.toInt(),
+        decreaseInterval: row.decreaseInterval,
+        isReviewed: row.isReviewed,
+        calibrationDays: row.calibrationDays,
+      );
     }
 
 
@@ -104,8 +116,9 @@ class SessionRepositoryImpl implements SessionRepository {
       avgScore: Value(session.avgScore),
       shouldDecrease: Value(session.shouldDecrease),
       decreasePercentage: Value(session.decreasePercentage?.toDouble()),
-      decreaseInterval: Value(session.decreaseInterval?.toString()),
+      decreaseInterval: Value(session.decreaseInterval),
       isReviewed: Value(session.isReviewed),
+      calibrationDays: Value(session.calibrationDays),
     );
 
     await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
@@ -122,8 +135,9 @@ class SessionRepositoryImpl implements SessionRepository {
         avgScore: row.avgScore,
         shouldDecrease: row.shouldDecrease,
         decreasePercentage: row.decreasePercentage?.toInt() ?? 0,
-        decreaseInterval: row.decreaseInterval != null ? (int.tryParse(row.decreaseInterval!) ?? 0) : 0,
+        decreaseInterval: row.decreaseInterval,
         isReviewed: row.isReviewed,
+        calibrationDays: row.calibrationDays,
       );
     }).toList();
   }
@@ -159,12 +173,11 @@ class SessionRepositoryImpl implements SessionRepository {
 
   /// Возвращает список суммарных баллов за каждый день начиная с [startDate] до сегодня
   @override
-  Future<List<double>> getScoresPerDaySince(DateTime startDate) async {
+  Future<List<double>> getScoresPerDaySince(DateTime startDate, int maxDays) async {
     final results = <double>[];
-    final now = DateTime.now();
     var current = DateTime(startDate.year, startDate.month, startDate.day);
 
-    while (!current.isAfter(DateTime(now.year, now.month, now.day))) {
+    for (int i = 0; i < maxDays; i++) {
       final score = await getTotalScoreSpentByDay(current);
       results.add(score.toDouble());
       current = current.add(const Duration(days: 1));
@@ -177,7 +190,7 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<String?> getMostFrequentHabitSince(DateTime startDate) async {
     final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
-    final endOfDay = DateTime.now();
+    final endOfDay = TimeProvider.now;
 
     final countExpr = _db.actionsTable.id.count();
 
@@ -201,5 +214,36 @@ class SessionRepositoryImpl implements SessionRepository {
           phase: Value(1),
           isReviewed: Value(true),
         ));
+  }
+
+  /// Баллы по каждой привычке за каждый день с [startDate] до сегодня
+  @override
+  Future<List<Map<String, int>>> getScoresPerHabitPerDay(DateTime startDate, int maxDays) async {
+    final results = <Map<String, int>>[];
+    var current = DateTime(startDate.year, startDate.month, startDate.day);
+
+    for (int i = 0; i < maxDays; i++) {
+      final startOfDay = DateTime(current.year, current.month, current.day, 0, 0, 0);
+      final endOfDay = DateTime(current.year, current.month, current.day, 23, 59, 59, 999);
+
+      final sumExpr = _db.actionsTable.scoreValue.sum();
+      final query = _db.selectOnly(_db.actionsTable)
+        ..addColumns([_db.actionsTable.habitType, sumExpr])
+        ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
+        ..groupBy([_db.actionsTable.habitType]);
+
+      final rows = await query.get();
+      final dayMap = <String, int>{};
+      for (final row in rows) {
+        final habit = row.read(_db.actionsTable.habitType) ?? '';
+        final score = row.read(sumExpr) ?? 0;
+        if (habit.isNotEmpty) dayMap[habit] = score;
+      }
+
+      results.add(dayMap);
+      current = current.add(const Duration(days: 1));
+    }
+
+    return results;
   }
 }

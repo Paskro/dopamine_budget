@@ -1,35 +1,63 @@
-import 'package:drift/drift.dart';
-import 'package:dopamine_budget/data/db/app_database.dart';
-import '../../domain/entities/session.dart';
+class Session {
+  final String id;
+  final DateTime createdAt;
+  final int phase; // 0 = Калибровка, 1 = Контроль
+  final double? avgScore; // Средний балл, вычисляется после калибровки
+  final bool shouldDecrease;
+  final int? decreasePercentage;
+  final String? decreaseInterval; // Интервал снижения: 'week' или 'month'
+  final bool isReviewed;
+  final int calibrationDays; // Количество дней калибровки
 
-class SessionMapper {
-  /// Конвертируем данные из БД (Drift) в доменную модель Session
-  static Session fromDb(SessionsTableData data) {
+  const Session({
+    required this.id,
+    required this.createdAt,
+    required this.phase,
+    this.avgScore,
+    this.shouldDecrease = false,
+    this.decreasePercentage,
+    this.decreaseInterval,
+    this.isReviewed = false,
+    this.calibrationDays = 3,
+  });
+
+Session copyWith({
+    String? id,
+    DateTime? createdAt,
+    int? phase,
+    double? avgScore,
+    bool? shouldDecrease,
+    int? decreasePercentage,
+    String? decreaseInterval,
+    bool? isReviewed,
+    int? calibrationDays,
+  }) {
     return Session(
-      id: data.id,
-      createdAt: data.createdAt,
-      phase: data.phase,
-      avgScore: data.avgScore,
-      shouldDecrease: data.shouldDecrease,
-      decreasePercentage: data.decreasePercentage?.toInt(), // Из double? в int?
-      decreaseInterval: data.decreaseInterval != null
-          ? (double.tryParse(data.decreaseInterval!)?.toInt() ?? int.tryParse(data.decreaseInterval!))
-          : null,
-      isReviewed: data.isReviewed,
+      id: id ?? this.id,
+      createdAt: createdAt ?? this.createdAt,
+      phase: phase ?? this.phase,
+      avgScore: avgScore ?? this.avgScore,
+      shouldDecrease: shouldDecrease ?? this.shouldDecrease,
+      decreasePercentage: decreasePercentage ?? this.decreasePercentage,
+      decreaseInterval: decreaseInterval ?? this.decreaseInterval,
+      isReviewed: isReviewed ?? this.isReviewed,
+      calibrationDays: calibrationDays ?? this.calibrationDays,
     );
   }
 
-  /// Конвертируем доменную модель Session в формат Drift для базы данных
-  static SessionsTableCompanion toDb(Session session) {
-    return SessionsTableCompanion(
-      id: Value(session.id),
-      createdAt: Value(session.createdAt),
-      phase: Value(session.phase),
-      avgScore: Value(session.avgScore),
-      shouldDecrease: Value(session.shouldDecrease),
-      decreasePercentage: Value(session.decreasePercentage?.toDouble()), // Из int? в double?
-      decreaseInterval: Value(session.decreaseInterval?.toString()),
-      isReviewed: Value(session.isReviewed),
-    );
+  /// Бизнес-логика: Вычисляем текущий дневной лимит дофамина
+  /// Если фаза калибровки (0) или AVG еще не посчитан — лимита нет (возвращаем null)
+  double? get dailyLimit {
+    if (phase == 0 || avgScore == null) return null;
+
+    if (shouldDecrease && decreasePercentage != null) {
+      // Формула: LIMIT = AVG - %снижения
+      // Например: 50 баллов - 20% = 40 баллов
+      final reduction = avgScore! * (decreasePercentage! / 100);
+      return avgScore! - reduction;
+    }
+
+    // Если снижение не включено, лимит равен среднему баллу калибровки
+    return avgScore;
   }
 }

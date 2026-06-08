@@ -20,6 +20,7 @@ class ScoringDI {
     // 3. Собираем финальный Нотификатор состояния для UI
     scoringNotifier = ScoringNotifier(
       sessionRepository: sessionsDI.repository,
+      scoringRepository: repository,
       getSessionsUseCase: sessionsDI.getSessionsUseCase,
       calculateScoreUseCase: calculateScoreUseCase,
     );

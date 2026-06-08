@@ -3,10 +3,11 @@ class Session {
   final DateTime createdAt;
   final int phase; // 0 = Калибровка, 1 = Контроль
   final double? avgScore; // Средний балл, вычисляется после калибровки
-  final bool shouldDecrease; // Нужно ли снижать лимит каждую неделю
-  final int? decreasePercentage; // На сколько процентов снижать (например, 20)
-  final int? decreaseInterval; // Интервал в днях
-  final bool isReviewed; // Пользователь ознакомился с итогами калибровки
+  final bool shouldDecrease;
+  final int? decreasePercentage;
+  final String? decreaseInterval; // Интервал снижения: 'week' или 'month'
+  final bool isReviewed;
+  final int calibrationDays; // Количество дней калибровки
 
   const Session({
     required this.id,
@@ -17,6 +18,7 @@ class Session {
     this.decreasePercentage,
     this.decreaseInterval,
     this.isReviewed = false,
+    this.calibrationDays = 3,
   });
 
 Session copyWith({
@@ -26,8 +28,9 @@ Session copyWith({
     double? avgScore,
     bool? shouldDecrease,
     int? decreasePercentage,
-    int? decreaseInterval,
+    String? decreaseInterval,
     bool? isReviewed,
+    int? calibrationDays,
   }) {
     return Session(
       id: id ?? this.id,
@@ -38,6 +41,7 @@ Session copyWith({
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseInterval: decreaseInterval ?? this.decreaseInterval,
       isReviewed: isReviewed ?? this.isReviewed,
+      calibrationDays: calibrationDays ?? this.calibrationDays,
     );
   }
 

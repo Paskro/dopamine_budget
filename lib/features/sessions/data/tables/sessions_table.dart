@@ -20,6 +20,9 @@ class SessionsTable extends Table {
   // Интервал снижения ('week' или 'month')
   TextColumn get decreaseInterval => text().nullable()();
 
+  // Количество дней калибровки (дефолт 3)
+  IntColumn get calibrationDays => integer().withDefault(const Constant(3))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
