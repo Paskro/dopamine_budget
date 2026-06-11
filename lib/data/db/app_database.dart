@@ -4,25 +4,33 @@ import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-import '../../features/sessions/data/tables/sessions_table.dart';
-import '../../features/actions/data/tables/actions_table.dart';
-import '../../features/habits/data/tables/habits_table.dart';
+import 'package:dopamine_budget/features/habits/data/tables/habits_table.dart';
+import 'package:dopamine_budget/features/sessions/data/tables/sessions_table.dart';
+import 'package:dopamine_budget/features/sessions/data/tables/days_table.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(
-  tables: [
-    SessionsTable,
-    ActionsTable,
-    HabitsTable,
-    SessionHabitsTable, // <-- добавили
-  ],
-)
+class ActionsTable extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get habitType => text()();
+  IntColumn get scoreValue => integer()();
+  DateTimeColumn get timestamp => dateTime()();
+}
+
+@DriftDatabase(tables: [
+  ActionsTable,
+  HabitsTable,
+  SessionsTable,
+  SessionHabitsTable,
+  DaysTable,         // ← новая таблица фазы контроля
+])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  static final AppDatabase instance = AppDatabase._internal();
+
+  AppDatabase._internal() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2; // <-- подняли версию
+  int get schemaVersion => 3; // ← 2 → 3
 
   @override
   MigrationStrategy get migration {
@@ -34,8 +42,41 @@ class AppDatabase extends _$AppDatabase {
         if (from < 2) {
           await m.createTable(sessionHabitsTable);
         }
+        if (from < 3) {
+          // Добавляем таблицу дней фазы контроля
+          await m.createTable(daysTable);
+        }
       },
     );
+  }
+
+  Future<List<int>> getSelectedHabitIdsForSession(String sessionId) async {
+    final query = select(sessionHabitsTable)
+      ..where((t) => t.sessionId.equals(sessionId));
+    final rows = await query.get();
+    return rows.map((row) => row.habitId).toList();
+  }
+
+  Future<void> toggleHabitSelection(String sessionId, int habitId) async {
+    final query = select(sessionHabitsTable)
+      ..where((t) => t.sessionId.equals(sessionId) & t.habitId.equals(habitId));
+    final existing = await query.getSingleOrNull();
+
+    if (existing != null) {
+      await (delete(sessionHabitsTable)..where((t) => t.id.equals(existing.id))).go();
+    } else {
+      await into(sessionHabitsTable).insert(
+        SessionHabitsTableCompanion.insert(
+          sessionId: sessionId,
+          habitId: habitId,
+        ),
+      );
+    }
+  }
+
+  Future<void> deleteHabit(int habitId) async {
+    await (delete(sessionHabitsTable)..where((t) => t.habitId.equals(habitId))).go();
+    await (delete(habitsTable)..where((t) => t.id.equals(habitId))).go();
   }
 }
 

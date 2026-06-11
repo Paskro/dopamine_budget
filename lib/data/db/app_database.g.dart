@@ -3,6 +3,560 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+class $ActionsTableTable extends ActionsTable
+    with TableInfo<$ActionsTableTable, ActionsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ActionsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _habitTypeMeta = const VerificationMeta(
+    'habitType',
+  );
+  @override
+  late final GeneratedColumn<String> habitType = GeneratedColumn<String>(
+    'habit_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scoreValueMeta = const VerificationMeta(
+    'scoreValue',
+  );
+  @override
+  late final GeneratedColumn<int> scoreValue = GeneratedColumn<int>(
+    'score_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, habitType, scoreValue, timestamp];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'actions_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ActionsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('habit_type')) {
+      context.handle(
+        _habitTypeMeta,
+        habitType.isAcceptableOrUnknown(data['habit_type']!, _habitTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_habitTypeMeta);
+    }
+    if (data.containsKey('score_value')) {
+      context.handle(
+        _scoreValueMeta,
+        scoreValue.isAcceptableOrUnknown(data['score_value']!, _scoreValueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreValueMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_timestampMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ActionsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ActionsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      habitType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}habit_type'],
+      )!,
+      scoreValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score_value'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+    );
+  }
+
+  @override
+  $ActionsTableTable createAlias(String alias) {
+    return $ActionsTableTable(attachedDatabase, alias);
+  }
+}
+
+class ActionsTableData extends DataClass
+    implements Insertable<ActionsTableData> {
+  final int id;
+  final String habitType;
+  final int scoreValue;
+  final DateTime timestamp;
+  const ActionsTableData({
+    required this.id,
+    required this.habitType,
+    required this.scoreValue,
+    required this.timestamp,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['habit_type'] = Variable<String>(habitType);
+    map['score_value'] = Variable<int>(scoreValue);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    return map;
+  }
+
+  ActionsTableCompanion toCompanion(bool nullToAbsent) {
+    return ActionsTableCompanion(
+      id: Value(id),
+      habitType: Value(habitType),
+      scoreValue: Value(scoreValue),
+      timestamp: Value(timestamp),
+    );
+  }
+
+  factory ActionsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ActionsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      habitType: serializer.fromJson<String>(json['habitType']),
+      scoreValue: serializer.fromJson<int>(json['scoreValue']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'habitType': serializer.toJson<String>(habitType),
+      'scoreValue': serializer.toJson<int>(scoreValue),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+    };
+  }
+
+  ActionsTableData copyWith({
+    int? id,
+    String? habitType,
+    int? scoreValue,
+    DateTime? timestamp,
+  }) => ActionsTableData(
+    id: id ?? this.id,
+    habitType: habitType ?? this.habitType,
+    scoreValue: scoreValue ?? this.scoreValue,
+    timestamp: timestamp ?? this.timestamp,
+  );
+  ActionsTableData copyWithCompanion(ActionsTableCompanion data) {
+    return ActionsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      habitType: data.habitType.present ? data.habitType.value : this.habitType,
+      scoreValue: data.scoreValue.present
+          ? data.scoreValue.value
+          : this.scoreValue,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActionsTableData(')
+          ..write('id: $id, ')
+          ..write('habitType: $habitType, ')
+          ..write('scoreValue: $scoreValue, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, habitType, scoreValue, timestamp);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ActionsTableData &&
+          other.id == this.id &&
+          other.habitType == this.habitType &&
+          other.scoreValue == this.scoreValue &&
+          other.timestamp == this.timestamp);
+}
+
+class ActionsTableCompanion extends UpdateCompanion<ActionsTableData> {
+  final Value<int> id;
+  final Value<String> habitType;
+  final Value<int> scoreValue;
+  final Value<DateTime> timestamp;
+  const ActionsTableCompanion({
+    this.id = const Value.absent(),
+    this.habitType = const Value.absent(),
+    this.scoreValue = const Value.absent(),
+    this.timestamp = const Value.absent(),
+  });
+  ActionsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String habitType,
+    required int scoreValue,
+    required DateTime timestamp,
+  }) : habitType = Value(habitType),
+       scoreValue = Value(scoreValue),
+       timestamp = Value(timestamp);
+  static Insertable<ActionsTableData> custom({
+    Expression<int>? id,
+    Expression<String>? habitType,
+    Expression<int>? scoreValue,
+    Expression<DateTime>? timestamp,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (habitType != null) 'habit_type': habitType,
+      if (scoreValue != null) 'score_value': scoreValue,
+      if (timestamp != null) 'timestamp': timestamp,
+    });
+  }
+
+  ActionsTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? habitType,
+    Value<int>? scoreValue,
+    Value<DateTime>? timestamp,
+  }) {
+    return ActionsTableCompanion(
+      id: id ?? this.id,
+      habitType: habitType ?? this.habitType,
+      scoreValue: scoreValue ?? this.scoreValue,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (habitType.present) {
+      map['habit_type'] = Variable<String>(habitType.value);
+    }
+    if (scoreValue.present) {
+      map['score_value'] = Variable<int>(scoreValue.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ActionsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('habitType: $habitType, ')
+          ..write('scoreValue: $scoreValue, ')
+          ..write('timestamp: $timestamp')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HabitsTableTable extends HabitsTable
+    with TableInfo<$HabitsTableTable, HabitsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HabitsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scoreValueMeta = const VerificationMeta(
+    'scoreValue',
+  );
+  @override
+  late final GeneratedColumn<int> scoreValue = GeneratedColumn<int>(
+    'score_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, title, scoreValue];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'habits_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<HabitsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('score_value')) {
+      context.handle(
+        _scoreValueMeta,
+        scoreValue.isAcceptableOrUnknown(data['score_value']!, _scoreValueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_scoreValueMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HabitsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HabitsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      scoreValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}score_value'],
+      )!,
+    );
+  }
+
+  @override
+  $HabitsTableTable createAlias(String alias) {
+    return $HabitsTableTable(attachedDatabase, alias);
+  }
+}
+
+class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
+  final int id;
+  final String title;
+  final int scoreValue;
+  const HabitsTableData({
+    required this.id,
+    required this.title,
+    required this.scoreValue,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['score_value'] = Variable<int>(scoreValue);
+    return map;
+  }
+
+  HabitsTableCompanion toCompanion(bool nullToAbsent) {
+    return HabitsTableCompanion(
+      id: Value(id),
+      title: Value(title),
+      scoreValue: Value(scoreValue),
+    );
+  }
+
+  factory HabitsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HabitsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      scoreValue: serializer.fromJson<int>(json['scoreValue']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'scoreValue': serializer.toJson<int>(scoreValue),
+    };
+  }
+
+  HabitsTableData copyWith({int? id, String? title, int? scoreValue}) =>
+      HabitsTableData(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        scoreValue: scoreValue ?? this.scoreValue,
+      );
+  HabitsTableData copyWithCompanion(HabitsTableCompanion data) {
+    return HabitsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      scoreValue: data.scoreValue.present
+          ? data.scoreValue.value
+          : this.scoreValue,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HabitsTableData(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('scoreValue: $scoreValue')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, title, scoreValue);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HabitsTableData &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.scoreValue == this.scoreValue);
+}
+
+class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<int> scoreValue;
+  const HabitsTableCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.scoreValue = const Value.absent(),
+  });
+  HabitsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    required int scoreValue,
+  }) : title = Value(title),
+       scoreValue = Value(scoreValue);
+  static Insertable<HabitsTableData> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<int>? scoreValue,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (scoreValue != null) 'score_value': scoreValue,
+    });
+  }
+
+  HabitsTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<int>? scoreValue,
+  }) {
+    return HabitsTableCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      scoreValue: scoreValue ?? this.scoreValue,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (scoreValue.present) {
+      map['score_value'] = Variable<int>(scoreValue.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HabitsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('scoreValue: $scoreValue')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SessionsTableTable extends SessionsTable
     with TableInfo<$SessionsTableTable, SessionsTableData> {
   @override
@@ -593,560 +1147,6 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
   }
 }
 
-class $ActionsTableTable extends ActionsTable
-    with TableInfo<$ActionsTableTable, ActionsTableData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ActionsTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
-  static const VerificationMeta _habitTypeMeta = const VerificationMeta(
-    'habitType',
-  );
-  @override
-  late final GeneratedColumn<String> habitType = GeneratedColumn<String>(
-    'habit_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _scoreValueMeta = const VerificationMeta(
-    'scoreValue',
-  );
-  @override
-  late final GeneratedColumn<int> scoreValue = GeneratedColumn<int>(
-    'score_value',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _timestampMeta = const VerificationMeta(
-    'timestamp',
-  );
-  @override
-  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
-    'timestamp',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [id, habitType, scoreValue, timestamp];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'actions_table';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ActionsTableData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('habit_type')) {
-      context.handle(
-        _habitTypeMeta,
-        habitType.isAcceptableOrUnknown(data['habit_type']!, _habitTypeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_habitTypeMeta);
-    }
-    if (data.containsKey('score_value')) {
-      context.handle(
-        _scoreValueMeta,
-        scoreValue.isAcceptableOrUnknown(data['score_value']!, _scoreValueMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_scoreValueMeta);
-    }
-    if (data.containsKey('timestamp')) {
-      context.handle(
-        _timestampMeta,
-        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_timestampMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  ActionsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ActionsTableData(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      habitType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}habit_type'],
-      )!,
-      scoreValue: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}score_value'],
-      )!,
-      timestamp: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}timestamp'],
-      )!,
-    );
-  }
-
-  @override
-  $ActionsTableTable createAlias(String alias) {
-    return $ActionsTableTable(attachedDatabase, alias);
-  }
-}
-
-class ActionsTableData extends DataClass
-    implements Insertable<ActionsTableData> {
-  final int id;
-  final String habitType;
-  final int scoreValue;
-  final DateTime timestamp;
-  const ActionsTableData({
-    required this.id,
-    required this.habitType,
-    required this.scoreValue,
-    required this.timestamp,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['habit_type'] = Variable<String>(habitType);
-    map['score_value'] = Variable<int>(scoreValue);
-    map['timestamp'] = Variable<DateTime>(timestamp);
-    return map;
-  }
-
-  ActionsTableCompanion toCompanion(bool nullToAbsent) {
-    return ActionsTableCompanion(
-      id: Value(id),
-      habitType: Value(habitType),
-      scoreValue: Value(scoreValue),
-      timestamp: Value(timestamp),
-    );
-  }
-
-  factory ActionsTableData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ActionsTableData(
-      id: serializer.fromJson<int>(json['id']),
-      habitType: serializer.fromJson<String>(json['habitType']),
-      scoreValue: serializer.fromJson<int>(json['scoreValue']),
-      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'habitType': serializer.toJson<String>(habitType),
-      'scoreValue': serializer.toJson<int>(scoreValue),
-      'timestamp': serializer.toJson<DateTime>(timestamp),
-    };
-  }
-
-  ActionsTableData copyWith({
-    int? id,
-    String? habitType,
-    int? scoreValue,
-    DateTime? timestamp,
-  }) => ActionsTableData(
-    id: id ?? this.id,
-    habitType: habitType ?? this.habitType,
-    scoreValue: scoreValue ?? this.scoreValue,
-    timestamp: timestamp ?? this.timestamp,
-  );
-  ActionsTableData copyWithCompanion(ActionsTableCompanion data) {
-    return ActionsTableData(
-      id: data.id.present ? data.id.value : this.id,
-      habitType: data.habitType.present ? data.habitType.value : this.habitType,
-      scoreValue: data.scoreValue.present
-          ? data.scoreValue.value
-          : this.scoreValue,
-      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ActionsTableData(')
-          ..write('id: $id, ')
-          ..write('habitType: $habitType, ')
-          ..write('scoreValue: $scoreValue, ')
-          ..write('timestamp: $timestamp')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, habitType, scoreValue, timestamp);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ActionsTableData &&
-          other.id == this.id &&
-          other.habitType == this.habitType &&
-          other.scoreValue == this.scoreValue &&
-          other.timestamp == this.timestamp);
-}
-
-class ActionsTableCompanion extends UpdateCompanion<ActionsTableData> {
-  final Value<int> id;
-  final Value<String> habitType;
-  final Value<int> scoreValue;
-  final Value<DateTime> timestamp;
-  const ActionsTableCompanion({
-    this.id = const Value.absent(),
-    this.habitType = const Value.absent(),
-    this.scoreValue = const Value.absent(),
-    this.timestamp = const Value.absent(),
-  });
-  ActionsTableCompanion.insert({
-    this.id = const Value.absent(),
-    required String habitType,
-    required int scoreValue,
-    required DateTime timestamp,
-  }) : habitType = Value(habitType),
-       scoreValue = Value(scoreValue),
-       timestamp = Value(timestamp);
-  static Insertable<ActionsTableData> custom({
-    Expression<int>? id,
-    Expression<String>? habitType,
-    Expression<int>? scoreValue,
-    Expression<DateTime>? timestamp,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (habitType != null) 'habit_type': habitType,
-      if (scoreValue != null) 'score_value': scoreValue,
-      if (timestamp != null) 'timestamp': timestamp,
-    });
-  }
-
-  ActionsTableCompanion copyWith({
-    Value<int>? id,
-    Value<String>? habitType,
-    Value<int>? scoreValue,
-    Value<DateTime>? timestamp,
-  }) {
-    return ActionsTableCompanion(
-      id: id ?? this.id,
-      habitType: habitType ?? this.habitType,
-      scoreValue: scoreValue ?? this.scoreValue,
-      timestamp: timestamp ?? this.timestamp,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (habitType.present) {
-      map['habit_type'] = Variable<String>(habitType.value);
-    }
-    if (scoreValue.present) {
-      map['score_value'] = Variable<int>(scoreValue.value);
-    }
-    if (timestamp.present) {
-      map['timestamp'] = Variable<DateTime>(timestamp.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ActionsTableCompanion(')
-          ..write('id: $id, ')
-          ..write('habitType: $habitType, ')
-          ..write('scoreValue: $scoreValue, ')
-          ..write('timestamp: $timestamp')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $HabitsTableTable extends HabitsTable
-    with TableInfo<$HabitsTableTable, HabitsTableData> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $HabitsTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
-  static const VerificationMeta _titleMeta = const VerificationMeta('title');
-  @override
-  late final GeneratedColumn<String> title = GeneratedColumn<String>(
-    'title',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _scoreValueMeta = const VerificationMeta(
-    'scoreValue',
-  );
-  @override
-  late final GeneratedColumn<int> scoreValue = GeneratedColumn<int>(
-    'score_value',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [id, title, scoreValue];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'habits_table';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<HabitsTableData> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
-    if (data.containsKey('title')) {
-      context.handle(
-        _titleMeta,
-        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_titleMeta);
-    }
-    if (data.containsKey('score_value')) {
-      context.handle(
-        _scoreValueMeta,
-        scoreValue.isAcceptableOrUnknown(data['score_value']!, _scoreValueMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_scoreValueMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  HabitsTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return HabitsTableData(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
-      title: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}title'],
-      )!,
-      scoreValue: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}score_value'],
-      )!,
-    );
-  }
-
-  @override
-  $HabitsTableTable createAlias(String alias) {
-    return $HabitsTableTable(attachedDatabase, alias);
-  }
-}
-
-class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
-  final int id;
-  final String title;
-  final int scoreValue;
-  const HabitsTableData({
-    required this.id,
-    required this.title,
-    required this.scoreValue,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['title'] = Variable<String>(title);
-    map['score_value'] = Variable<int>(scoreValue);
-    return map;
-  }
-
-  HabitsTableCompanion toCompanion(bool nullToAbsent) {
-    return HabitsTableCompanion(
-      id: Value(id),
-      title: Value(title),
-      scoreValue: Value(scoreValue),
-    );
-  }
-
-  factory HabitsTableData.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return HabitsTableData(
-      id: serializer.fromJson<int>(json['id']),
-      title: serializer.fromJson<String>(json['title']),
-      scoreValue: serializer.fromJson<int>(json['scoreValue']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'title': serializer.toJson<String>(title),
-      'scoreValue': serializer.toJson<int>(scoreValue),
-    };
-  }
-
-  HabitsTableData copyWith({int? id, String? title, int? scoreValue}) =>
-      HabitsTableData(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        scoreValue: scoreValue ?? this.scoreValue,
-      );
-  HabitsTableData copyWithCompanion(HabitsTableCompanion data) {
-    return HabitsTableData(
-      id: data.id.present ? data.id.value : this.id,
-      title: data.title.present ? data.title.value : this.title,
-      scoreValue: data.scoreValue.present
-          ? data.scoreValue.value
-          : this.scoreValue,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('HabitsTableData(')
-          ..write('id: $id, ')
-          ..write('title: $title, ')
-          ..write('scoreValue: $scoreValue')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(id, title, scoreValue);
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is HabitsTableData &&
-          other.id == this.id &&
-          other.title == this.title &&
-          other.scoreValue == this.scoreValue);
-}
-
-class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
-  final Value<int> id;
-  final Value<String> title;
-  final Value<int> scoreValue;
-  const HabitsTableCompanion({
-    this.id = const Value.absent(),
-    this.title = const Value.absent(),
-    this.scoreValue = const Value.absent(),
-  });
-  HabitsTableCompanion.insert({
-    this.id = const Value.absent(),
-    required String title,
-    required int scoreValue,
-  }) : title = Value(title),
-       scoreValue = Value(scoreValue);
-  static Insertable<HabitsTableData> custom({
-    Expression<int>? id,
-    Expression<String>? title,
-    Expression<int>? scoreValue,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (title != null) 'title': title,
-      if (scoreValue != null) 'score_value': scoreValue,
-    });
-  }
-
-  HabitsTableCompanion copyWith({
-    Value<int>? id,
-    Value<String>? title,
-    Value<int>? scoreValue,
-  }) {
-    return HabitsTableCompanion(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      scoreValue: scoreValue ?? this.scoreValue,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
-    if (title.present) {
-      map['title'] = Variable<String>(title.value);
-    }
-    if (scoreValue.present) {
-      map['score_value'] = Variable<int>(scoreValue.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('HabitsTableCompanion(')
-          ..write('id: $id, ')
-          ..write('title: $title, ')
-          ..write('scoreValue: $scoreValue')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $SessionHabitsTableTable extends SessionHabitsTable
     with TableInfo<$SessionHabitsTableTable, SessionHabitsTableData> {
   @override
@@ -1404,316 +1404,443 @@ class SessionHabitsTableCompanion
   }
 }
 
+class $DaysTableTable extends DaysTable
+    with TableInfo<$DaysTableTable, DaysTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DaysTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<String> date = GeneratedColumn<String>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'UNIQUE NOT NULL',
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isBrokenClickedMeta = const VerificationMeta(
+    'isBrokenClicked',
+  );
+  @override
+  late final GeneratedColumn<bool> isBrokenClicked = GeneratedColumn<bool>(
+    'is_broken_clicked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_broken_clicked" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isGoodBoyClickedMeta = const VerificationMeta(
+    'isGoodBoyClicked',
+  );
+  @override
+  late final GeneratedColumn<bool> isGoodBoyClicked = GeneratedColumn<bool>(
+    'is_good_boy_clicked',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_good_boy_clicked" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _dayStatusMeta = const VerificationMeta(
+    'dayStatus',
+  );
+  @override
+  late final GeneratedColumn<String> dayStatus = GeneratedColumn<String>(
+    'day_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('regular'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    date,
+    sessionId,
+    isBrokenClicked,
+    isGoodBoyClicked,
+    dayStatus,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'days_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DaysTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('is_broken_clicked')) {
+      context.handle(
+        _isBrokenClickedMeta,
+        isBrokenClicked.isAcceptableOrUnknown(
+          data['is_broken_clicked']!,
+          _isBrokenClickedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_good_boy_clicked')) {
+      context.handle(
+        _isGoodBoyClickedMeta,
+        isGoodBoyClicked.isAcceptableOrUnknown(
+          data['is_good_boy_clicked']!,
+          _isGoodBoyClickedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('day_status')) {
+      context.handle(
+        _dayStatusMeta,
+        dayStatus.isAcceptableOrUnknown(data['day_status']!, _dayStatusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DaysTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DaysTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}date'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      isBrokenClicked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_broken_clicked'],
+      )!,
+      isGoodBoyClicked: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_good_boy_clicked'],
+      )!,
+      dayStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}day_status'],
+      )!,
+    );
+  }
+
+  @override
+  $DaysTableTable createAlias(String alias) {
+    return $DaysTableTable(attachedDatabase, alias);
+  }
+}
+
+class DaysTableData extends DataClass implements Insertable<DaysTableData> {
+  final int id;
+  final String date;
+  final String sessionId;
+  final bool isBrokenClicked;
+  final bool isGoodBoyClicked;
+  final String dayStatus;
+  const DaysTableData({
+    required this.id,
+    required this.date,
+    required this.sessionId,
+    required this.isBrokenClicked,
+    required this.isGoodBoyClicked,
+    required this.dayStatus,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['date'] = Variable<String>(date);
+    map['session_id'] = Variable<String>(sessionId);
+    map['is_broken_clicked'] = Variable<bool>(isBrokenClicked);
+    map['is_good_boy_clicked'] = Variable<bool>(isGoodBoyClicked);
+    map['day_status'] = Variable<String>(dayStatus);
+    return map;
+  }
+
+  DaysTableCompanion toCompanion(bool nullToAbsent) {
+    return DaysTableCompanion(
+      id: Value(id),
+      date: Value(date),
+      sessionId: Value(sessionId),
+      isBrokenClicked: Value(isBrokenClicked),
+      isGoodBoyClicked: Value(isGoodBoyClicked),
+      dayStatus: Value(dayStatus),
+    );
+  }
+
+  factory DaysTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DaysTableData(
+      id: serializer.fromJson<int>(json['id']),
+      date: serializer.fromJson<String>(json['date']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      isBrokenClicked: serializer.fromJson<bool>(json['isBrokenClicked']),
+      isGoodBoyClicked: serializer.fromJson<bool>(json['isGoodBoyClicked']),
+      dayStatus: serializer.fromJson<String>(json['dayStatus']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'date': serializer.toJson<String>(date),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'isBrokenClicked': serializer.toJson<bool>(isBrokenClicked),
+      'isGoodBoyClicked': serializer.toJson<bool>(isGoodBoyClicked),
+      'dayStatus': serializer.toJson<String>(dayStatus),
+    };
+  }
+
+  DaysTableData copyWith({
+    int? id,
+    String? date,
+    String? sessionId,
+    bool? isBrokenClicked,
+    bool? isGoodBoyClicked,
+    String? dayStatus,
+  }) => DaysTableData(
+    id: id ?? this.id,
+    date: date ?? this.date,
+    sessionId: sessionId ?? this.sessionId,
+    isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,
+    isGoodBoyClicked: isGoodBoyClicked ?? this.isGoodBoyClicked,
+    dayStatus: dayStatus ?? this.dayStatus,
+  );
+  DaysTableData copyWithCompanion(DaysTableCompanion data) {
+    return DaysTableData(
+      id: data.id.present ? data.id.value : this.id,
+      date: data.date.present ? data.date.value : this.date,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      isBrokenClicked: data.isBrokenClicked.present
+          ? data.isBrokenClicked.value
+          : this.isBrokenClicked,
+      isGoodBoyClicked: data.isGoodBoyClicked.present
+          ? data.isGoodBoyClicked.value
+          : this.isGoodBoyClicked,
+      dayStatus: data.dayStatus.present ? data.dayStatus.value : this.dayStatus,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DaysTableData(')
+          ..write('id: $id, ')
+          ..write('date: $date, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('isBrokenClicked: $isBrokenClicked, ')
+          ..write('isGoodBoyClicked: $isGoodBoyClicked, ')
+          ..write('dayStatus: $dayStatus')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    date,
+    sessionId,
+    isBrokenClicked,
+    isGoodBoyClicked,
+    dayStatus,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DaysTableData &&
+          other.id == this.id &&
+          other.date == this.date &&
+          other.sessionId == this.sessionId &&
+          other.isBrokenClicked == this.isBrokenClicked &&
+          other.isGoodBoyClicked == this.isGoodBoyClicked &&
+          other.dayStatus == this.dayStatus);
+}
+
+class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
+  final Value<int> id;
+  final Value<String> date;
+  final Value<String> sessionId;
+  final Value<bool> isBrokenClicked;
+  final Value<bool> isGoodBoyClicked;
+  final Value<String> dayStatus;
+  const DaysTableCompanion({
+    this.id = const Value.absent(),
+    this.date = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.isBrokenClicked = const Value.absent(),
+    this.isGoodBoyClicked = const Value.absent(),
+    this.dayStatus = const Value.absent(),
+  });
+  DaysTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String date,
+    required String sessionId,
+    this.isBrokenClicked = const Value.absent(),
+    this.isGoodBoyClicked = const Value.absent(),
+    this.dayStatus = const Value.absent(),
+  }) : date = Value(date),
+       sessionId = Value(sessionId);
+  static Insertable<DaysTableData> custom({
+    Expression<int>? id,
+    Expression<String>? date,
+    Expression<String>? sessionId,
+    Expression<bool>? isBrokenClicked,
+    Expression<bool>? isGoodBoyClicked,
+    Expression<String>? dayStatus,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (date != null) 'date': date,
+      if (sessionId != null) 'session_id': sessionId,
+      if (isBrokenClicked != null) 'is_broken_clicked': isBrokenClicked,
+      if (isGoodBoyClicked != null) 'is_good_boy_clicked': isGoodBoyClicked,
+      if (dayStatus != null) 'day_status': dayStatus,
+    });
+  }
+
+  DaysTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? date,
+    Value<String>? sessionId,
+    Value<bool>? isBrokenClicked,
+    Value<bool>? isGoodBoyClicked,
+    Value<String>? dayStatus,
+  }) {
+    return DaysTableCompanion(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      sessionId: sessionId ?? this.sessionId,
+      isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,
+      isGoodBoyClicked: isGoodBoyClicked ?? this.isGoodBoyClicked,
+      dayStatus: dayStatus ?? this.dayStatus,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<String>(date.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (isBrokenClicked.present) {
+      map['is_broken_clicked'] = Variable<bool>(isBrokenClicked.value);
+    }
+    if (isGoodBoyClicked.present) {
+      map['is_good_boy_clicked'] = Variable<bool>(isGoodBoyClicked.value);
+    }
+    if (dayStatus.present) {
+      map['day_status'] = Variable<String>(dayStatus.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DaysTableCompanion(')
+          ..write('id: $id, ')
+          ..write('date: $date, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('isBrokenClicked: $isBrokenClicked, ')
+          ..write('isGoodBoyClicked: $isGoodBoyClicked, ')
+          ..write('dayStatus: $dayStatus')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
-  late final $SessionsTableTable sessionsTable = $SessionsTableTable(this);
   late final $ActionsTableTable actionsTable = $ActionsTableTable(this);
   late final $HabitsTableTable habitsTable = $HabitsTableTable(this);
+  late final $SessionsTableTable sessionsTable = $SessionsTableTable(this);
   late final $SessionHabitsTableTable sessionHabitsTable =
       $SessionHabitsTableTable(this);
+  late final $DaysTableTable daysTable = $DaysTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-    sessionsTable,
     actionsTable,
     habitsTable,
+    sessionsTable,
     sessionHabitsTable,
+    daysTable,
   ];
 }
 
-typedef $$SessionsTableTableCreateCompanionBuilder =
-    SessionsTableCompanion Function({
-      required String id,
-      required DateTime createdAt,
-      required int phase,
-      Value<double?> avgScore,
-      Value<bool> isReviewed,
-      Value<bool> shouldDecrease,
-      Value<double?> decreasePercentage,
-      Value<String?> decreaseInterval,
-      Value<int> calibrationDays,
-      Value<int> rowid,
-    });
-typedef $$SessionsTableTableUpdateCompanionBuilder =
-    SessionsTableCompanion Function({
-      Value<String> id,
-      Value<DateTime> createdAt,
-      Value<int> phase,
-      Value<double?> avgScore,
-      Value<bool> isReviewed,
-      Value<bool> shouldDecrease,
-      Value<double?> decreasePercentage,
-      Value<String?> decreaseInterval,
-      Value<int> calibrationDays,
-      Value<int> rowid,
-    });
-
-class $$SessionsTableTableFilterComposer
-    extends Composer<_$AppDatabase, $SessionsTableTable> {
-  $$SessionsTableTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get phase => $composableBuilder(
-    column: $table.phase,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get avgScore => $composableBuilder(
-    column: $table.avgScore,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isReviewed => $composableBuilder(
-    column: $table.isReviewed,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get shouldDecrease => $composableBuilder(
-    column: $table.shouldDecrease,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get decreasePercentage => $composableBuilder(
-    column: $table.decreasePercentage,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get decreaseInterval => $composableBuilder(
-    column: $table.decreaseInterval,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get calibrationDays => $composableBuilder(
-    column: $table.calibrationDays,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$SessionsTableTableOrderingComposer
-    extends Composer<_$AppDatabase, $SessionsTableTable> {
-  $$SessionsTableTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get phase => $composableBuilder(
-    column: $table.phase,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get avgScore => $composableBuilder(
-    column: $table.avgScore,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isReviewed => $composableBuilder(
-    column: $table.isReviewed,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get shouldDecrease => $composableBuilder(
-    column: $table.shouldDecrease,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get decreasePercentage => $composableBuilder(
-    column: $table.decreasePercentage,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get decreaseInterval => $composableBuilder(
-    column: $table.decreaseInterval,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get calibrationDays => $composableBuilder(
-    column: $table.calibrationDays,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$SessionsTableTableAnnotationComposer
-    extends Composer<_$AppDatabase, $SessionsTableTable> {
-  $$SessionsTableTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<int> get phase =>
-      $composableBuilder(column: $table.phase, builder: (column) => column);
-
-  GeneratedColumn<double> get avgScore =>
-      $composableBuilder(column: $table.avgScore, builder: (column) => column);
-
-  GeneratedColumn<bool> get isReviewed => $composableBuilder(
-    column: $table.isReviewed,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get shouldDecrease => $composableBuilder(
-    column: $table.shouldDecrease,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get decreasePercentage => $composableBuilder(
-    column: $table.decreasePercentage,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get decreaseInterval => $composableBuilder(
-    column: $table.decreaseInterval,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get calibrationDays => $composableBuilder(
-    column: $table.calibrationDays,
-    builder: (column) => column,
-  );
-}
-
-class $$SessionsTableTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $SessionsTableTable,
-          SessionsTableData,
-          $$SessionsTableTableFilterComposer,
-          $$SessionsTableTableOrderingComposer,
-          $$SessionsTableTableAnnotationComposer,
-          $$SessionsTableTableCreateCompanionBuilder,
-          $$SessionsTableTableUpdateCompanionBuilder,
-          (
-            SessionsTableData,
-            BaseReferences<
-              _$AppDatabase,
-              $SessionsTableTable,
-              SessionsTableData
-            >,
-          ),
-          SessionsTableData,
-          PrefetchHooks Function()
-        > {
-  $$SessionsTableTableTableManager(_$AppDatabase db, $SessionsTableTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$SessionsTableTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$SessionsTableTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$SessionsTableTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<int> phase = const Value.absent(),
-                Value<double?> avgScore = const Value.absent(),
-                Value<bool> isReviewed = const Value.absent(),
-                Value<bool> shouldDecrease = const Value.absent(),
-                Value<double?> decreasePercentage = const Value.absent(),
-                Value<String?> decreaseInterval = const Value.absent(),
-                Value<int> calibrationDays = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SessionsTableCompanion(
-                id: id,
-                createdAt: createdAt,
-                phase: phase,
-                avgScore: avgScore,
-                isReviewed: isReviewed,
-                shouldDecrease: shouldDecrease,
-                decreasePercentage: decreasePercentage,
-                decreaseInterval: decreaseInterval,
-                calibrationDays: calibrationDays,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required DateTime createdAt,
-                required int phase,
-                Value<double?> avgScore = const Value.absent(),
-                Value<bool> isReviewed = const Value.absent(),
-                Value<bool> shouldDecrease = const Value.absent(),
-                Value<double?> decreasePercentage = const Value.absent(),
-                Value<String?> decreaseInterval = const Value.absent(),
-                Value<int> calibrationDays = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SessionsTableCompanion.insert(
-                id: id,
-                createdAt: createdAt,
-                phase: phase,
-                avgScore: avgScore,
-                isReviewed: isReviewed,
-                shouldDecrease: shouldDecrease,
-                decreasePercentage: decreasePercentage,
-                decreaseInterval: decreaseInterval,
-                calibrationDays: calibrationDays,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$SessionsTableTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $SessionsTableTable,
-      SessionsTableData,
-      $$SessionsTableTableFilterComposer,
-      $$SessionsTableTableOrderingComposer,
-      $$SessionsTableTableAnnotationComposer,
-      $$SessionsTableTableCreateCompanionBuilder,
-      $$SessionsTableTableUpdateCompanionBuilder,
-      (
-        SessionsTableData,
-        BaseReferences<_$AppDatabase, $SessionsTableTable, SessionsTableData>,
-      ),
-      SessionsTableData,
-      PrefetchHooks Function()
-    >;
 typedef $$ActionsTableTableCreateCompanionBuilder =
     ActionsTableCompanion Function({
       Value<int> id,
@@ -2049,6 +2176,296 @@ typedef $$HabitsTableTableProcessedTableManager =
       HabitsTableData,
       PrefetchHooks Function()
     >;
+typedef $$SessionsTableTableCreateCompanionBuilder =
+    SessionsTableCompanion Function({
+      required String id,
+      required DateTime createdAt,
+      required int phase,
+      Value<double?> avgScore,
+      Value<bool> isReviewed,
+      Value<bool> shouldDecrease,
+      Value<double?> decreasePercentage,
+      Value<String?> decreaseInterval,
+      Value<int> calibrationDays,
+      Value<int> rowid,
+    });
+typedef $$SessionsTableTableUpdateCompanionBuilder =
+    SessionsTableCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<int> phase,
+      Value<double?> avgScore,
+      Value<bool> isReviewed,
+      Value<bool> shouldDecrease,
+      Value<double?> decreasePercentage,
+      Value<String?> decreaseInterval,
+      Value<int> calibrationDays,
+      Value<int> rowid,
+    });
+
+class $$SessionsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $SessionsTableTable> {
+  $$SessionsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get phase => $composableBuilder(
+    column: $table.phase,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgScore => $composableBuilder(
+    column: $table.avgScore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get shouldDecrease => $composableBuilder(
+    column: $table.shouldDecrease,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get decreasePercentage => $composableBuilder(
+    column: $table.decreasePercentage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decreaseInterval => $composableBuilder(
+    column: $table.decreaseInterval,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get calibrationDays => $composableBuilder(
+    column: $table.calibrationDays,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SessionsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $SessionsTableTable> {
+  $$SessionsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get phase => $composableBuilder(
+    column: $table.phase,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgScore => $composableBuilder(
+    column: $table.avgScore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get shouldDecrease => $composableBuilder(
+    column: $table.shouldDecrease,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get decreasePercentage => $composableBuilder(
+    column: $table.decreasePercentage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decreaseInterval => $composableBuilder(
+    column: $table.decreaseInterval,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get calibrationDays => $composableBuilder(
+    column: $table.calibrationDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SessionsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SessionsTableTable> {
+  $$SessionsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get phase =>
+      $composableBuilder(column: $table.phase, builder: (column) => column);
+
+  GeneratedColumn<double> get avgScore =>
+      $composableBuilder(column: $table.avgScore, builder: (column) => column);
+
+  GeneratedColumn<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get shouldDecrease => $composableBuilder(
+    column: $table.shouldDecrease,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get decreasePercentage => $composableBuilder(
+    column: $table.decreasePercentage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get decreaseInterval => $composableBuilder(
+    column: $table.decreaseInterval,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get calibrationDays => $composableBuilder(
+    column: $table.calibrationDays,
+    builder: (column) => column,
+  );
+}
+
+class $$SessionsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SessionsTableTable,
+          SessionsTableData,
+          $$SessionsTableTableFilterComposer,
+          $$SessionsTableTableOrderingComposer,
+          $$SessionsTableTableAnnotationComposer,
+          $$SessionsTableTableCreateCompanionBuilder,
+          $$SessionsTableTableUpdateCompanionBuilder,
+          (
+            SessionsTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $SessionsTableTable,
+              SessionsTableData
+            >,
+          ),
+          SessionsTableData,
+          PrefetchHooks Function()
+        > {
+  $$SessionsTableTableTableManager(_$AppDatabase db, $SessionsTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SessionsTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SessionsTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SessionsTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> phase = const Value.absent(),
+                Value<double?> avgScore = const Value.absent(),
+                Value<bool> isReviewed = const Value.absent(),
+                Value<bool> shouldDecrease = const Value.absent(),
+                Value<double?> decreasePercentage = const Value.absent(),
+                Value<String?> decreaseInterval = const Value.absent(),
+                Value<int> calibrationDays = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SessionsTableCompanion(
+                id: id,
+                createdAt: createdAt,
+                phase: phase,
+                avgScore: avgScore,
+                isReviewed: isReviewed,
+                shouldDecrease: shouldDecrease,
+                decreasePercentage: decreasePercentage,
+                decreaseInterval: decreaseInterval,
+                calibrationDays: calibrationDays,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required DateTime createdAt,
+                required int phase,
+                Value<double?> avgScore = const Value.absent(),
+                Value<bool> isReviewed = const Value.absent(),
+                Value<bool> shouldDecrease = const Value.absent(),
+                Value<double?> decreasePercentage = const Value.absent(),
+                Value<String?> decreaseInterval = const Value.absent(),
+                Value<int> calibrationDays = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SessionsTableCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                phase: phase,
+                avgScore: avgScore,
+                isReviewed: isReviewed,
+                shouldDecrease: shouldDecrease,
+                decreasePercentage: decreasePercentage,
+                decreaseInterval: decreaseInterval,
+                calibrationDays: calibrationDays,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SessionsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SessionsTableTable,
+      SessionsTableData,
+      $$SessionsTableTableFilterComposer,
+      $$SessionsTableTableOrderingComposer,
+      $$SessionsTableTableAnnotationComposer,
+      $$SessionsTableTableCreateCompanionBuilder,
+      $$SessionsTableTableUpdateCompanionBuilder,
+      (
+        SessionsTableData,
+        BaseReferences<_$AppDatabase, $SessionsTableTable, SessionsTableData>,
+      ),
+      SessionsTableData,
+      PrefetchHooks Function()
+    >;
 typedef $$SessionHabitsTableTableCreateCompanionBuilder =
     SessionHabitsTableCompanion Function({
       Value<int> id,
@@ -2218,16 +2635,235 @@ typedef $$SessionHabitsTableTableProcessedTableManager =
       SessionHabitsTableData,
       PrefetchHooks Function()
     >;
+typedef $$DaysTableTableCreateCompanionBuilder =
+    DaysTableCompanion Function({
+      Value<int> id,
+      required String date,
+      required String sessionId,
+      Value<bool> isBrokenClicked,
+      Value<bool> isGoodBoyClicked,
+      Value<String> dayStatus,
+    });
+typedef $$DaysTableTableUpdateCompanionBuilder =
+    DaysTableCompanion Function({
+      Value<int> id,
+      Value<String> date,
+      Value<String> sessionId,
+      Value<bool> isBrokenClicked,
+      Value<bool> isGoodBoyClicked,
+      Value<String> dayStatus,
+    });
+
+class $$DaysTableTableFilterComposer
+    extends Composer<_$AppDatabase, $DaysTableTable> {
+  $$DaysTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isBrokenClicked => $composableBuilder(
+    column: $table.isBrokenClicked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isGoodBoyClicked => $composableBuilder(
+    column: $table.isGoodBoyClicked,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dayStatus => $composableBuilder(
+    column: $table.dayStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DaysTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $DaysTableTable> {
+  $$DaysTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isBrokenClicked => $composableBuilder(
+    column: $table.isBrokenClicked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isGoodBoyClicked => $composableBuilder(
+    column: $table.isGoodBoyClicked,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dayStatus => $composableBuilder(
+    column: $table.dayStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DaysTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DaysTableTable> {
+  $$DaysTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<bool> get isBrokenClicked => $composableBuilder(
+    column: $table.isBrokenClicked,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isGoodBoyClicked => $composableBuilder(
+    column: $table.isGoodBoyClicked,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get dayStatus =>
+      $composableBuilder(column: $table.dayStatus, builder: (column) => column);
+}
+
+class $$DaysTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DaysTableTable,
+          DaysTableData,
+          $$DaysTableTableFilterComposer,
+          $$DaysTableTableOrderingComposer,
+          $$DaysTableTableAnnotationComposer,
+          $$DaysTableTableCreateCompanionBuilder,
+          $$DaysTableTableUpdateCompanionBuilder,
+          (
+            DaysTableData,
+            BaseReferences<_$AppDatabase, $DaysTableTable, DaysTableData>,
+          ),
+          DaysTableData,
+          PrefetchHooks Function()
+        > {
+  $$DaysTableTableTableManager(_$AppDatabase db, $DaysTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DaysTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DaysTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DaysTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> date = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<bool> isBrokenClicked = const Value.absent(),
+                Value<bool> isGoodBoyClicked = const Value.absent(),
+                Value<String> dayStatus = const Value.absent(),
+              }) => DaysTableCompanion(
+                id: id,
+                date: date,
+                sessionId: sessionId,
+                isBrokenClicked: isBrokenClicked,
+                isGoodBoyClicked: isGoodBoyClicked,
+                dayStatus: dayStatus,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String date,
+                required String sessionId,
+                Value<bool> isBrokenClicked = const Value.absent(),
+                Value<bool> isGoodBoyClicked = const Value.absent(),
+                Value<String> dayStatus = const Value.absent(),
+              }) => DaysTableCompanion.insert(
+                id: id,
+                date: date,
+                sessionId: sessionId,
+                isBrokenClicked: isBrokenClicked,
+                isGoodBoyClicked: isGoodBoyClicked,
+                dayStatus: dayStatus,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DaysTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DaysTableTable,
+      DaysTableData,
+      $$DaysTableTableFilterComposer,
+      $$DaysTableTableOrderingComposer,
+      $$DaysTableTableAnnotationComposer,
+      $$DaysTableTableCreateCompanionBuilder,
+      $$DaysTableTableUpdateCompanionBuilder,
+      (
+        DaysTableData,
+        BaseReferences<_$AppDatabase, $DaysTableTable, DaysTableData>,
+      ),
+      DaysTableData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
   $AppDatabaseManager(this._db);
-  $$SessionsTableTableTableManager get sessionsTable =>
-      $$SessionsTableTableTableManager(_db, _db.sessionsTable);
   $$ActionsTableTableTableManager get actionsTable =>
       $$ActionsTableTableTableManager(_db, _db.actionsTable);
   $$HabitsTableTableTableManager get habitsTable =>
       $$HabitsTableTableTableManager(_db, _db.habitsTable);
+  $$SessionsTableTableTableManager get sessionsTable =>
+      $$SessionsTableTableTableManager(_db, _db.sessionsTable);
   $$SessionHabitsTableTableTableManager get sessionHabitsTable =>
       $$SessionHabitsTableTableTableManager(_db, _db.sessionHabitsTable);
+  $$DaysTableTableTableManager get daysTable =>
+      $$DaysTableTableTableManager(_db, _db.daysTable);
 }

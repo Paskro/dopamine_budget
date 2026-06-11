@@ -2,19 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/sessions_notifier.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/session_onboarding_screen.dart';
-import 'package:dopamine_budget/main.dart';
 import 'package:dopamine_budget/features/habits/presentation/state/habits_notifier.dart';
 import 'package:dopamine_budget/features/scoring/presentation/state/scoring_notifier.dart';
-// ==========================================
-// БЛОК ИМПОРТОВ СЛОЯ ПРЕЗЕНТАЦИИ
-// ==========================================
 import 'package:dopamine_budget/features/scoring/presentation/pages/home_page.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/control_screen.dart';
+import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
   final SessionsNotifier sessionsNotifier;
   final HabitsNotifier habitsNotifier;
   final ScoringNotifier scoringNotifier;
+  final ControlScreenNotifier controlScreenNotifier;
 
   const RootGate({
     super.key,
@@ -22,6 +21,7 @@ class RootGate extends StatefulWidget {
     required this.sessionsNotifier,
     required this.habitsNotifier,
     required this.scoringNotifier,
+    required this.controlScreenNotifier,
   });
 
   @override
@@ -66,7 +66,17 @@ class _RootGateState extends State<RootGate> {
           );
         }
 
-        // Прокидываем базу данных и нотифайеры на главный экран
+        final phase = state.currentSession!.phase;
+
+        if (phase == 1) {
+          widget.controlScreenNotifier.refresh();
+          // ControlScreen больше не принимает habitsNotifier —
+          // нотификатор сам грузит привычки
+          return ControlScreen(
+            controlNotifier: widget.controlScreenNotifier,
+          );
+        }
+
         return HomePage(
           scoringNotifier: widget.scoringNotifier,
           habitsNotifier: widget.habitsNotifier,
