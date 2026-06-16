@@ -4,9 +4,6 @@ import 'package:dopamine_budget/features/scoring/domain/repositories/scoring_rep
 
 // lib/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart
 
-/// Проверяет завершённость калибровки.
-/// Если условия выполнены — самостоятельно переключает фазу в БД (side effect инкапсулирован).
-/// Возвращает true если сессия уже в фазе контроля или перешла в неё прямо сейчас.
 class VerifyCalibrationExpiryUseCase {
   final SessionRepository _sessionRepository;
   final ScoringRepository _scoringRepository;
@@ -21,8 +18,13 @@ class VerifyCalibrationExpiryUseCase {
     final currentSession = await _sessionRepository.getActiveSession();
     if (currentSession == null) return false;
 
-    // Уже в фазе контроля — ничего не делаем
     if (currentSession.phase == 1) return true;
+
+    if (currentSession.phase == 1) {
+      print('VCE: уже phase=1, выходим без пересчёта');
+      return true;
+    }
+    print('VCE: phase=${currentSession.phase}, ИДЁМ ДАЛЬШЕ — это бы не должно происходить если контроль уже активен');
 
     final uniqueDays = await _scoringRepository.getUniqueRecordedDays();
     final completedDays = uniqueDays.length;
@@ -34,7 +36,6 @@ class VerifyCalibrationExpiryUseCase {
       TimeProvider.now.day,
     );
 
-    // Последний день калибровки должен быть вчера или раньше (не сегодня)
     final lastCalibrationDay = uniqueDays.isNotEmpty
         ? DateTime(
             uniqueDays.last.year,
@@ -47,22 +48,24 @@ class VerifyCalibrationExpiryUseCase {
 
     if (completedDays < targetDays || !lastDayIsComplete) return false;
 
-    // Калибровка истекла — считаем AVG и переключаем фазу
     double totalScore = 0;
     for (final day in uniqueDays.take(targetDays)) {
       totalScore += (await _scoringRepository.getScoreForDay(day)).toDouble();
     }
     final avgScore = totalScore / targetDays;
 
+    // Фиксируем точный момент перехода в контроль — будет использован
+    // как нижняя граница для watchScoreForDay в ControlScreenNotifier,
+    // чтобы калибровочные клики не попадали в баланс контроля.
     final updatedSession = currentSession.copyWith(
       phase: 1,
       avgScore: avgScore,
+      controlStartedAt: TimeProvider.now,
     );
 
-    // Side effect инкапсулирован здесь — нотификатор только читает результат
     await _sessionRepository.updateSession(updatedSession);
 
-    print('🚀 [VerifyCalibrationExpiry] Калибровка завершена! avg=$avgScore');
+    print('🚀 [VerifyCalibrationExpiry] Калибровка завершена! avg=$avgScore, controlStartedAt=${updatedSession.controlStartedAt}');
     return true;
   }
 }

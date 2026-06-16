@@ -6,16 +6,12 @@ import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/day_log.dart';
 import 'package:dopamine_budget/features/sessions/data/mappers/day_log_mapper.dart';
 
-// lib/features/sessions/data/repositories/session_repository_impl.dart
-
 class SessionRepositoryImpl implements SessionRepository {
   final AppDatabase _db;
 
   SessionRepositoryImpl(this._db);
 
-  // =========================================================================
-  // SESSIONS
-  // =========================================================================
+  // === 1. РЕАЛИЗАЦИЯ МЕТОДОВ ДЛЯ ИНТЕРФЕЙСА ===
 
   @override
   Future<void> addSession(Session session) async {
@@ -23,7 +19,69 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
+  Future<List<Session>> getSessionsByDay(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    final query = _db.select(_db.sessionsTable)
+      ..where((tbl) => tbl.createdAt.isBetweenValues(startOfDay, endOfDay));
+
+    final rows = await query.get();
+
+    return rows.map(_sessionFromRow).toList();
+  }
+
+  @override
   Future<void> updateSession(Session session) async {
+    try {
+      final companion = SessionsTableCompanion(
+        id: Value(session.id),
+        createdAt: Value(session.createdAt),
+        phase: Value(session.phase),
+        avgScore: Value(session.avgScore),
+        shouldDecrease: Value(session.shouldDecrease),
+        decreasePercentage: Value(session.decreasePercentage?.toDouble()),
+        decreaseInterval: Value(session.decreaseInterval),
+        isReviewed: Value(session.isReviewed),
+        calibrationDays: Value(session.calibrationDays),
+        controlStartedAt: Value(session.controlStartedAt),
+      );
+      await (_db.update(_db.sessionsTable)
+            ..where((t) => t.id.equals(session.id)))
+          .write(companion);
+      print('Сессия ${session.id} успешно обновлена в СУБД (фаза: ${session.phase})');
+    } catch (e) {
+      print('Ошибка выполнения updateSession в репозитории: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Session?> getActiveSession() async {
+    final row = await (_db.select(_db.sessionsTable)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+        .getSingleOrNull();
+    return row == null ? null : _sessionFromRow(row);
+  }
+
+  Future<int> getTotalScoreCostForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+    final totalCostExpression = _db.actionsTable.scoreValue.sum();
+
+    final query = _db.selectOnly(_db.actionsTable)
+      ..addColumns([totalCostExpression])
+      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
+
+    final row = await query.getSingle();
+    return row.read(totalCostExpression) ?? 0;
+  }
+
+  // === 2. МЕТОДЫ УПРАВЛЕНИЯ СЕССИЯМИ ===
+
+  Future<void> saveSession(Session session) async {
     final companion = SessionsTableCompanion(
       id: Value(session.id),
       createdAt: Value(session.createdAt),
@@ -34,54 +92,27 @@ class SessionRepositoryImpl implements SessionRepository {
       decreaseInterval: Value(session.decreaseInterval),
       isReviewed: Value(session.isReviewed),
       calibrationDays: Value(session.calibrationDays),
+      controlStartedAt: Value(session.controlStartedAt),
     );
-    await (_db.update(_db.sessionsTable)
-          ..where((t) => t.id.equals(session.id)))
-        .write(companion);
+
+    await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
   }
 
-  @override
-  Future<List<Session>> getSessionsByDay(DateTime date) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
-
-    final rows = await (_db.select(_db.sessionsTable)
-          ..where((tbl) =>
-              tbl.createdAt.isBetweenValues(startOfDay, endOfDay)))
-        .get();
-
+  Future<List<Session>> getAllSessions() async {
+    final rows = await _db.select(_db.sessionsTable).get();
     return rows.map(_sessionFromRow).toList();
-  }
-
-  @override
-  Future<Session?> getActiveSession() async {
-    final row = await (_db.select(_db.sessionsTable)..limit(1))
-        .getSingleOrNull();
-    return row == null ? null : _sessionFromRow(row);
-  }
-
-  @override
-  Future<void> updateSessionToControl({required String sessionId}) async {
-    await (_db.update(_db.sessionsTable)
-          ..where((t) => t.id.equals(sessionId)))
-        .write(const SessionsTableCompanion(
-          phase: Value(1),
-          isReviewed: Value(true),
-        ));
   }
 
   @override
   Future<int> getTotalScoreSpentByDay(DateTime date) async {
     final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
-    final endOfDay =
-        DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
 
     final totalCostExpression = _db.actionsTable.scoreValue.sum();
 
     final query = _db.selectOnly(_db.actionsTable)
       ..addColumns([totalCostExpression])
-      ..where(
-          _db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
+      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
 
     final row = await query.getSingle();
     return row.read(totalCostExpression) ?? 0;
@@ -103,8 +134,7 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
-  Future<List<double>> getScoresPerDaySince(
-      DateTime startDate, int maxDays) async {
+  Future<List<double>> getScoresPerDaySince(DateTime startDate, int maxDays) async {
     final results = <double>[];
     var current = DateTime(startDate.year, startDate.month, startDate.day);
 
@@ -119,16 +149,14 @@ class SessionRepositoryImpl implements SessionRepository {
 
   @override
   Future<String?> getMostFrequentHabitSince(DateTime startDate) async {
-    final startOfDay =
-        DateTime(startDate.year, startDate.month, startDate.day);
+    final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
     final endOfDay = TimeProvider.now;
 
     final countExpr = _db.actionsTable.id.count();
 
     final query = _db.selectOnly(_db.actionsTable)
       ..addColumns([_db.actionsTable.habitType, countExpr])
-      ..where(
-          _db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
+      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
       ..groupBy([_db.actionsTable.habitType])
       ..orderBy([OrderingTerm.desc(countExpr)])
       ..limit(1);
@@ -138,22 +166,28 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
-  Future<List<Map<String, int>>> getScoresPerHabitPerDay(
-      DateTime startDate, int maxDays) async {
+  Future<void> updateSessionToControl({required String sessionId}) async {
+    await (_db.update(_db.sessionsTable)
+          ..where((t) => t.id.equals(sessionId)))
+        .write(const SessionsTableCompanion(
+          phase: Value(1),
+          isReviewed: Value(true),
+        ));
+  }
+
+  @override
+  Future<List<Map<String, int>>> getScoresPerHabitPerDay(DateTime startDate, int maxDays) async {
     final results = <Map<String, int>>[];
     var current = DateTime(startDate.year, startDate.month, startDate.day);
 
     for (int i = 0; i < maxDays; i++) {
-      final startOfDay =
-          DateTime(current.year, current.month, current.day, 0, 0, 0);
-      final endOfDay =
-          DateTime(current.year, current.month, current.day, 23, 59, 59, 999);
+      final startOfDay = DateTime(current.year, current.month, current.day, 0, 0, 0);
+      final endOfDay = DateTime(current.year, current.month, current.day, 23, 59, 59, 999);
 
       final sumExpr = _db.actionsTable.scoreValue.sum();
       final query = _db.selectOnly(_db.actionsTable)
         ..addColumns([_db.actionsTable.habitType, sumExpr])
-        ..where(_db.actionsTable.timestamp
-            .isBetweenValues(startOfDay, endOfDay))
+        ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
         ..groupBy([_db.actionsTable.habitType]);
 
       final rows = await query.get();
@@ -172,7 +206,7 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   // =========================================================================
-  // DAYS TABLE
+  // DAYS TABLE (legacy Future API)
   // =========================================================================
 
   @override
@@ -191,14 +225,12 @@ class SessionRepositoryImpl implements SessionRepository {
   }) async {
     final dateStr = DayLogMapper.dateToString(date);
 
-    // Пробуем найти существующую запись
     final existing = await (_db.select(_db.daysTable)
           ..where((t) => t.date.equals(dateStr)))
         .getSingleOrNull();
 
     if (existing != null) return DayLogMapper.fromDb(existing);
 
-    // Создаём новую запись — date UNIQUE гарантирует отсутствие дублей
     final companion = DaysTableCompanion.insert(
       date: dateStr,
       sessionId: sessionId,
@@ -236,8 +268,6 @@ class SessionRepositoryImpl implements SessionRepository {
         ));
   }
 
-  /// Атомарная транзакция: клик привычки + деградация статуса ideal → almost_ideal.
-  /// Race condition исключён — проверка и запись в одной СУБД-транзакции.
   @override
   Future<void> logHabitClickWithStatusCheck({
     required String habitId,
@@ -245,7 +275,6 @@ class SessionRepositoryImpl implements SessionRepository {
     required DateTime timestamp,
   }) async {
     await _db.transaction(() async {
-      // 1. Записываем клик в ActionsTable
       await _db.into(_db.actionsTable).insert(
             ActionsTableCompanion.insert(
               habitType: habitId,
@@ -254,7 +283,6 @@ class SessionRepositoryImpl implements SessionRepository {
             ),
           );
 
-      // 2. Атомарно проверяем и деградируем статус дня
       final dateStr = DayLogMapper.dateToString(timestamp);
       final dayRow = await (_db.select(_db.daysTable)
             ..where((t) => t.date.equals(dateStr)))
@@ -267,7 +295,48 @@ class SessionRepositoryImpl implements SessionRepository {
               dayStatus: Value('almost_ideal'),
             ));
       }
+
+      // Гарантируем существование записи дня — иначе watchDayLog
+      // не получит значение если запись ещё не была создана.
+      if (dayRow == null) {
+        final session = await (_db.select(_db.sessionsTable)
+              ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+              ..limit(1))
+            .getSingleOrNull();
+        if (session != null) {
+          await _db.into(_db.daysTable).insert(
+                DaysTableCompanion.insert(
+                  date: dateStr,
+                  sessionId: session.id,
+                ),
+              );
+        }
+      }
     });
+  }
+
+  // =========================================================================
+  // STREAM API — Single Source of Truth
+  // =========================================================================
+
+  @override
+  Stream<Session?> watchActiveSession() {
+    return _db.watchActiveSession().map(
+          (row) => row == null ? null : _sessionFromRow(row),
+        );
+  }
+
+  @override
+  Stream<DayLog?> watchDayLog(DateTime date) {
+    final dateStr = DayLogMapper.dateToString(date);
+    return _db.watchDayLog(dateStr).map(
+          (row) => row == null ? null : DayLogMapper.fromDb(row),
+        );
+  }
+
+  @override
+  Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive) {
+    return _db.watchScoreForDay(start, endExclusive);
   }
 
   // =========================================================================
@@ -285,22 +354,7 @@ class SessionRepositoryImpl implements SessionRepository {
       decreaseInterval: row.decreaseInterval,
       isReviewed: row.isReviewed,
       calibrationDays: row.calibrationDays,
+      controlStartedAt: row.controlStartedAt,
     );
-  }
-
-  // Оставлено для обратной совместимости (вызывается из addSession)
-  Future<void> saveSession(Session session) async {
-    final companion = SessionsTableCompanion(
-      id: Value(session.id),
-      createdAt: Value(session.createdAt),
-      phase: Value(session.phase),
-      avgScore: Value(session.avgScore),
-      shouldDecrease: Value(session.shouldDecrease),
-      decreasePercentage: Value(session.decreasePercentage?.toDouble()),
-      decreaseInterval: Value(session.decreaseInterval),
-      isReviewed: Value(session.isReviewed),
-      calibrationDays: Value(session.calibrationDays),
-    );
-    await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
   }
 }

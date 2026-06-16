@@ -15,6 +15,7 @@ class ControlScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    controlNotifier.checkAndResetDayIfNeeded();
     return ListenableBuilder(
       listenable: controlNotifier,
       builder: (context, _) {
@@ -37,10 +38,6 @@ class ControlScreen extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// ЭКРАН: ACTIVE
-// =============================================================================
-
 class _ActiveScreen extends StatelessWidget {
   final ControlScreenNotifier controlNotifier;
   final ControlScreenState state;
@@ -53,17 +50,13 @@ class _ActiveScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // sessionHabits — геттер из стейта, фильтрует по selectedIds
     final habits = state.sessionHabits;
 
-    final minHabitCost = habits.isEmpty
-        ? null
-        : habits.map((h) => h.scoreValue).reduce(min);
+    final hasUnaffordableHabit =
+    habits.any((h) => state.balance < h.scoreValue);
 
-    final showBrokenButton = habits.isNotEmpty &&
-        (state.balance <= 0 ||
-            (minHabitCost != null && state.balance < minHabitCost));
+    final showBrokenButton = state.balance <= 0 || hasUnaffordableHabit;
+    final itemCount = habits.length + (showBrokenButton ? 1 : 0);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -81,56 +74,53 @@ class _ActiveScreen extends StatelessWidget {
           const SizedBox(height: 12),
 
           Expanded(
-            child: habits.isEmpty
+            child: habits.isEmpty && !showBrokenButton
                 ? Center(
-                    child: Text(
-                      'Нет привязанных привычек.',
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: Colors.grey),
-                    ),
-                  )
+              child: Text(
+                'Нет привязанных привычек.',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: Colors.grey),
+              ),
+            )
                 : ListView.separated(
-                    itemCount: habits.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final habit = habits[index];
-                      final canAfford = state.balance >= habit.scoreValue;
+              itemCount: itemCount,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                // ВРЕМЕННО: "Я сорвался" — последний элемент списка,
+                // а не зафиксирована у низа экрана, чтобы её не перекрывал DeveloperOverlay.
+                if (index == habits.length) {
+                  return _BrokenHoldButton(
+                    onConfirmed: () => controlNotifier.confirmBreak(),
+                  );
+                }
 
-                      return Opacity(
-                        opacity: canAfford ? 1.0 : 0.4,
-                        child: IgnorePointer(
-                          ignoring: !canAfford,
-                          child: ControlHabitButton(
-                            title: habit.title,
-                            points: habit.scoreValue,
-                            onTriggered: () async {
-                              await controlNotifier.logHabitClick(
-                                habitId: habit.id,
-                                scoreCost: habit.scoreValue,
-                              );
-                            },
-                          ),
-                        ),
-                      );
-                    },
+                final habit = habits[index];
+                final canAfford = state.balance >= habit.scoreValue;
+
+                return Opacity(
+                  opacity: canAfford ? 1.0 : 0.4,
+                  child: IgnorePointer(
+                    ignoring: !canAfford,
+                    child: ControlHabitButton(
+                      title: habit.title,
+                      points: habit.scoreValue,
+                      onTriggered: () async {
+                        await controlNotifier.logHabitClick(
+                          habitId: habit.id,
+                          scoreCost: habit.scoreValue,
+                        );
+                      },
+                    ),
                   ),
-          ),
-
-          if (showBrokenButton) ...[
-            const SizedBox(height: 16),
-            _BrokenHoldButton(
-              onConfirmed: () => controlNotifier.confirmBreak(),
+                );
+              },
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 }
-
-// =============================================================================
-// ЭКРАН: BROKEN LOCKED
-// =============================================================================
 
 class _BrokenLockedScreen extends StatelessWidget {
   @override
@@ -173,10 +163,6 @@ class _BrokenLockedScreen extends StatelessWidget {
     );
   }
 }
-
-// =============================================================================
-// ВИДЖЕТ: БЕНЗОБАК
-// =============================================================================
 
 class _FuelTankCard extends StatelessWidget {
   final int balance;
@@ -235,10 +221,6 @@ class _FuelTankCard extends StatelessWidget {
     );
   }
 }
-
-// =============================================================================
-// ВИДЖЕТ: КНОПКА ПРИВЫЧКИ
-// =============================================================================
 
 class ControlHabitButton extends StatefulWidget {
   final String title;
@@ -378,10 +360,6 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
     );
   }
 }
-
-// =============================================================================
-// ВИДЖЕТ: КНОПКА «Я СОРВАЛСЯ»
-// =============================================================================
 
 class _BrokenHoldButton extends StatefulWidget {
   final VoidCallback onConfirmed;

@@ -3,25 +3,18 @@ import 'package:drift/drift.dart';
 class SessionsTable extends Table {
   TextColumn get id => text()();
   DateTimeColumn get createdAt => dateTime()();
-  IntColumn get phase => integer()(); // 0 = stats (калибровка), 1 = control (контроль)
-  RealColumn get avgScore => real().nullable()(); // Базовый лимит XP
-
-  // Добавляем флаг ознакомления (дефолт false)
+  IntColumn get phase => integer()();
+  RealColumn get avgScore => real().nullable()();
   BoolColumn get isReviewed => boolean().withDefault(const Constant(false))();
-
-  // === НОВЫЕ ПОЛЯ ДЛЯ ГИБКИХ НАСТРОЕК СЕЙЧАС И НА БУДУЩЕЕ ===
-
-  // Нужно ли автоматически снижать лимит со временем
   BoolColumn get shouldDecrease => boolean().withDefault(const Constant(false))();
-
-  // Процент снижения (например, 5.0)
   RealColumn get decreasePercentage => real().nullable()();
-
-  // Интервал снижения ('week' или 'month')
   TextColumn get decreaseInterval => text().nullable()();
-
-  // Количество дней калибровки (дефолт 3)
   IntColumn get calibrationDays => integer().withDefault(const Constant(3))();
+
+  // Момент перехода в фазу контроля. null пока сессия в калибровке.
+  // Используется для фильтрации ActionsTable — считаем только клики
+  // ПОСЛЕ этой метки, чтобы не включать баллы калибровки в баланс контроля.
+  DateTimeColumn get controlStartedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

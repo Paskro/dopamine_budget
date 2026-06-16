@@ -11,13 +11,7 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<List<Habit>> getHabits() async {
     final rows = await _db.select(_db.habitsTable).get();
-    return rows.map<Habit>((row) {
-      return Habit(
-        id: row.id.toString(),
-        title: row.title,
-        scoreValue: row.scoreValue,
-      );
-    }).toList();
+    return rows.map(_habitFromRow).toList();
   }
 
   @override
@@ -36,6 +30,21 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<void> addHabit(Habit habit) async {
     await saveHabit(habit);
+  }
+
+  @override
+  Future<int?> addHabitAndGetId(Habit habit) async {
+    try {
+      final companion = HabitsTableCompanion(
+        id: const Value.absent(),
+        title: Value(habit.title),
+        scoreValue: Value(habit.scoreValue),
+      );
+      final id = await _db.into(_db.habitsTable).insert(companion);
+      return id;
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
@@ -83,7 +92,34 @@ class HabitRepositoryImpl implements HabitRepository {
     final query = _db.select(_db.sessionHabitsTable)
       ..where((t) => t.sessionId.equals(sessionId));
     final rows = await query.get();
-    // явное приведение к List<int> чтобы не было return_of_invalid_type
     return rows.map<int>((row) => row.habitId).toList();
+  }
+
+  // =========================================================================
+  // STREAM API
+  // =========================================================================
+
+  @override
+  Stream<List<Habit>> watchHabits() {
+    return _db.watchHabits().map(
+          (rows) => rows.map(_habitFromRow).toList(),
+        );
+  }
+
+  @override
+  Stream<List<int>> watchSelectedHabitIds(String sessionId) {
+    return _db.watchSelectedHabitIds(sessionId);
+  }
+
+  // =========================================================================
+  // PRIVATE HELPERS
+  // =========================================================================
+
+  Habit _habitFromRow(HabitsTableData row) {
+    return Habit(
+      id: row.id.toString(),
+      title: row.title,
+      scoreValue: row.scoreValue,
+    );
   }
 }

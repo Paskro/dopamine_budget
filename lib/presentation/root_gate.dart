@@ -7,6 +7,7 @@ import 'package:dopamine_budget/features/scoring/presentation/state/scoring_noti
 import 'package:dopamine_budget/features/scoring/presentation/pages/home_page.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/control_screen.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
+import 'package:dopamine_budget/core/debug/developer_overlay.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -28,13 +29,27 @@ class RootGate extends StatefulWidget {
   State<RootGate> createState() => _RootGateState();
 }
 
-class _RootGateState extends State<RootGate> {
+class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.sessionsNotifier.checkForNewDay();
-    });
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // При возврате приложения на передний план — проверяем смену суток.
+  // ControlScreenNotifier переподпишется на новый день автоматически.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.controlScreenNotifier.checkForNewDay();
+    }
   }
 
   @override
@@ -44,14 +59,14 @@ class _RootGateState extends State<RootGate> {
       builder: (context, _) {
         final state = widget.sessionsNotifier.state;
 
+        Widget content;
+
         if (state.isLoading) {
-          return const Scaffold(
+          content = const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
-        }
-
-        if (state.currentSession == null) {
-          return SessionOnboardingScreen(
+        } else if (state.currentSession == null) {
+          content = SessionOnboardingScreen(
             onStartCalibration: (days) {
               widget.sessionsNotifier.restartCalibration(durationDays: days);
             },
@@ -64,22 +79,27 @@ class _RootGateState extends State<RootGate> {
               );
             },
           );
-        }
-
-        final phase = state.currentSession!.phase;
-
-        if (phase == 1) {
-          widget.controlScreenNotifier.refresh();
-          // ControlScreen больше не принимает habitsNotifier —
-          // нотификатор сам грузит привычки
-          return ControlScreen(
-            controlNotifier: widget.controlScreenNotifier,
+        } else {
+          final session = state.currentSession!;
+          // ControlScreen только если фаза==1 И итоги просмотрены.
+          content = (session.phase == 1 && session.isReviewed)
+              ? ControlScreen(controlNotifier: widget.controlScreenNotifier)
+              : HomePage(
+            scoringNotifier: widget.scoringNotifier,
+            habitsNotifier: widget.habitsNotifier,
           );
         }
 
-        return HomePage(
-          scoringNotifier: widget.scoringNotifier,
-          habitsNotifier: widget.habitsNotifier,
+        return Stack(
+          children: [
+            content,
+            DeveloperOverlay(
+              onTimeShifted: () async {
+                await widget.scoringNotifier.checkAndResetDayIfNeeded();
+                widget.controlScreenNotifier.checkAndResetDayIfNeeded();
+              },
+            ),
+          ],
         );
       },
     );

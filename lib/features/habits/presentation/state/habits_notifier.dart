@@ -1,21 +1,27 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/features/habits/domain/repositories/habit_repository.dart';
+import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
 
+// lib/features/habits/presentation/state/habits_notifier.dart
+
+/// Single Source of Truth для справочника привычек и их привязки к сессии.
+///
+/// Подписывается на:
+/// - watchHabits() — весь справочник
+/// - watchActiveSession() → watchSelectedHabitIds(sessionId) — привязки
+///   текущей сессии, реактивно переключается при смене sessionId.
+///
+/// Перезапуск приложения больше не сбрасывает галки — оба стрима читают
+/// напрямую из БД и эмитят актуальное значение сразу при подписке.
 class HabitsNotifier extends ChangeNotifier {
   final HabitRepository _habitRepository;
+  final SessionRepository _sessionRepository;
   final AddActionUseCase _addActionUseCase;
 
-  HabitsNotifier({
-    required HabitRepository habitRepository,
-    required AddActionUseCase addActionUseCase,
-  })  : _habitRepository = habitRepository,
-        _addActionUseCase = addActionUseCase {
-    loadHabits();
-  }
-
-  bool _isLoading = false;
+  bool _isLoading = true;
   bool get isLoading => _isLoading;
 
   List<Habit> _habits = [];
@@ -25,33 +31,66 @@ class HabitsNotifier extends ChangeNotifier {
   List<int> get selectedHabitIds => _selectedHabitIds;
 
   String? _currentSessionId;
+  String? get currentSessionId => _currentSessionId;
 
-  Future<void> loadHabits({String? currentSessionId}) async {
-    if (currentSessionId != null) {
-      _currentSessionId = currentSessionId;
-    }
+  StreamSubscription<List<Habit>>? _habitsSub;
+  StreamSubscription? _sessionSub;
+  StreamSubscription<List<int>>? _selectedIdsSub;
 
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      _habits = await _habitRepository.getHabits();
-
-      if (_currentSessionId != null) {
-        _selectedHabitIds = await _habitRepository
-            .getSelectedHabitIdsForSession(_currentSessionId!);
-      }
-    } catch (e) {
-      debugPrint('Ошибка загрузки привычек: $e');
-    } finally {
+  HabitsNotifier({
+    required HabitRepository habitRepository,
+    required SessionRepository sessionRepository,
+    required AddActionUseCase addActionUseCase,
+  })  : _habitRepository = habitRepository,
+        _sessionRepository = sessionRepository,
+        _addActionUseCase = addActionUseCase {
+    _habitsSub = _habitRepository.watchHabits().listen((habits) {
+      _habits = habits;
       _isLoading = false;
       notifyListeners();
-    }
+    });
+
+    // Слушаем сессию → при смене sessionId пересоздаём подписку на selectedIds
+    _sessionSub = _sessionRepository.watchActiveSession().listen((session) {
+      final newSessionId = session?.id;
+      if (newSessionId == _currentSessionId) return;
+
+      _currentSessionId = newSessionId;
+      _selectedIdsSub?.cancel();
+
+      if (newSessionId == null) {
+        _selectedHabitIds = [];
+        notifyListeners();
+        return;
+      }
+
+      _selectedIdsSub = _habitRepository
+          .watchSelectedHabitIds(newSessionId)
+          .listen((ids) {
+        _selectedHabitIds = ids;
+        notifyListeners();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _habitsSub?.cancel();
+    _sessionSub?.cancel();
+    _selectedIdsSub?.cancel();
+    super.dispose();
+  }
+
+  /// Оставлен для обратной совместимости с HabitManagementPage.
+  /// sessionId обновляется через стрим — этот метод больше не нужен для загрузки.
+  void loadHabits({String? currentSessionId}) {
+    // no-op: данные приходят через watchHabits() и watchSelectedHabitIds()
+    // sessionId уже отслеживается через watchActiveSession() в конструкторе
   }
 
   Future<void> toggleHabitSelection(String sessionId, int habitId) async {
     await _habitRepository.toggleHabitSelection(sessionId, habitId);
-    await loadHabits(currentSessionId: sessionId);
+    // _selectedHabitIds обновится сам через watchSelectedHabitIds.
   }
 
   Future<void> addHabit(String title, int scoreValue) async {
@@ -60,21 +99,25 @@ class HabitsNotifier extends ChangeNotifier {
       title: title,
       scoreValue: scoreValue,
     );
-    await _habitRepository.addHabit(newHabit);
-    await loadHabits();
+    final savedId = await _habitRepository.addHabitAndGetId(newHabit);
+
+    // Автоматически привязываем к текущей сессии — по умолчанию отмечена
+    if (_currentSessionId != null && savedId != null) {
+      await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
+    }
+    // _habits и _selectedHabitIds обновятся сами через стримы.
   }
 
   Future<void> updateHabit(Habit habit) async {
     await _habitRepository.updateHabit(habit);
-    await loadHabits();
   }
 
   Future<void> deleteHabit(int habitId, {String? sessionId}) async {
     await _habitRepository.deleteHabit(habitId);
-    await loadHabits(currentSessionId: sessionId);
+    // _habits и _selectedHabitIds обновятся сами через стримы
+    // (DELETE из SessionHabitsTable триггерит watchSelectedHabitIds).
   }
 
-  /// Старый метод фиксации (оставляем для обратной совместимости)
   Future<void> hitHabit(Habit habit, {dynamic scoringNotifier}) async {
     _isLoading = true;
     notifyListeners();
@@ -86,37 +129,26 @@ class HabitsNotifier extends ChangeNotifier {
         await scoringNotifier.refreshScore();
       }
     } catch (e) {
-      debugPrint('Ошибка при записи срыва (hitHabit): $e');
+      debugPrint('Ошибка при вызове hitHabit: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// 🎯 НОВЫЙ МЕТОД: Специально для интерактивной кнопки удержания на HomePage.
-
-   Future<void> addActionLog({
-     required String habitId,
-     required int points,
-     required DateTime timestamp,
-   }) async {
-     _isLoading = true;
-     notifyListeners();
-
-     try {
-       // Собираем объект Habit, так как execute ждет именно его
-       // (поля сверяем с твоим методом addHabit: title и scoreValue)
-       final habit = _habits.firstWhere(
-         (h) => h.id == habitId,
-         orElse: () => Habit(id: habitId, title: habitId, scoreValue: points),
-       );
-       await _addActionUseCase.execute(habit);
-
-     } catch (e) {
-       debugPrint('Ошибка при записи действия в addActionLog: $e');
-     } finally {
-       _isLoading = false;
-       notifyListeners();
-     }
-   }
+  Future<void> addActionLog({
+    required String habitId,
+    required int points,
+    required DateTime timestamp,
+  }) async {
+    try {
+      final habit = _habits.firstWhere(
+        (h) => h.id == habitId,
+        orElse: () => Habit(id: habitId, title: habitId, scoreValue: points),
+      );
+      await _addActionUseCase.execute(habit);
+    } catch (e) {
+      debugPrint('Ошибка при записи действия в addActionLog: $e');
+    }
+  }
 }
