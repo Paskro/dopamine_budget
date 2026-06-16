@@ -22,7 +22,7 @@ class ActionsTable extends Table {
   HabitsTable,
   SessionsTable,
   SessionHabitsTable,
-  DaysTable,         // ← новая таблица фазы контроля
+  DaysTable,
 ])
 class AppDatabase extends _$AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
@@ -30,7 +30,11 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase._internal() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3; // ← 2 → 3
+  DriftDatabaseOptions get options =>
+      const DriftDatabaseOptions(storeDateTimeAsText: true);
+
+  @override
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -43,8 +47,11 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(sessionHabitsTable);
         }
         if (from < 3) {
-          // Добавляем таблицу дней фазы контроля
           await m.createTable(daysTable);
+        }
+        if (from < 4) {
+          // Добавляем колонку для фиксации момента старта фазы контроля
+          await m.addColumn(sessionsTable, sessionsTable.controlStartedAt);
         }
       },
     );
@@ -77,6 +84,54 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteHabit(int habitId) async {
     await (delete(sessionHabitsTable)..where((t) => t.habitId.equals(habitId))).go();
     await (delete(habitsTable)..where((t) => t.id.equals(habitId))).go();
+  }
+
+  // ===========================================================================
+  // STREAM API
+  // ===========================================================================
+
+  /// Последняя сессия по createdAt. Использует watch() для надёжного
+  /// триггера при UPDATE (watchSingleOrNull может пропускать обновления).
+  Stream<SessionsTableData?> watchActiveSession() {
+    return (select(sessionsTable)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+        .watch()
+        .map((rows) => rows.isEmpty ? null : rows.first);
+  }
+
+  Stream<List<HabitsTableData>> watchHabits() {
+    return select(habitsTable).watch();
+  }
+
+  Stream<List<int>> watchSelectedHabitIds(String sessionId) {
+    final query = select(sessionHabitsTable)
+      ..where((t) => t.sessionId.equals(sessionId));
+    return query.watch().map(
+          (rows) => rows.map((row) => row.habitId).toList(),
+        );
+  }
+
+  /// Наблюдает за записью дня по дате.
+  /// Использует watch() + firstOrNull для надёжного триггера при UPDATE.
+  Stream<DaysTableData?> watchDayLog(String dateStr) {
+    return (select(daysTable)..where((t) => t.date.equals(dateStr)))
+        .watch()
+        .map((rows) => rows.isEmpty ? null : rows.first);
+  }
+
+  /// Баллы за клики в диапазоне [start, endExclusive).
+  /// В фазе контроля start = controlStartedAt (не начало суток!) —
+  /// чтобы исключить калибровочные клики из баланса.
+  /// Суммирует scoreValue за [start, endExclusive).
+  /// Использует watch() на всей таблице + map для надёжного триггера
+  /// при каждом INSERT — selectOnly+watchSingle не всегда реагирует на вставки.
+  Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive) {
+    final end = endExclusive.subtract(const Duration(microseconds: 1));
+    return (select(actionsTable)
+          ..where((t) => t.timestamp.isBetweenValues(start, end)))
+        .watch()
+        .map((rows) => rows.fold(0, (sum, row) => sum + row.scoreValue));
   }
 }
 

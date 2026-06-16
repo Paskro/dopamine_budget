@@ -28,13 +28,27 @@ class RootGate extends StatefulWidget {
   State<RootGate> createState() => _RootGateState();
 }
 
-class _RootGateState extends State<RootGate> {
+class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.sessionsNotifier.checkForNewDay();
-    });
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // При возврате приложения на передний план — проверяем смену суток.
+  // ControlScreenNotifier переподпишется на новый день автоматически.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      widget.controlScreenNotifier.checkForNewDay();
+    }
   }
 
   @override
@@ -66,12 +80,13 @@ class _RootGateState extends State<RootGate> {
           );
         }
 
-        final phase = state.currentSession!.phase;
+        final session = state.currentSession!;
+        final phase = session.phase;
+        final isReviewed = session.isReviewed;
 
-        if (phase == 1) {
-          widget.controlScreenNotifier.refresh();
-          // ControlScreen больше не принимает habitsNotifier —
-          // нотификатор сам грузит привычки
+        // ControlScreen только если фаза==1 И итоги просмотрены.
+        // Если isReviewed==false — HomePage покажет CalibrationResultPage.
+        if (phase == 1 && isReviewed) {
           return ControlScreen(
             controlNotifier: widget.controlScreenNotifier,
           );

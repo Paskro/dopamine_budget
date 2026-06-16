@@ -63,7 +63,7 @@ class ScoringRepositoryImpl implements ScoringRepository {
     try {
       // Используем функцию SQLite 'date', чтобы отсечь время (оставить YYYY-MM-DD)
       final dateFunction = CustomExpression<String>(
-        "date(datetime(timestamp, 'unixepoch', 'localtime'))"
+        "date(timestamp)"
       );
 
       // Строим запрос: берем только эту вычисляемую колонку дат

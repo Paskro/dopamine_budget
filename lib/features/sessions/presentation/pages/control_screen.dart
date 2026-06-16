@@ -15,6 +15,7 @@ class ControlScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    controlNotifier.checkAndResetDayIfNeeded();
     return ListenableBuilder(
       listenable: controlNotifier,
       builder: (context, _) {
@@ -37,10 +38,6 @@ class ControlScreen extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// ЭКРАН: ACTIVE
-// =============================================================================
-
 class _ActiveScreen extends StatelessWidget {
   final ControlScreenNotifier controlNotifier;
   final ControlScreenState state;
@@ -53,17 +50,13 @@ class _ActiveScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // sessionHabits — геттер из стейта, фильтрует по selectedIds
     final habits = state.sessionHabits;
 
-    final minHabitCost = habits.isEmpty
-        ? null
-        : habits.map((h) => h.scoreValue).reduce(min);
 
-    final showBrokenButton = habits.isNotEmpty &&
-        (state.balance <= 0 ||
-            (minHabitCost != null && state.balance < minHabitCost));
+    final hasUnaffordableHabit =
+        habits.any((h) => state.balance < h.scoreValue);
+
+    final showBrokenButton = state.balance <= 0 || hasUnaffordableHabit;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -128,10 +121,6 @@ class _ActiveScreen extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// ЭКРАН: BROKEN LOCKED
-// =============================================================================
-
 class _BrokenLockedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -173,10 +162,6 @@ class _BrokenLockedScreen extends StatelessWidget {
     );
   }
 }
-
-// =============================================================================
-// ВИДЖЕТ: БЕНЗОБАК
-// =============================================================================
 
 class _FuelTankCard extends StatelessWidget {
   final int balance;
@@ -235,10 +220,6 @@ class _FuelTankCard extends StatelessWidget {
     );
   }
 }
-
-// =============================================================================
-// ВИДЖЕТ: КНОПКА ПРИВЫЧКИ
-// =============================================================================
 
 class ControlHabitButton extends StatefulWidget {
   final String title;
@@ -378,10 +359,6 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
     );
   }
 }
-
-// =============================================================================
-// ВИДЖЕТ: КНОПКА «Я СОРВАЛСЯ»
-// =============================================================================
 
 class _BrokenHoldButton extends StatefulWidget {
   final VoidCallback onConfirmed;

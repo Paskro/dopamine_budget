@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  shared_preferences: any
 
   drift: any
   sqlite3_flutter_libs: any

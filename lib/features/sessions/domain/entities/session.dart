@@ -1,13 +1,18 @@
+import 'package:dopamine_budget/core/utils/time_provider.dart';
+
 class Session {
   final String id;
   final DateTime createdAt;
-  final int phase; // 0 = Калибровка, 1 = Контроль
-  final double? avgScore; // Средний балл, вычисляется после калибровки
+  final int phase;
+  final double? avgScore;
   final bool shouldDecrease;
   final int? decreasePercentage;
-  final String? decreaseInterval; // Интервал снижения: 'week' или 'month'
+  final String? decreaseInterval;
   final bool isReviewed;
-  final int calibrationDays; // Количество дней калибровки
+  final int calibrationDays;
+
+  /// Момент перехода в фазу контроля. null пока в калибровке.
+  final DateTime? controlStartedAt;
 
   const Session({
     required this.id,
@@ -19,9 +24,10 @@ class Session {
     this.decreaseInterval,
     this.isReviewed = false,
     this.calibrationDays = 3,
+    this.controlStartedAt,
   });
 
-Session copyWith({
+  Session copyWith({
     String? id,
     DateTime? createdAt,
     int? phase,
@@ -31,6 +37,7 @@ Session copyWith({
     String? decreaseInterval,
     bool? isReviewed,
     int? calibrationDays,
+    DateTime? controlStartedAt,
   }) {
     return Session(
       id: id ?? this.id,
@@ -42,22 +49,27 @@ Session copyWith({
       decreaseInterval: decreaseInterval ?? this.decreaseInterval,
       isReviewed: isReviewed ?? this.isReviewed,
       calibrationDays: calibrationDays ?? this.calibrationDays,
+      controlStartedAt: controlStartedAt ?? this.controlStartedAt,
     );
   }
 
-  /// Бизнес-логика: Вычисляем текущий дневной лимит дофамина
-  /// Если фаза калибровки (0) или AVG еще не посчитан — лимита нет (возвращаем null)
   double? get dailyLimit {
     if (phase == 0 || avgScore == null) return null;
 
     if (shouldDecrease && decreasePercentage != null) {
-      // Формула: LIMIT = AVG - %снижения
-      // Например: 50 баллов - 20% = 40 баллов
       final reduction = avgScore! * (decreasePercentage! / 100);
       return avgScore! - reduction;
     }
 
-    // Если снижение не включено, лимит равен среднему баллу калибровки
     return avgScore;
+  }
+
+  /// Начало отсчёта баланса в фазе контроля.
+  /// Если controlStartedAt не записан — используем начало текущих суток
+  /// как fallback (для сессий созданных до добавления этого поля).
+  DateTime get balanceStartTime {
+    if (controlStartedAt != null) return controlStartedAt!;
+    final now = TimeProvider.now;
+    return DateTime(now.year, now.month, now.day);
   }
 }

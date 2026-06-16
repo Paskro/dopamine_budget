@@ -7,5 +7,5 @@ class ActionsTable extends Table {
 
   IntColumn get scoreValue => integer()();
 
-  DateTimeColumn get timestamp => dateTime()();
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
 }

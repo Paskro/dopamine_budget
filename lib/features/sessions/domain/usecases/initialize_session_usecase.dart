@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
+import 'package:flutter/foundation.dart';
 
 class InitializeSessionUseCase {
   final AppDatabase _db;
@@ -9,11 +10,22 @@ class InitializeSessionUseCase {
 
   Future<Session?> execute({bool forceRestart = false, int durationDays = 7}) async {
       try {
+        final row = await (_db.select(_db.sessionsTable)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+          ..limit(1))
+            .getSingleOrNull();
+        print('RAW controlStartedAt=${row?.controlStartedAt}, phase=${row?.phase}, id=${row?.id}');
         if (!forceRestart) {
-          final allSessions = await _db.select(_db.sessionsTable).get();
+          // ФИКС: явный orderBy по createdAt DESC — без него порядок строк
+          // не определён и .last может вернуть НЕ последнюю созданную сессию.
+          // Это рассинхронизировало SessionsNotifier с getActiveSession()
+          // в SessionRepositoryImpl, который уже использует orderBy DESC.
+          final latestRow = await (_db.select(_db.sessionsTable)
+                ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+                ..limit(1))
+              .getSingleOrNull();
 
-          if (allSessions.isNotEmpty) {
-            final latestRow = allSessions.last;
+          if (latestRow != null) {
             return Session(
               id: latestRow.id,
               createdAt: latestRow.createdAt,
@@ -21,9 +33,10 @@ class InitializeSessionUseCase {
               avgScore: latestRow.avgScore,
               shouldDecrease: latestRow.shouldDecrease,
               decreasePercentage: latestRow.decreasePercentage?.toInt(),
-              decreaseInterval: latestRow.decreaseInterval, // String? как есть
+              decreaseInterval: latestRow.decreaseInterval,
               isReviewed: latestRow.isReviewed,
               calibrationDays: latestRow.calibrationDays,
+              controlStartedAt: latestRow.controlStartedAt,
               );
           } else {
             return null;
@@ -39,7 +52,6 @@ class InitializeSessionUseCase {
 
         final newId = 'S_$year$month$day\_$hour$minute';
 
-        // ТЕПЕРЬ МЫ ЧЕСТНО ПИШЕМ СЮДА ПАРАМЕТР durationDays
         final companion = SessionsTableCompanion(
           id: Value(newId),
           createdAt: Value(now),
@@ -48,7 +60,7 @@ class InitializeSessionUseCase {
           shouldDecrease: const Value(false),
           decreasePercentage: const Value(null),
           decreaseInterval: const Value(null),
-          calibrationDays: Value(durationDays), // <-- теперь в правильном поле
+          calibrationDays: Value(durationDays),
         );
 
         await _db.into(_db.sessionsTable).insert(companion);

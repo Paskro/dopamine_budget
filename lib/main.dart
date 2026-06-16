@@ -19,59 +19,66 @@ import 'package:dopamine_budget/features/habits/data/repositories/habit_reposito
 import 'package:dopamine_budget/features/habits/presentation/state/habits_notifier.dart';
 
 import 'package:dopamine_budget/presentation/root_gate.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await TimeProvider.restore();
 
   final database = AppDatabase.instance;
 
-  // Сессии
+
+
+  // Репозитории
   final sessionRepository = SessionRepositoryImpl(database);
+  final habitRepository = HabitRepositoryImpl(database);
+  final scoringRepository = ScoringRepositoryImpl(database);
+
+  // Use Cases — сессии
   final initializeSessionUseCase = InitializeSessionUseCase(database);
   final startControlSessionUseCase = StartControlSessionUseCase(database);
   final getSessionsByDayUseCase = GetSessionsByDayUseCase(sessionRepository);
 
-  final sessionsNotifier = SessionsNotifier(
-    initializeSessionUseCase: initializeSessionUseCase,
-    startControlSessionUseCase: startControlSessionUseCase,
-  );
-
-  // Привычки
-  final habitRepository = HabitRepositoryImpl(database);
-  final addActionUseCase = AddActionUseCase(database);
-
-  final habitsNotifier = HabitsNotifier(
-    habitRepository: habitRepository,
-    addActionUseCase: addActionUseCase,
-  );
-
-  // Скоринг
-  final scoringRepository = ScoringRepositoryImpl(database);
+  // Use Cases — скоринг
   final calculateScoreUseCase = CalculateScoreUseCase(scoringRepository);
-
   final verifyCalibrationExpiryUseCase = VerifyCalibrationExpiryUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
   );
-
   final getDopamineBalanceUseCase = GetCurrentDopamineBalanceUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
   );
 
+  // Use Cases — привычки
+  final addActionUseCase = AddActionUseCase(database);
+
+  // Notifiers
+  final sessionsNotifier = SessionsNotifier(
+    sessionRepository: sessionRepository,
+    initializeSessionUseCase: initializeSessionUseCase,
+    startControlSessionUseCase: startControlSessionUseCase,
+  );
+
+  // HabitsNotifier теперь сам подписывается на sessionId через стрим сессии
+  final habitsNotifier = HabitsNotifier(
+    habitRepository: habitRepository,
+    sessionRepository: sessionRepository,
+    addActionUseCase: addActionUseCase,
+  );
+
   final scoringNotifier = ScoringNotifier(
-    calculateScoreUseCase: calculateScoreUseCase,
+
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
-    getSessionsUseCase: getSessionsByDayUseCase,
+
     verifyCalibrationExpiry: verifyCalibrationExpiryUseCase,
     getDopamineBalance: getDopamineBalanceUseCase,
   );
 
-  // Экран контроля — сам грузит привычки через habitRepository
+  // ControlScreenNotifier не нужен getDopamineBalance — сам считает из стримов
   final controlScreenNotifier = ControlScreenNotifier(
     sessionRepository: sessionRepository,
-    getDopamineBalance: getDopamineBalanceUseCase,
     habitRepository: habitRepository,
   );
 
