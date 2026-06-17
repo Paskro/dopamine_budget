@@ -1,0 +1,59 @@
+@startuml
+' --- Настройки темы для красивого отображения ---
+skinparam monochrome false
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+hide circle
+
+title ER-диаграмма БД приложения "Dopamine Budget" (Drift / SQLite)
+
+' --- Определение сущностей (Таблиц) ---
+
+entity "SessionsTable\n(Сессии калибровки/контроля)" as Session {
+    * id : TEXT [PK] -- Формат: S_YYYYMMDD_HHMM
+    --
+    * createdAt : INTEGER -- Дата создания (Timestamp)
+    * targetCalibrationDays : INTEGER -- Целевое число дней калибровки (например, 7)
+    * targetControlDays : INTEGER -- Дней контроля
+    * decreasePercentage : INTEGER -- Процент усыхания лимита
+    decreaseInterval : INTEGER -- Интервал снижения в часах (nullable)
+    * phase : INTEGER -- 0 = Калибровка, 1 = Контроль
+    * controlMode : INTEGER -- 0 = Базовый, 1 = Без ухода в минус
+    * isFrozen : INTEGER -- Флаг блокировки списка привычек (0 или 1)
+}
+
+entity "HabitsTable\n(Справочник привычек)" as Habit {
+    * id : TEXT [PK] -- UUID / Уникальный ключ
+    --
+    * title : TEXT -- Название привычки
+    * scoreCost : INTEGER -- Тяжесть в баллах (1, 2, 3...)
+    * isDeleted : INTEGER -- Мягкое удаление (0 или 1)
+}
+
+entity "SessionHabits\n(Выбранные в сессию привычки)" as SessionHabit {
+    * sessionId : TEXT [FK] -- Ссылка на сессию
+    * habitId : TEXT [FK] -- Ссылка на привычку
+    --
+    * isSelected : INTEGER -- Выбрана ли для текущего экрана (0 или 1)
+}
+
+entity "ActionsTable\n(Лог деструктивных действий)" as Action {
+    * id : TEXT [PK] -- UUID / Уникальный ключ
+    --
+    * habitId : TEXT [FK] -- Ссылка на привычку
+    * clickedAt : INTEGER -- Точный Timestamp клика (через TimeProvider)
+    * dateStr : TEXT -- Форматированная дата YYYY-MM-DD для быстрого GROUP BY
+    comment : TEXT -- Опциональная заметка/контекст срыва
+}
+
+' --- Связи и кардинальность (Relationships) ---
+
+' Сессия имеет промежуточную таблицу для связи "многие-ко-многим" с привычками
+Session ||--o{ SessionHabit : "содержит настройки"
+Habit   ||--o{ SessionHabit : "включается в"
+
+' Логи кликов жестко привязаны к справочнику привычек
+Habit   ||--o{ Action       : "фиксирует срывы по"
+
+@endum
