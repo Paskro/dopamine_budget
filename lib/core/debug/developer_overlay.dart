@@ -33,13 +33,25 @@ class DeveloperOverlay extends StatelessWidget {
                   children: [
                     ElevatedButton.icon(
                       icon: const Icon(Icons.fast_forward),
-                      label: const Text('+1 День'),
+                      label: const Text('+1Д'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade700,
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () {
                         TimeProvider.addDuration(const Duration(days: 1));
+                        onTimeShifted();
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.schedule),
+                      label: const Text('+6ч'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber.shade400,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        TimeProvider.addDuration(const Duration(hours: 6));
                         onTimeShifted();
                       },
                     ),
@@ -52,7 +64,7 @@ class DeveloperOverlay extends StatelessWidget {
                         TimeProvider.reset();
                         onTimeShifted();
                       },
-                      child: const Text('Сбросить время'),
+                      child: const Text('Сброс'),
                     ),
                   ],
                 ),
