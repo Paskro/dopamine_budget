@@ -1,7 +1,5 @@
 import 'package:drift/drift.dart';
 
-// lib/features/sessions/data/tables/days_table.dart
-
 class DaysTable extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -12,13 +10,19 @@ class DaysTable extends Table {
   // FK → SessionsTable.id
   TextColumn get sessionId => text()();
 
+  // DEPRECATED: не источник правды о срыве. Читать dayStatus == 'broken'.
+  // Поле оставлено только для обратной совместимости старых записей в БД,
+  // синхронизируется в markDayAsBroken, но никем не читается в новой логике.
   BoolColumn get isBrokenClicked =>
       boolean().withDefault(const Constant(false))();
 
   BoolColumn get isGoodBoyClicked =>
       boolean().withDefault(const Constant(false))();
 
-  // 'regular' | 'ideal' | 'almost_ideal'
+  // 'regular' | 'ideal' | 'almost_ideal' | 'broken' — единственный источник
+  // правды о состоянии дня. 'broken' терминален: дальнейшие переходы
+  // запрещены на уровне репозитория (см. SessionRepositoryImpl:
+  // markDayAsGoodBoy, logHabitClickWithStatusCheck).
   TextColumn get dayStatus =>
       text().withDefault(const Constant('regular'))();
 }

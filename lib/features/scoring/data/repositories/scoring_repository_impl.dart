@@ -14,13 +14,17 @@ class ScoringRepositoryImpl implements ScoringRepository {
     required int scoreValue,
     required DateTime timestamp,
   }) async {
-    await _db.into(_db.actionsTable).insert(
-          ActionsTableCompanion.insert(
-            habitType: habitType,
-            scoreValue: scoreValue,
-            timestamp: timestamp,
-          ),
-        );
+    final sessionId = await _db.getActiveSessionId();
+    if (sessionId == null) {
+      throw StateError('Нет активной сессии для записи действия');
+    }
+    await _db.into(_db.habitLogsTable).insert(
+      HabitLogsTableCompanion.insert(
+        habitId: int.parse(habitType),
+        sessionId: sessionId,
+        timestamp: timestamp,
+      ),
+    );
   }
 
   @override
@@ -28,12 +32,13 @@ class ScoringRepositoryImpl implements ScoringRepository {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
 
-    final query = _db.selectOnly(_db.actionsTable)
-      ..addColumns([_db.actionsTable.scoreValue.sum()])
-      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
+    final query = _db.select(_db.habitLogsTable).join([
+      innerJoin(_db.habitsTable, _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId)),
+    ])
+      ..where(_db.habitLogsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
 
-    final row = await query.getSingle();
-    return row.read(_db.actionsTable.scoreValue.sum()) ?? 0;
+    final rows = await query.get();
+    return rows.fold<int>(0, (sum, row) => sum + row.readTable(_db.habitsTable).scoreValue);
   }
 
   @override
@@ -41,14 +46,14 @@ class ScoringRepositoryImpl implements ScoringRepository {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
 
-    final query = _db.select(_db.actionsTable)
+    final query = _db.select(_db.habitLogsTable)
       ..where((tbl) => tbl.timestamp.isBetweenValues(startOfDay, endOfDay));
 
     final rows = await query.get();
 
     final Map<String, int> result = {};
     for (final row in rows) {
-      final key = row.habitType.toString();
+      final key = row.habitId.toString();
       result[key] = (result[key] ?? 0) + 1;
     }
 
@@ -67,7 +72,7 @@ class ScoringRepositoryImpl implements ScoringRepository {
       );
 
       // Строим запрос: берем только эту вычисляемую колонку дат
-      final query = _db.selectOnly(_db.actionsTable)
+      final query = _db.selectOnly(_db.habitLogsTable)
         ..addColumns([dateFunction])
         ..groupBy([dateFunction]); // Группируем, чтобы исключить дубли
 

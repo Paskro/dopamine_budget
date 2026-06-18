@@ -29,8 +29,20 @@ abstract class SessionRepository {
     required DateTime date,
     required String sessionId,
   });
+
+  /// Безусловно помечает день как 'broken'. Терминальный статус — после
+  /// вызова дальнейшие переходы dayStatus для этого дня запрещены
+  /// (см. markDayAsGoodBoy, logHabitClickWithStatusCheck).
   Future<void> markDayAsBroken(DateTime date);
+
+  /// Помечает день как 'ideal'. Бросает [StateError], если день уже
+  /// зафиксирован как 'broken' — вызывающая сторона обязана обработать
+  /// исключение (см. ControlScreenNotifier.confirmGoodBoy).
   Future<void> markDayAsGoodBoy(DateTime date);
+
+  /// Записывает клик по привычке и при необходимости деградирует
+  /// dayStatus 'ideal' → 'almost_ideal' в единой транзакции.
+  /// Бросает [StateError], если день уже зафиксирован как 'broken'.
   Future<void> logHabitClickWithStatusCheck({
     required String habitId,
     required int scoreCost,
@@ -39,19 +51,9 @@ abstract class SessionRepository {
 
   // ===========================================================================
   // STREAM API — Single Source of Truth.
-  // Notifier'ы подписываются один раз в конструкторе и больше никогда
-  // не вызывают ручной refresh()/loadX() после мутаций — обновление
-  // приходит автоматически из БД.
   // ===========================================================================
 
-  /// Текущая активная сессия (последняя по createdAt). null если сессий нет.
   Stream<Session?> watchActiveSession();
-
-  /// Состояние дня (срыв/статус) за указанную дату. null если запись
-  /// в DaysTable ещё не создана для этого дня.
   Stream<DayLog?> watchDayLog(DateTime date);
-
-  /// Сумма баллов потраченных за указанные календарные сутки.
-  /// [start] — начало суток, [endExclusive] — начало следующих суток.
   Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive);
 }

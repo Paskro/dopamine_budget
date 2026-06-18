@@ -1,15 +1,19 @@
 import 'package:flutter/foundation.dart';
 
-// lib/features/sessions/domain/entities/day_log.dart
-
 @immutable
 class DayLog {
   final int id;
   final DateTime date;     // DateTime внутри домена — маппер отсекает время
   final String sessionId;
+
+  @Deprecated(
+    "Источник правды — dayStatus == 'broken'. Поле оставлено только для "
+        "обратной совместимости старых записей, не использовать в новой логике.",
+  )
   final bool isBrokenClicked;
+
   final bool isGoodBoyClicked;
-  final String dayStatus;  // 'regular' | 'ideal' | 'almost_ideal'
+  final String dayStatus;  // 'regular' | 'ideal' | 'almost_ideal' | 'broken' (терминальный)
 
   const DayLog({
     required this.id,
@@ -19,6 +23,9 @@ class DayLog {
     required this.isGoodBoyClicked,
     required this.dayStatus,
   });
+
+  /// Единственный корректный способ проверки срыва дня.
+  bool get isBroken => dayStatus == 'broken';
 
   DayLog copyWith({
     int? id,

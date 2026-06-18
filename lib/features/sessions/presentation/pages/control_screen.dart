@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +6,7 @@ import 'package:dopamine_budget/features/sessions/presentation/state/control_scr
 
 // lib/features/sessions/presentation/pages/control_screen.dart
 
-class ControlScreen extends StatelessWidget {
+class ControlScreen extends StatefulWidget {
   final ControlScreenNotifier controlNotifier;
 
   const ControlScreen({
@@ -14,12 +15,39 @@ class ControlScreen extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<ControlScreen> createState() => _ControlScreenState();
+}
+
+class _ControlScreenState extends State<ControlScreen> {
+  StreamSubscription<String>? _errorSub;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controlNotifier.checkAndResetDayIfNeeded();
+    // Подписка на one-shot события ошибок (StateError из репозитория,
+    // например попытка клика/отметки после фиксации срыва дня).
+    _errorSub = widget.controlNotifier.errorEvents.listen((message) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorSub?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    controlNotifier.checkAndResetDayIfNeeded();
+    widget.controlNotifier.checkAndResetDayIfNeeded();
     return ListenableBuilder(
-      listenable: controlNotifier,
+      listenable: widget.controlNotifier,
       builder: (context, _) {
-        final state = controlNotifier.state;
+        final state = widget.controlNotifier.state;
 
         if (state.isLoading) {
           return const Scaffold(
@@ -31,7 +59,10 @@ class ControlScreen extends StatelessWidget {
           appBar: AppBar(title: const Text('Контроль')),
           body: state.status == ControlScreenStatus.brokenLocked
               ? _BrokenLockedScreen()
-              : _ActiveScreen(controlNotifier: controlNotifier, state: state),
+              : _ActiveScreen(
+            controlNotifier: widget.controlNotifier,
+            state: state,
+          ),
         );
       },
     );
@@ -64,6 +95,12 @@ class _ActiveScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _FuelTankCard(balance: state.balance, dailyLimit: state.dailyLimit),
+
+          if (state.canShowGoodBoyButton) ...[
+            const SizedBox(height: 16),
+            _GoodBoyBanner(onTap: () => controlNotifier.confirmGoodBoy()),
+          ],
+
           const SizedBox(height: 24),
 
           Text(
@@ -122,6 +159,52 @@ class _ActiveScreen extends StatelessWidget {
   }
 }
 
+/// Баннер «Я сегодня молодец». Простой тап (без механики удержания —
+/// «терапевтическое трение» 2.5с относится только к кнопке «Я сорвался»).
+/// Исчезает реактивно через стрим watchDayLog, как только dayStatus
+/// перестаёт быть 'regular'.
+class _GoodBoyBanner extends StatelessWidget {
+  final VoidCallback onTap;
+  const _GoodBoyBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 2,
+      color: theme.colorScheme.tertiaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Icon(Icons.emoji_events_outlined,
+                  color: theme.colorScheme.onTertiaryContainer),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Я сегодня молодец',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onTertiaryContainer,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: theme.colorScheme.onTertiaryContainer),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BrokenLockedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -148,10 +231,10 @@ class _BrokenLockedScreen extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             'Ты нажал кнопку, а значит — проявил осознанность и признал срыв. '
-            'Мозг сейчас ищет лёгкий дофамин, и это биохимия, а не твоя слабость. '
-            'Интерфейс контроля на сегодня закрыт, чтобы снизить напряжение от подсчётов.\n\n'
-            'Мы не ругаем. Отдохни от контроля. '
-            'Твой полный бензобак и новый шанс будут ждать тебя завтра утром. Увидимся.',
+                'Мозг сейчас ищет лёгкий дофамин, и это биохимия, а не твоя слабость. '
+                'Интерфейс контроля на сегодня закрыт, чтобы снизить напряжение от подсчётов.\n\n'
+                'Мы не ругаем. Отдохни от контроля. '
+                'Твой полный бензобак и новый шанс будут ждать тебя завтра утром. Увидимся.',
             style: theme.textTheme.bodyLarge?.copyWith(
               height: 1.6,
               color: theme.colorScheme.onSurface.withOpacity(0.75),
@@ -174,13 +257,13 @@ class _FuelTankCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final fillRatio =
-        dailyLimit > 0 ? (balance / dailyLimit).clamp(0.0, 1.0) : 0.0;
+    dailyLimit > 0 ? (balance / dailyLimit).clamp(0.0, 1.0) : 0.0;
 
     final tankColor = fillRatio > 0.5
         ? Colors.green.shade600
         : fillRatio > 0.2
-            ? Colors.orange.shade600
-            : Colors.red.shade600;
+        ? Colors.orange.shade600
+        : Colors.red.shade600;
 
     return Card(
       elevation: 4,
@@ -203,7 +286,7 @@ class _FuelTankCard extends StatelessWidget {
                 value: fillRatio,
                 minHeight: 16,
                 backgroundColor:
-                    theme.colorScheme.onPrimaryContainer.withOpacity(0.1),
+                theme.colorScheme.onPrimaryContainer.withOpacity(0.1),
                 valueColor: AlwaysStoppedAnimation<Color>(tankColor),
               ),
             ),
@@ -273,8 +356,8 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
     widget.points <= 3
         ? HapticFeedback.lightImpact()
         : widget.points <= 7
-            ? HapticFeedback.mediumImpact()
-            : HapticFeedback.vibrate();
+        ? HapticFeedback.mediumImpact()
+        : HapticFeedback.vibrate();
     _controller.reset();
     widget.onTriggered();
   }

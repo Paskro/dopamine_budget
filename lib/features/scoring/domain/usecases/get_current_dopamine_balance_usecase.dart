@@ -5,7 +5,7 @@ import 'package:dopamine_budget/features/scoring/domain/repositories/scoring_rep
 // lib/features/scoring/domain/usecases/get_current_dopamine_balance_usecase.dart
 
 /// Возвращает текущий остаток баланса дофамина для экрана контроля.
-/// Если isBrokenClicked == true — возвращает 0 без обращения к ActionsTable.
+/// Если dayStatus == 'broken' — возвращает 0 без обращения к ActionsTable.
 class GetCurrentDopamineBalanceUseCase {
   final SessionRepository _sessionRepository;
   final ScoringRepository _scoringRepository;
@@ -24,8 +24,9 @@ class GetCurrentDopamineBalanceUseCase {
     );
 
     final dayLog = await _sessionRepository.getDayLog(today);
-    if (dayLog != null && dayLog.isBrokenClicked) {
-      print('[DopamineBalance] День сорван → баланс = 0');
+    // Источник правды — dayStatus, а не legacy-поле isBrokenClicked.
+    if (dayLog != null && dayLog.dayStatus == 'broken') {
+      print('[DopamineBalance] День сорван (dayStatus=broken) → баланс = 0');
       return 0;
     }
 

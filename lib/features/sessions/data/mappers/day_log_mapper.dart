@@ -12,6 +12,7 @@ class DayLogMapper {
       id: data.id,
       date: DateTime.parse(data.date),
       sessionId: data.sessionId,
+      // ignore: deprecated_member_use_from_same_package
       isBrokenClicked: data.isBrokenClicked,
       isGoodBoyClicked: data.isGoodBoyClicked,
       dayStatus: data.dayStatus,

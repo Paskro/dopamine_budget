@@ -47,7 +47,7 @@ class SessionRepositoryImpl implements SessionRepository {
         controlStartedAt: Value(session.controlStartedAt),
       );
       await (_db.update(_db.sessionsTable)
-            ..where((t) => t.id.equals(session.id)))
+        ..where((t) => t.id.equals(session.id)))
           .write(companion);
       print('Сессия ${session.id} успешно обновлена в СУБД (фаза: ${session.phase})');
     } catch (e) {
@@ -59,24 +59,24 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<Session?> getActiveSession() async {
     final row = await (_db.select(_db.sessionsTable)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-          ..limit(1))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+      ..limit(1))
         .getSingleOrNull();
     return row == null ? null : _sessionFromRow(row);
   }
+
 
   Future<int> getTotalScoreCostForDate(DateTime date) async {
     final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
 
-    final totalCostExpression = _db.actionsTable.scoreValue.sum();
+    final query = _db.select(_db.habitLogsTable).join([
+      innerJoin(_db.habitsTable, _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId)),
+    ])
+      ..where(_db.habitLogsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
 
-    final query = _db.selectOnly(_db.actionsTable)
-      ..addColumns([totalCostExpression])
-      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
-
-    final row = await query.getSingle();
-    return row.read(totalCostExpression) ?? 0;
+    final rows = await query.get();
+    return rows.fold<int>(0, (sum, row) => sum + row.readTable(_db.habitsTable).scoreValue);
   }
 
   // === 2. МЕТОДЫ УПРАВЛЕНИЯ СЕССИЯМИ ===
@@ -108,14 +108,13 @@ class SessionRepositoryImpl implements SessionRepository {
     final startOfDay = DateTime(date.year, date.month, date.day, 0, 0, 0);
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
 
-    final totalCostExpression = _db.actionsTable.scoreValue.sum();
+    final query = _db.select(_db.habitLogsTable).join([
+      innerJoin(_db.habitsTable, _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId)),
+    ])
+      ..where(_db.habitLogsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
 
-    final query = _db.selectOnly(_db.actionsTable)
-      ..addColumns([totalCostExpression])
-      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
-
-    final row = await query.getSingle();
-    return row.read(totalCostExpression) ?? 0;
+    final rows = await query.get();
+    return rows.fold<int>(0, (sum, row) => sum + row.readTable(_db.habitsTable).scoreValue);
   }
 
   @override
@@ -124,13 +123,17 @@ class SessionRepositoryImpl implements SessionRepository {
     required int scoreCost,
     required DateTime createdAt,
   }) async {
-    await _db.into(_db.actionsTable).insert(
-          ActionsTableCompanion.insert(
-            habitType: habitId,
-            scoreValue: scoreCost,
-            timestamp: createdAt,
-          ),
-        );
+    final sessionId = await _db.getActiveSessionId();
+    if (sessionId == null) {
+      throw StateError('Нет активной сессии для записи действия');
+    }
+    await _db.into(_db.habitLogsTable).insert(
+      HabitLogsTableCompanion.insert(
+        habitId: int.parse(habitId),
+        sessionId: sessionId,
+        timestamp: createdAt,
+      ),
+    );
   }
 
   @override
@@ -152,27 +155,29 @@ class SessionRepositoryImpl implements SessionRepository {
     final startOfDay = DateTime(startDate.year, startDate.month, startDate.day);
     final endOfDay = TimeProvider.now;
 
-    final countExpr = _db.actionsTable.id.count();
+    final query = _db.select(_db.habitLogsTable).join([
+      innerJoin(_db.habitsTable, _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId)),
+    ])
+      ..where(_db.habitLogsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
 
-    final query = _db.selectOnly(_db.actionsTable)
-      ..addColumns([_db.actionsTable.habitType, countExpr])
-      ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
-      ..groupBy([_db.actionsTable.habitType])
-      ..orderBy([OrderingTerm.desc(countExpr)])
-      ..limit(1);
-
-    final row = await query.getSingleOrNull();
-    return row?.read(_db.actionsTable.habitType);
+    final rows = await query.get();
+    final counts = <String, int>{};
+    for (final row in rows) {
+      final title = row.readTable(_db.habitsTable).title;
+      counts[title] = (counts[title] ?? 0) + 1;
+    }
+    if (counts.isEmpty) return null;
+    return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
 
   @override
   Future<void> updateSessionToControl({required String sessionId}) async {
     await (_db.update(_db.sessionsTable)
-          ..where((t) => t.id.equals(sessionId)))
+      ..where((t) => t.id.equals(sessionId)))
         .write(const SessionsTableCompanion(
-          phase: Value(1),
-          isReviewed: Value(true),
-        ));
+      phase: Value(1),
+      isReviewed: Value(true),
+    ));
   }
 
   @override
@@ -184,18 +189,16 @@ class SessionRepositoryImpl implements SessionRepository {
       final startOfDay = DateTime(current.year, current.month, current.day, 0, 0, 0);
       final endOfDay = DateTime(current.year, current.month, current.day, 23, 59, 59, 999);
 
-      final sumExpr = _db.actionsTable.scoreValue.sum();
-      final query = _db.selectOnly(_db.actionsTable)
-        ..addColumns([_db.actionsTable.habitType, sumExpr])
-        ..where(_db.actionsTable.timestamp.isBetweenValues(startOfDay, endOfDay))
-        ..groupBy([_db.actionsTable.habitType]);
+      final query = _db.select(_db.habitLogsTable).join([
+        innerJoin(_db.habitsTable, _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId)),
+      ])
+        ..where(_db.habitLogsTable.timestamp.isBetweenValues(startOfDay, endOfDay));
 
       final rows = await query.get();
       final dayMap = <String, int>{};
       for (final row in rows) {
-        final habit = row.read(_db.actionsTable.habitType) ?? '';
-        final score = row.read(sumExpr) ?? 0;
-        if (habit.isNotEmpty) dayMap[habit] = score;
+        final habit = row.readTable(_db.habitsTable);
+        dayMap[habit.title] = (dayMap[habit.title] ?? 0) + habit.scoreValue;
       }
 
       results.add(dayMap);
@@ -213,7 +216,7 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<DayLog?> getDayLog(DateTime date) async {
     final dateStr = DayLogMapper.dateToString(date);
     final row = await (_db.select(_db.daysTable)
-          ..where((t) => t.date.equals(dateStr)))
+      ..where((t) => t.date.equals(dateStr)))
         .getSingleOrNull();
     return row == null ? null : DayLogMapper.fromDb(row);
   }
@@ -226,7 +229,7 @@ class SessionRepositoryImpl implements SessionRepository {
     final dateStr = DayLogMapper.dateToString(date);
 
     final existing = await (_db.select(_db.daysTable)
-          ..where((t) => t.date.equals(dateStr)))
+      ..where((t) => t.date.equals(dateStr)))
         .getSingleOrNull();
 
     if (existing != null) return DayLogMapper.fromDb(existing);
@@ -251,21 +254,34 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<void> markDayAsBroken(DateTime date) async {
     final dateStr = DayLogMapper.dateToString(date);
     await (_db.update(_db.daysTable)
-          ..where((t) => t.date.equals(dateStr)))
+      ..where((t) => t.date.equals(dateStr)))
         .write(const DaysTableCompanion(
-          isBrokenClicked: Value(true),
-        ));
+      isBrokenClicked: Value(true), // deprecated alias, синхронизирован для совместимости
+      dayStatus: Value('broken'),
+    ));
   }
 
   @override
   Future<void> markDayAsGoodBoy(DateTime date) async {
     final dateStr = DayLogMapper.dateToString(date);
-    await (_db.update(_db.daysTable)
-          ..where((t) => t.date.equals(dateStr)))
+
+    // Guard: 'broken' терминален — UPDATE не затронет строку, если день
+    // уже зафиксирован как сорванный. Предполагает, что строка для этой
+    // даты уже существует (вызывающая сторона должна предварительно
+    // позвать getOrCreateDayLog — см. ControlScreenNotifier.confirmGoodBoy).
+    final affectedRows = await (_db.update(_db.daysTable)
+      ..where((t) =>
+      t.date.equals(dateStr) & t.dayStatus.equals('broken').not()))
         .write(const DaysTableCompanion(
-          isGoodBoyClicked: Value(true),
-          dayStatus: Value('ideal'),
-        ));
+      isGoodBoyClicked: Value(true),
+      dayStatus: Value('ideal'),
+    ));
+
+    if (affectedRows == 0) {
+      throw StateError(
+        "markDayAsGoodBoy отклонён: день $dateStr уже зафиксирован как 'broken'.",
+      );
+    }
   }
 
   @override
@@ -274,43 +290,51 @@ class SessionRepositoryImpl implements SessionRepository {
     required int scoreCost,
     required DateTime timestamp,
   }) async {
-    await _db.transaction(() async {
-      await _db.into(_db.actionsTable).insert(
-            ActionsTableCompanion.insert(
-              habitType: habitId,
-              scoreValue: scoreCost,
-              timestamp: timestamp,
-            ),
-          );
+    final dateStr = DayLogMapper.dateToString(timestamp);
 
-      final dateStr = DayLogMapper.dateToString(timestamp);
-      final dayRow = await (_db.select(_db.daysTable)
-            ..where((t) => t.date.equals(dateStr)))
+
+    await _db.transaction(() async {
+      final session = await (_db.select(_db.sessionsTable)
+        ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+        ..limit(1))
           .getSingleOrNull();
+      if (session == null) {
+        throw StateError('Нет активной сессии для записи действия');
+      }
+
+      final dayRow = await (_db.select(_db.daysTable)
+        ..where((t) => t.date.equals(dateStr)))
+          .getSingleOrNull();
+
+      if (dayRow != null && dayRow.dayStatus == 'broken') {
+        throw StateError(
+          "logHabitClickWithStatusCheck отклонён: день $dateStr уже зафиксирован как 'broken'.",
+        );
+      }
+
+      await _db.into(_db.habitLogsTable).insert(
+        HabitLogsTableCompanion.insert(
+          habitId: int.parse(habitId),
+          sessionId: session.id,
+          timestamp: timestamp,
+        ),
+      );
 
       if (dayRow != null && dayRow.dayStatus == 'ideal') {
         await (_db.update(_db.daysTable)
-              ..where((t) => t.date.equals(dateStr)))
+          ..where((t) => t.date.equals(dateStr)))
             .write(const DaysTableCompanion(
-              dayStatus: Value('almost_ideal'),
-            ));
+          dayStatus: Value('almost_ideal'),
+        ));
       }
 
-      // Гарантируем существование записи дня — иначе watchDayLog
-      // не получит значение если запись ещё не была создана.
       if (dayRow == null) {
-        final session = await (_db.select(_db.sessionsTable)
-              ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-              ..limit(1))
-            .getSingleOrNull();
-        if (session != null) {
-          await _db.into(_db.daysTable).insert(
-                DaysTableCompanion.insert(
-                  date: dateStr,
-                  sessionId: session.id,
-                ),
-              );
-        }
+        await _db.into(_db.daysTable).insert(
+          DaysTableCompanion.insert(
+            date: dateStr,
+            sessionId: session.id,
+          ),
+        );
       }
     });
   }
@@ -323,7 +347,7 @@ class SessionRepositoryImpl implements SessionRepository {
   Stream<Session?> watchActiveSession() {
     return _db.watchActiveSession().map(
           (row) => row == null ? null : _sessionFromRow(row),
-        );
+    );
   }
 
   @override
@@ -331,7 +355,7 @@ class SessionRepositoryImpl implements SessionRepository {
     final dateStr = DayLogMapper.dateToString(date);
     return _db.watchDayLog(dateStr).map(
           (row) => row == null ? null : DayLogMapper.fromDb(row),
-        );
+    );
   }
 
   @override

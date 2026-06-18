@@ -5,20 +5,16 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:dopamine_budget/features/habits/data/tables/habits_table.dart';
+import 'package:dopamine_budget/features/actions/data/tables/habit_logs_table.dart';
 import 'package:dopamine_budget/features/sessions/data/tables/sessions_table.dart';
 import 'package:dopamine_budget/features/sessions/data/tables/days_table.dart';
 
 part 'app_database.g.dart';
 
-class ActionsTable extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  TextColumn get habitType => text()();
-  IntColumn get scoreValue => integer()();
-  DateTimeColumn get timestamp => dateTime()();
-}
+
 
 @DriftDatabase(tables: [
-  ActionsTable,
+  HabitLogsTable, // было ActionsTable
   HabitsTable,
   SessionsTable,
   SessionHabitsTable,
@@ -34,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration {
@@ -83,6 +79,7 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteHabit(int habitId) async {
     await (delete(sessionHabitsTable)..where((t) => t.habitId.equals(habitId))).go();
+    await (delete(habitLogsTable)..where((t) => t.habitId.equals(habitId))).go();
     await (delete(habitsTable)..where((t) => t.id.equals(habitId))).go();
   }
 
@@ -98,6 +95,14 @@ class AppDatabase extends _$AppDatabase {
           ..limit(1))
         .watch()
         .map((rows) => rows.isEmpty ? null : rows.first);
+  }
+
+  Future<String?> getActiveSessionId() async {
+    final query = select(sessionsTable)
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+      ..limit(1);
+    final row = await query.getSingleOrNull();
+    return row?.id;
   }
 
   Stream<List<HabitsTableData>> watchHabits() {
@@ -126,12 +131,20 @@ class AppDatabase extends _$AppDatabase {
   /// Суммирует scoreValue за [start, endExclusive).
   /// Использует watch() на всей таблице + map для надёжного триггера
   /// при каждом INSERT — selectOnly+watchSingle не всегда реагирует на вставки.
+  // ЗАМЕНИТЬ метод целиком:
   Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive) {
     final end = endExclusive.subtract(const Duration(microseconds: 1));
-    return (select(actionsTable)
-          ..where((t) => t.timestamp.isBetweenValues(start, end)))
-        .watch()
-        .map((rows) => rows.fold(0, (sum, row) => sum + row.scoreValue));
+    final query = select(habitLogsTable).join([
+      innerJoin(habitsTable, habitsTable.id.equalsExp(habitLogsTable.habitId)),
+    ])
+      ..where(habitLogsTable.timestamp.isBetweenValues(start, end));
+
+    return query.watch().map(
+          (rows) => rows.fold<int>(
+        0,
+            (sum, row) => sum + row.readTable(habitsTable).scoreValue,
+      ),
+    );
   }
 }
 

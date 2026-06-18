@@ -1,5 +1,3 @@
-// control_screen_notifier.dart — ПОЛНАЯ ЗАМЕНА ФАЙЛА
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
@@ -19,6 +17,13 @@ class ControlScreenState {
   final List<int> selectedIds;
   final bool isLoading;
 
+  /// 'regular' | 'ideal' | 'almost_ideal' | 'broken'
+  final String dayStatus;
+
+  /// true, если сегодня уже был хотя бы один клик по привычке
+  /// (производная от потраченного баланса, см. ControlScreenNotifier._spentToday).
+  final bool hasHabitClickToday;
+
   const ControlScreenState({
     required this.status,
     required this.balance,
@@ -26,6 +31,8 @@ class ControlScreenState {
     required this.habits,
     required this.selectedIds,
     required this.isLoading,
+    required this.dayStatus,
+    required this.hasHabitClickToday,
   });
 
   factory ControlScreenState.initial() => const ControlScreenState(
@@ -35,6 +42,8 @@ class ControlScreenState {
     habits: [],
     selectedIds: [],
     isLoading: true,
+    dayStatus: 'regular',
+    hasHabitClickToday: false,
   );
 
   ControlScreenState copyWith({
@@ -44,6 +53,8 @@ class ControlScreenState {
     List<Habit>? habits,
     List<int>? selectedIds,
     bool? isLoading,
+    String? dayStatus,
+    bool? hasHabitClickToday,
   }) {
     return ControlScreenState(
       status: status ?? this.status,
@@ -52,12 +63,23 @@ class ControlScreenState {
       habits: habits ?? this.habits,
       selectedIds: selectedIds ?? this.selectedIds,
       isLoading: isLoading ?? this.isLoading,
+      dayStatus: dayStatus ?? this.dayStatus,
+      hasHabitClickToday: hasHabitClickToday ?? this.hasHabitClickToday,
     );
   }
 
   List<Habit> get sessionHabits => habits
       .where((h) => selectedIds.contains(int.tryParse(h.id)))
       .toList();
+
+  /// Кнопка «Я сегодня молодец» показывается, если:
+  /// 1. день ещё ничем не помечен (dayStatus == 'regular'),
+  /// 2. сегодня не было ни одного клика по привычке,
+  /// 3. текущее время >= 20:00 (TimeProvider.now, не системные часы).
+  bool get canShowGoodBoyButton =>
+      dayStatus == 'regular' &&
+          !hasHabitClickToday &&
+          TimeProvider.now.hour >= 20;
 }
 
 class ControlScreenNotifier extends ChangeNotifier {
@@ -66,6 +88,13 @@ class ControlScreenNotifier extends ChangeNotifier {
 
   ControlScreenState _state = ControlScreenState.initial();
   ControlScreenState get state => _state;
+
+  // One-shot события для UI (SnackBar и т.п.) — отдельно от _state,
+  // чтобы сообщение не "всплывало" повторно при каждом ребилде виджета,
+  // подписанного на ChangeNotifier.
+  final StreamController<String> _errorEventsController =
+  StreamController<String>.broadcast();
+  Stream<String> get errorEvents => _errorEventsController.stream;
 
   Session? _session;
   DayLog? _dayLog;
@@ -129,7 +158,7 @@ class ControlScreenNotifier extends ChangeNotifier {
     _spentSub?.cancel();
 
     _dayLogSub = _sessionRepository.watchDayLog(today).listen((dayLog) {
-      debugPrint('[ControlScreen] watchDayLog emit: date=$today, isBroken=${dayLog?.isBrokenClicked}, dayLog=$dayLog');
+      debugPrint('[ControlScreen] watchDayLog emit: date=$today, dayStatus=${dayLog?.dayStatus}, dayLog=$dayLog');
       _dayLog = dayLog;
       _recompute();
     });
@@ -171,13 +200,15 @@ class ControlScreenNotifier extends ChangeNotifier {
   void checkAndResetDayIfNeeded() => checkForNewDay();
 
   void _recompute() {
-    final bool isBroken = _dayLog?.isBrokenClicked ?? false;
+    // Источник правды о срыве — dayStatus, а не legacy-поле isBrokenClicked.
+    final String dayStatus = _dayLog?.dayStatus ?? 'regular';
+    final bool isBroken = dayStatus == 'broken';
     final int dailyLimit = (_session?.dailyLimit ?? 0).toInt();
     final int balance = isBroken
         ? 0
         : (dailyLimit - _spentToday).clamp(0, dailyLimit > 0 ? dailyLimit : 0);
 
-    debugPrint('[ControlScreen] _recompute: phase=${_session?.phase}, dailyLimit=$dailyLimit, spent=$_spentToday, balance=$balance, broken=$isBroken');
+    debugPrint('[ControlScreen] _recompute: phase=${_session?.phase}, dailyLimit=$dailyLimit, spent=$_spentToday, balance=$balance, dayStatus=$dayStatus');
 
     _state = _state.copyWith(
       status: isBroken ? ControlScreenStatus.brokenLocked : ControlScreenStatus.active,
@@ -186,6 +217,8 @@ class ControlScreenNotifier extends ChangeNotifier {
       habits: _habits,
       selectedIds: _selectedIds,
       isLoading: false,
+      dayStatus: dayStatus,
+      hasHabitClickToday: _spentToday > 0,
     );
     notifyListeners();
   }
@@ -197,6 +230,7 @@ class ControlScreenNotifier extends ChangeNotifier {
     _habitsSub?.cancel();
     _selectedIdsSub?.cancel();
     _spentSub?.cancel();
+    _errorEventsController.close();
     super.dispose();
   }
 
@@ -209,6 +243,7 @@ class ControlScreenNotifier extends ChangeNotifier {
       await _sessionRepository.markDayAsBroken(today);
     } catch (e) {
       debugPrint('[ControlScreen] Ошибка confirmBreak: $e');
+      _errorEventsController.add('Не удалось зафиксировать срыв. Попробуйте ещё раз.');
     }
   }
 
@@ -219,8 +254,12 @@ class ControlScreenNotifier extends ChangeNotifier {
     try {
       await _sessionRepository.getOrCreateDayLog(date: today, sessionId: session.id);
       await _sessionRepository.markDayAsGoodBoy(today);
+    } on StateError catch (e) {
+      debugPrint('[ControlScreen] confirmGoodBoy отклонён: $e');
+      _errorEventsController.add('День уже зафиксирован как срыв — отметка недоступна.');
     } catch (e) {
       debugPrint('[ControlScreen] Ошибка confirmGoodBoy: $e');
+      _errorEventsController.add('Не удалось сохранить отметку. Попробуйте ещё раз.');
     }
   }
 
@@ -237,8 +276,12 @@ class ControlScreenNotifier extends ChangeNotifier {
         scoreCost: scoreCost,
         timestamp: TimeProvider.now,
       );
+    } on StateError catch (e) {
+      debugPrint('[ControlScreen] logHabitClick отклонён: $e');
+      _errorEventsController.add('День уже зафиксирован как срыв — клики недоступны.');
     } catch (e) {
       debugPrint('[ControlScreen] Ошибка logHabitClick: $e');
+      _errorEventsController.add('Не удалось записать действие. Попробуйте ещё раз.');
     }
   }
 }
