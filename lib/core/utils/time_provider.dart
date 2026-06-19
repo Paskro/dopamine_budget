@@ -17,7 +17,7 @@ class TimeProvider {
 
   static void addDay() => addDuration(const Duration(days: 1));
 
-  static void addSixHours() => addDuration(const Duration(hours: 6));
+  static void addSixHours() => addDuration(const Duration(hours: 4));
 
   static void addDuration(Duration duration) {
     if (!kDebugMode) return;

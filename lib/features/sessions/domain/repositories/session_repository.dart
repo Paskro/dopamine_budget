@@ -9,6 +9,10 @@ abstract class SessionRepository {
   Future<List<Session>> getSessionsByDay(DateTime date);
   Future<Session?> getActiveSession();
   Future<void> updateSessionToControl({required String sessionId});
+  Future<List<DayLog>> getCompletedControlDays(String sessionId);
+  Future<bool> hasHabitClicksForDate(DateTime date);
+  Future<Map<DateTime, int>> getScoresPerDateRange(
+      DateTime from, DateTime to);
 
   Future<int> getTotalScoreSpentByDay(DateTime date);
   Future<void> recordActionLog({

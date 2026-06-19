@@ -364,6 +364,17 @@ class $SessionsTableTable extends SessionsTable
     requiredDuringInsert: false,
     defaultValue: const Constant(3),
   );
+  static const VerificationMeta _lastReviewedControlWeekMeta =
+      const VerificationMeta('lastReviewedControlWeek');
+  @override
+  late final GeneratedColumn<int> lastReviewedControlWeek =
+      GeneratedColumn<int>(
+        'last_reviewed_control_week',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _controlStartedAtMeta = const VerificationMeta(
     'controlStartedAt',
   );
@@ -387,6 +398,7 @@ class $SessionsTableTable extends SessionsTable
     decreasePercentage,
     decreaseInterval,
     calibrationDays,
+    lastReviewedControlWeek,
     controlStartedAt,
   ];
   @override
@@ -470,6 +482,15 @@ class $SessionsTableTable extends SessionsTable
         ),
       );
     }
+    if (data.containsKey('last_reviewed_control_week')) {
+      context.handle(
+        _lastReviewedControlWeekMeta,
+        lastReviewedControlWeek.isAcceptableOrUnknown(
+          data['last_reviewed_control_week']!,
+          _lastReviewedControlWeekMeta,
+        ),
+      );
+    }
     if (data.containsKey('control_started_at')) {
       context.handle(
         _controlStartedAtMeta,
@@ -524,6 +545,10 @@ class $SessionsTableTable extends SessionsTable
         DriftSqlType.int,
         data['${effectivePrefix}calibration_days'],
       )!,
+      lastReviewedControlWeek: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_reviewed_control_week'],
+      ),
       controlStartedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}control_started_at'],
@@ -548,6 +573,7 @@ class SessionsTableData extends DataClass
   final double? decreasePercentage;
   final String? decreaseInterval;
   final int calibrationDays;
+  final int? lastReviewedControlWeek;
   final DateTime? controlStartedAt;
   const SessionsTableData({
     required this.id,
@@ -559,6 +585,7 @@ class SessionsTableData extends DataClass
     this.decreasePercentage,
     this.decreaseInterval,
     required this.calibrationDays,
+    this.lastReviewedControlWeek,
     this.controlStartedAt,
   });
   @override
@@ -579,6 +606,11 @@ class SessionsTableData extends DataClass
       map['decrease_interval'] = Variable<String>(decreaseInterval);
     }
     map['calibration_days'] = Variable<int>(calibrationDays);
+    if (!nullToAbsent || lastReviewedControlWeek != null) {
+      map['last_reviewed_control_week'] = Variable<int>(
+        lastReviewedControlWeek,
+      );
+    }
     if (!nullToAbsent || controlStartedAt != null) {
       map['control_started_at'] = Variable<DateTime>(controlStartedAt);
     }
@@ -602,6 +634,9 @@ class SessionsTableData extends DataClass
           ? const Value.absent()
           : Value(decreaseInterval),
       calibrationDays: Value(calibrationDays),
+      lastReviewedControlWeek: lastReviewedControlWeek == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastReviewedControlWeek),
       controlStartedAt: controlStartedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(controlStartedAt),
@@ -625,6 +660,9 @@ class SessionsTableData extends DataClass
       ),
       decreaseInterval: serializer.fromJson<String?>(json['decreaseInterval']),
       calibrationDays: serializer.fromJson<int>(json['calibrationDays']),
+      lastReviewedControlWeek: serializer.fromJson<int?>(
+        json['lastReviewedControlWeek'],
+      ),
       controlStartedAt: serializer.fromJson<DateTime?>(
         json['controlStartedAt'],
       ),
@@ -643,6 +681,9 @@ class SessionsTableData extends DataClass
       'decreasePercentage': serializer.toJson<double?>(decreasePercentage),
       'decreaseInterval': serializer.toJson<String?>(decreaseInterval),
       'calibrationDays': serializer.toJson<int>(calibrationDays),
+      'lastReviewedControlWeek': serializer.toJson<int?>(
+        lastReviewedControlWeek,
+      ),
       'controlStartedAt': serializer.toJson<DateTime?>(controlStartedAt),
     };
   }
@@ -657,6 +698,7 @@ class SessionsTableData extends DataClass
     Value<double?> decreasePercentage = const Value.absent(),
     Value<String?> decreaseInterval = const Value.absent(),
     int? calibrationDays,
+    Value<int?> lastReviewedControlWeek = const Value.absent(),
     Value<DateTime?> controlStartedAt = const Value.absent(),
   }) => SessionsTableData(
     id: id ?? this.id,
@@ -672,6 +714,9 @@ class SessionsTableData extends DataClass
         ? decreaseInterval.value
         : this.decreaseInterval,
     calibrationDays: calibrationDays ?? this.calibrationDays,
+    lastReviewedControlWeek: lastReviewedControlWeek.present
+        ? lastReviewedControlWeek.value
+        : this.lastReviewedControlWeek,
     controlStartedAt: controlStartedAt.present
         ? controlStartedAt.value
         : this.controlStartedAt,
@@ -697,6 +742,9 @@ class SessionsTableData extends DataClass
       calibrationDays: data.calibrationDays.present
           ? data.calibrationDays.value
           : this.calibrationDays,
+      lastReviewedControlWeek: data.lastReviewedControlWeek.present
+          ? data.lastReviewedControlWeek.value
+          : this.lastReviewedControlWeek,
       controlStartedAt: data.controlStartedAt.present
           ? data.controlStartedAt.value
           : this.controlStartedAt,
@@ -715,6 +763,7 @@ class SessionsTableData extends DataClass
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseInterval: $decreaseInterval, ')
           ..write('calibrationDays: $calibrationDays, ')
+          ..write('lastReviewedControlWeek: $lastReviewedControlWeek, ')
           ..write('controlStartedAt: $controlStartedAt')
           ..write(')'))
         .toString();
@@ -731,6 +780,7 @@ class SessionsTableData extends DataClass
     decreasePercentage,
     decreaseInterval,
     calibrationDays,
+    lastReviewedControlWeek,
     controlStartedAt,
   );
   @override
@@ -746,6 +796,7 @@ class SessionsTableData extends DataClass
           other.decreasePercentage == this.decreasePercentage &&
           other.decreaseInterval == this.decreaseInterval &&
           other.calibrationDays == this.calibrationDays &&
+          other.lastReviewedControlWeek == this.lastReviewedControlWeek &&
           other.controlStartedAt == this.controlStartedAt);
 }
 
@@ -759,6 +810,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
   final Value<double?> decreasePercentage;
   final Value<String?> decreaseInterval;
   final Value<int> calibrationDays;
+  final Value<int?> lastReviewedControlWeek;
   final Value<DateTime?> controlStartedAt;
   final Value<int> rowid;
   const SessionsTableCompanion({
@@ -771,6 +823,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.decreasePercentage = const Value.absent(),
     this.decreaseInterval = const Value.absent(),
     this.calibrationDays = const Value.absent(),
+    this.lastReviewedControlWeek = const Value.absent(),
     this.controlStartedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -784,6 +837,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.decreasePercentage = const Value.absent(),
     this.decreaseInterval = const Value.absent(),
     this.calibrationDays = const Value.absent(),
+    this.lastReviewedControlWeek = const Value.absent(),
     this.controlStartedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -799,6 +853,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Expression<double>? decreasePercentage,
     Expression<String>? decreaseInterval,
     Expression<int>? calibrationDays,
+    Expression<int>? lastReviewedControlWeek,
     Expression<DateTime>? controlStartedAt,
     Expression<int>? rowid,
   }) {
@@ -812,6 +867,8 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       if (decreasePercentage != null) 'decrease_percentage': decreasePercentage,
       if (decreaseInterval != null) 'decrease_interval': decreaseInterval,
       if (calibrationDays != null) 'calibration_days': calibrationDays,
+      if (lastReviewedControlWeek != null)
+        'last_reviewed_control_week': lastReviewedControlWeek,
       if (controlStartedAt != null) 'control_started_at': controlStartedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -827,6 +884,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Value<double?>? decreasePercentage,
     Value<String?>? decreaseInterval,
     Value<int>? calibrationDays,
+    Value<int?>? lastReviewedControlWeek,
     Value<DateTime?>? controlStartedAt,
     Value<int>? rowid,
   }) {
@@ -840,6 +898,8 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseInterval: decreaseInterval ?? this.decreaseInterval,
       calibrationDays: calibrationDays ?? this.calibrationDays,
+      lastReviewedControlWeek:
+          lastReviewedControlWeek ?? this.lastReviewedControlWeek,
       controlStartedAt: controlStartedAt ?? this.controlStartedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -875,6 +935,11 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     if (calibrationDays.present) {
       map['calibration_days'] = Variable<int>(calibrationDays.value);
     }
+    if (lastReviewedControlWeek.present) {
+      map['last_reviewed_control_week'] = Variable<int>(
+        lastReviewedControlWeek.value,
+      );
+    }
     if (controlStartedAt.present) {
       map['control_started_at'] = Variable<DateTime>(controlStartedAt.value);
     }
@@ -896,6 +961,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseInterval: $decreaseInterval, ')
           ..write('calibrationDays: $calibrationDays, ')
+          ..write('lastReviewedControlWeek: $lastReviewedControlWeek, ')
           ..write('controlStartedAt: $controlStartedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2179,6 +2245,7 @@ typedef $$SessionsTableTableCreateCompanionBuilder =
       Value<double?> decreasePercentage,
       Value<String?> decreaseInterval,
       Value<int> calibrationDays,
+      Value<int?> lastReviewedControlWeek,
       Value<DateTime?> controlStartedAt,
       Value<int> rowid,
     });
@@ -2193,6 +2260,7 @@ typedef $$SessionsTableTableUpdateCompanionBuilder =
       Value<double?> decreasePercentage,
       Value<String?> decreaseInterval,
       Value<int> calibrationDays,
+      Value<int?> lastReviewedControlWeek,
       Value<DateTime?> controlStartedAt,
       Value<int> rowid,
     });
@@ -2282,6 +2350,11 @@ class $$SessionsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get lastReviewedControlWeek => $composableBuilder(
+    column: $table.lastReviewedControlWeek,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get controlStartedAt => $composableBuilder(
     column: $table.controlStartedAt,
     builder: (column) => ColumnFilters(column),
@@ -2367,6 +2440,11 @@ class $$SessionsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get lastReviewedControlWeek => $composableBuilder(
+    column: $table.lastReviewedControlWeek,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get controlStartedAt => $composableBuilder(
     column: $table.controlStartedAt,
     builder: (column) => ColumnOrderings(column),
@@ -2416,6 +2494,11 @@ class $$SessionsTableTableAnnotationComposer
 
   GeneratedColumn<int> get calibrationDays => $composableBuilder(
     column: $table.calibrationDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastReviewedControlWeek => $composableBuilder(
+    column: $table.lastReviewedControlWeek,
     builder: (column) => column,
   );
 
@@ -2487,6 +2570,7 @@ class $$SessionsTableTableTableManager
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<String?> decreaseInterval = const Value.absent(),
                 Value<int> calibrationDays = const Value.absent(),
+                Value<int?> lastReviewedControlWeek = const Value.absent(),
                 Value<DateTime?> controlStartedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion(
@@ -2499,6 +2583,7 @@ class $$SessionsTableTableTableManager
                 decreasePercentage: decreasePercentage,
                 decreaseInterval: decreaseInterval,
                 calibrationDays: calibrationDays,
+                lastReviewedControlWeek: lastReviewedControlWeek,
                 controlStartedAt: controlStartedAt,
                 rowid: rowid,
               ),
@@ -2513,6 +2598,7 @@ class $$SessionsTableTableTableManager
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<String?> decreaseInterval = const Value.absent(),
                 Value<int> calibrationDays = const Value.absent(),
+                Value<int?> lastReviewedControlWeek = const Value.absent(),
                 Value<DateTime?> controlStartedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion.insert(
@@ -2525,6 +2611,7 @@ class $$SessionsTableTableTableManager
                 decreasePercentage: decreasePercentage,
                 decreaseInterval: decreaseInterval,
                 calibrationDays: calibrationDays,
+                lastReviewedControlWeek: lastReviewedControlWeek,
                 controlStartedAt: controlStartedAt,
                 rowid: rowid,
               ),

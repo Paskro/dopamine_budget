@@ -45,6 +45,7 @@ class SessionRepositoryImpl implements SessionRepository {
         isReviewed: Value(session.isReviewed),
         calibrationDays: Value(session.calibrationDays),
         controlStartedAt: Value(session.controlStartedAt),
+        lastReviewedControlWeek: Value(session.lastReviewedControlWeek),
       );
       await (_db.update(_db.sessionsTable)
         ..where((t) => t.id.equals(session.id)))
@@ -63,6 +64,61 @@ class SessionRepositoryImpl implements SessionRepository {
       ..limit(1))
         .getSingleOrNull();
     return row == null ? null : _sessionFromRow(row);
+  }
+
+  @override
+  Future<List<DayLog>> getCompletedControlDays(String sessionId) async {
+    final session = await getActiveSession();
+    if (session?.controlStartedAt == null) return [];
+
+    final today = DateTime(
+      TimeProvider.now.year,
+      TimeProvider.now.month,
+      TimeProvider.now.day,
+    );
+
+    final controlStartStr = DayLogMapper.dateToString(session!.controlStartedAt!);
+
+    final rows = await (_db.select(_db.daysTable)
+      ..where((t) =>
+      t.sessionId.equals(sessionId) &
+      t.date.isBiggerOrEqualValue(controlStartStr))
+      ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+        .get();
+
+    return rows
+        .map(DayLogMapper.fromDb)
+        .where((d) => d.date.isBefore(today))
+        .toList();
+  }
+
+  @override
+  Future<Map<DateTime, int>> getScoresPerDateRange(
+      DateTime from, DateTime to) async {
+    final result = <DateTime, int>{};
+    var current = DateTime(from.year, from.month, from.day);
+    final end = DateTime(to.year, to.month, to.day);
+
+    while (!current.isAfter(end)) {
+      final score = await getTotalScoreSpentByDay(current);
+      result[current] = score;
+      current = current.add(const Duration(days: 1));
+    }
+
+    return result;
+  }
+
+  @override
+  Future<bool> hasHabitClicksForDate(DateTime date) async {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+    final query = _db.select(_db.habitLogsTable)
+      ..where((t) => t.timestamp.isBetweenValues(start, end))
+      ..limit(1);
+
+    final row = await query.getSingleOrNull();
+    return row != null;
   }
 
 
@@ -93,6 +149,7 @@ class SessionRepositoryImpl implements SessionRepository {
       isReviewed: Value(session.isReviewed),
       calibrationDays: Value(session.calibrationDays),
       controlStartedAt: Value(session.controlStartedAt),
+      lastReviewedControlWeek: Value(session.lastReviewedControlWeek),
     );
 
     await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
@@ -379,6 +436,7 @@ class SessionRepositoryImpl implements SessionRepository {
       isReviewed: row.isReviewed,
       calibrationDays: row.calibrationDays,
       controlStartedAt: row.controlStartedAt,
+      lastReviewedControlWeek: row.lastReviewedControlWeek,
     );
   }
 }

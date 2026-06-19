@@ -75,4 +75,8 @@ class SessionsNotifier extends ChangeNotifier {
     );
     // Аналогично — стрим подхватит новую сессию сам.
   }
+
+  Future<void> updateSession(Session session) async {
+    await _sessionRepository.updateSession(session);
+  }
 }

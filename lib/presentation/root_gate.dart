@@ -8,6 +8,8 @@ import 'package:dopamine_budget/features/scoring/presentation/pages/home_page.da
 import 'package:dopamine_budget/features/sessions/presentation/pages/control_screen.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
 import 'package:dopamine_budget/core/debug/developer_overlay.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/weekly_report_page.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -15,6 +17,7 @@ class RootGate extends StatefulWidget {
   final HabitsNotifier habitsNotifier;
   final ScoringNotifier scoringNotifier;
   final ControlScreenNotifier controlScreenNotifier;
+  final CheckAndGenerateWeeklyReportUseCase weeklyReportUseCase;
 
   const RootGate({
     super.key,
@@ -23,6 +26,7 @@ class RootGate extends StatefulWidget {
     required this.habitsNotifier,
     required this.scoringNotifier,
     required this.controlScreenNotifier,
+    required this.weeklyReportUseCase,
   });
 
   @override
@@ -30,6 +34,7 @@ class RootGate extends StatefulWidget {
 }
 
 class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
+  WeeklyReportData? _pendingWeeklyReport;
 
   @override
   void initState() {
@@ -43,13 +48,34 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  // При возврате приложения на передний план — проверяем смену суток.
-  // ControlScreenNotifier переподпишется на новый день автоматически.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       widget.controlScreenNotifier.checkForNewDay();
+      _checkWeeklyReport();
     }
+  }
+
+  Future<void> _checkWeeklyReport() async {
+    final session = widget.sessionsNotifier.state.currentSession;
+    if (session == null || session.phase != 1) return;
+
+    final report = await widget.weeklyReportUseCase.execute(session);
+    if (report != null && mounted) {
+      setState(() => _pendingWeeklyReport = report);
+    }
+  }
+
+  Future<void> _markWeeklyReportReviewed() async {
+    final report = _pendingWeeklyReport;
+    final session = widget.sessionsNotifier.state.currentSession;
+    if (report == null || session == null) return;
+
+    final updated = session.copyWith(
+      lastReviewedControlWeek: report.weekNumber,
+    );
+    await widget.sessionsNotifier.updateSession(updated);
+    if (mounted) setState(() => _pendingWeeklyReport = null);
   }
 
   @override
@@ -81,13 +107,25 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
           );
         } else {
           final session = state.currentSession!;
-          // ControlScreen только если фаза==1 И итоги просмотрены.
-          content = (session.phase == 1 && session.isReviewed)
-              ? ControlScreen(controlNotifier: widget.controlScreenNotifier)
-              : HomePage(
-            scoringNotifier: widget.scoringNotifier,
-            habitsNotifier: widget.habitsNotifier,
-          );
+
+          if (session.phase == 1 && session.isReviewed) {
+            // Проверяем при первом построении ControlScreen
+            if (_pendingWeeklyReport == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => _checkWeeklyReport());
+            }
+
+            content = _pendingWeeklyReport != null
+                ? WeeklyReportPage(
+              reportData: _pendingWeeklyReport!,
+              onContinue: _markWeeklyReportReviewed,
+            )
+                : ControlScreen(controlNotifier: widget.controlScreenNotifier);
+          } else {
+            content = HomePage(
+              scoringNotifier: widget.scoringNotifier,
+              habitsNotifier: widget.habitsNotifier,
+            );
+          }
         }
 
         return Stack(
@@ -97,6 +135,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
               onTimeShifted: () async {
                 await widget.scoringNotifier.checkAndResetDayIfNeeded();
                 widget.controlScreenNotifier.checkAndResetDayIfNeeded();
+                await _checkWeeklyReport();
               },
             ),
           ],

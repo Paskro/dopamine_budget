@@ -10,6 +10,7 @@ class SessionsTable extends Table {
   RealColumn get decreasePercentage => real().nullable()();
   TextColumn get decreaseInterval => text().nullable()();
   IntColumn get calibrationDays => integer().withDefault(const Constant(3))();
+  IntColumn get lastReviewedControlWeek => integer().nullable()();
 
   // Момент перехода в фазу контроля. null пока сессия в калибровке.
   // Используется для фильтрации ActionsTable — считаем только клики

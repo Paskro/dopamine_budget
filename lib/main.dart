@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 
 import 'package:dopamine_budget/features/sessions/data/repositories/session_repository_impl.dart';
@@ -13,6 +14,7 @@ import 'package:dopamine_budget/features/scoring/presentation/state/scoring_noti
 import 'package:dopamine_budget/features/scoring/domain/usecases/calculate_score_usecase.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_current_dopamine_balance_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
 
 import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
 import 'package:dopamine_budget/features/habits/data/repositories/habit_repository_impl.dart';
@@ -23,6 +25,7 @@ import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('ru', null);
   await TimeProvider.restore();
 
   final database = AppDatabase.instance;
@@ -48,6 +51,10 @@ void main() async {
   final getDopamineBalanceUseCase = GetCurrentDopamineBalanceUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
+  );
+
+  final weeklyReportUseCase = CheckAndGenerateWeeklyReportUseCase(
+    sessionRepository: sessionRepository,
   );
 
   // Use Cases — привычки
@@ -88,6 +95,7 @@ void main() async {
     habitsNotifier: habitsNotifier,
     scoringNotifier: scoringNotifier,
     controlScreenNotifier: controlScreenNotifier,
+    weeklyReportUseCase: weeklyReportUseCase,
   ));
 }
 
@@ -97,6 +105,7 @@ class MyApp extends StatelessWidget {
   final HabitsNotifier habitsNotifier;
   final ScoringNotifier scoringNotifier;
   final ControlScreenNotifier controlScreenNotifier;
+  final CheckAndGenerateWeeklyReportUseCase weeklyReportUseCase;
 
   const MyApp({
     super.key,
@@ -105,6 +114,7 @@ class MyApp extends StatelessWidget {
     required this.habitsNotifier,
     required this.scoringNotifier,
     required this.controlScreenNotifier,
+    required this.weeklyReportUseCase,
   });
 
   @override
@@ -119,6 +129,7 @@ class MyApp extends StatelessWidget {
         habitsNotifier: habitsNotifier,
         scoringNotifier: scoringNotifier,
         controlScreenNotifier: controlScreenNotifier,
+        weeklyReportUseCase: weeklyReportUseCase,
       ),
     );
   }

@@ -13,6 +13,7 @@ class Session {
 
   /// Момент перехода в фазу контроля. null пока в калибровке.
   final DateTime? controlStartedAt;
+  final int? lastReviewedControlWeek;
 
   const Session({
     required this.id,
@@ -25,6 +26,7 @@ class Session {
     this.isReviewed = false,
     this.calibrationDays = 3,
     this.controlStartedAt,
+    this.lastReviewedControlWeek,
   });
 
   Session copyWith({
@@ -38,6 +40,7 @@ class Session {
     bool? isReviewed,
     int? calibrationDays,
     DateTime? controlStartedAt,
+    int? lastReviewedControlWeek,
   }) {
     return Session(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class Session {
       isReviewed: isReviewed ?? this.isReviewed,
       calibrationDays: calibrationDays ?? this.calibrationDays,
       controlStartedAt: controlStartedAt ?? this.controlStartedAt,
+      lastReviewedControlWeek: lastReviewedControlWeek ?? this.lastReviewedControlWeek,
     );
   }
 

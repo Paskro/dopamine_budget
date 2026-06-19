@@ -45,13 +45,13 @@ class DeveloperOverlay extends StatelessWidget {
                     ),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.schedule),
-                      label: const Text('+6ч'),
+                      label: const Text('+4ч'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade400,
                         foregroundColor: Colors.white,
                       ),
                       onPressed: () {
-                        TimeProvider.addDuration(const Duration(hours: 6));
+                        TimeProvider.addDuration(const Duration(hours: 4));
                         onTimeShifted();
                       },
                     ),

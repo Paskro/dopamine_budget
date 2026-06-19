@@ -30,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -48,6 +48,9 @@ class AppDatabase extends _$AppDatabase {
         if (from < 4) {
           // Добавляем колонку для фиксации момента старта фазы контроля
           await m.addColumn(sessionsTable, sessionsTable.controlStartedAt);
+        }
+        if (from < 7) {
+          await m.addColumn(sessionsTable, sessionsTable.lastReviewedControlWeek);
         }
       },
     );
