@@ -28,4 +28,9 @@ abstract class ScoringRepository {
 
   /// Обновляет фазу сессии на Контроль и фиксирует прочтение итогов
   Future<void> updateSessionToControl({required String sessionId});
+
+  /// Агрегация трат по привычкам за 7 дней [weekStart, weekStart+7)
+  Future<List<({int habitId, String habitName, int totalPts})>> getWeeklyHabitTotals({
+    required DateTime weekStart,
+  });
 }

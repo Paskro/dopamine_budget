@@ -121,4 +121,35 @@ class ScoringRepositoryImpl implements ScoringRepository {
         ),
       );
     }
+
+  @override
+  Future<List<({int habitId, String habitName, int totalPts})>> getWeeklyHabitTotals({
+    required DateTime weekStart,
+  }) async {
+    final weekEnd = weekStart.add(const Duration(days: 7));
+
+    final scoreExp = _db.habitsTable.scoreValue;
+    final nameExp = _db.habitsTable.title;
+    final idExp = _db.habitsTable.id;
+    final totalExp = scoreExp.total();
+
+    final query = _db.selectOnly(_db.habitLogsTable)
+      ..addColumns([idExp, nameExp, totalExp])
+      ..join([
+        innerJoin(
+          _db.habitsTable,
+          _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId),
+        ),
+      ])
+      ..where(_db.habitLogsTable.timestamp.isBetweenValues(weekStart, weekEnd))
+      ..groupBy([idExp]);
+
+    final rows = await query.get();
+
+    return rows.map((row) => (
+    habitId: row.read(idExp)!,
+    habitName: row.read(nameExp) ?? '',
+    totalPts: (row.read(totalExp) ?? 0.0).toInt(),
+    )).toList();
+  }
 }

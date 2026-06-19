@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/day_log.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
+import 'package:dopamine_budget/features/scoring/domain/entities/weekly_habits_report.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habits_report_usecase.dart';
+import 'package:dopamine_budget/features/scoring/presentation/pages/weekly_detail_bottom_sheet.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habits_report_usecase.dart';
+import 'package:dopamine_budget/features/scoring/presentation/pages/weekly_detail_bottom_sheet.dart';
 
 class WeeklyReportPage extends StatelessWidget {
   final WeeklyReportData reportData;
   final VoidCallback onContinue;
+  final GetWeeklyHabitsReportUseCase getWeeklyHabitsReportUseCase;
 
   const WeeklyReportPage({
     Key? key,
     required this.reportData,
     required this.onContinue,
+    required this.getWeeklyHabitsReportUseCase,
   }) : super(key: key);
 
   @override
@@ -25,6 +32,11 @@ class WeeklyReportPage extends StatelessWidget {
         (dailyLimit * reportData.session.decreasePercentage! / 100))
         .round()
         : null;
+    final weekStartNormalized = DateTime(
+      reportData.weekStart.year,
+      reportData.weekStart.month,
+      reportData.weekStart.day,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
@@ -40,6 +52,8 @@ class WeeklyReportPage extends StatelessWidget {
               _buildDayMatrix(),
               const SizedBox(height: 20),
               _buildMetrics(deviation),
+              const SizedBox(height: 20),
+              _buildDetailButton(context, weekStartNormalized),
               const SizedBox(height: 20),
               _buildBudgetBlock(isWeekly, dailyLimit, newLimit),
               const SizedBox(height: 32),
@@ -227,6 +241,29 @@ class WeeklyReportPage extends StatelessWidget {
           style: const TextStyle(fontSize: 13, color: Colors.white38),
         ),
       ],
+    );
+  }
+
+  Widget _buildDetailButton(BuildContext context, DateTime weekStart) {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFFEF9F27),
+        side: BorderSide(color: const Color(0xFFEF9F27).withOpacity(0.4)),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+      icon: const Icon(Icons.bar_chart_rounded, size: 18),
+      label: const Text('Подробнее по привычкам'),
+      onPressed: () => showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => WeeklyDetailBottomSheet(
+          session: reportData.session,
+          weekStart: weekStart,
+          getWeeklyHabitsReportUseCase: getWeeklyHabitsReportUseCase,
+        ),
+      ),
     );
   }
 

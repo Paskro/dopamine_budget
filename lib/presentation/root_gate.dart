@@ -10,6 +10,7 @@ import 'package:dopamine_budget/features/sessions/presentation/state/control_scr
 import 'package:dopamine_budget/core/debug/developer_overlay.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/weekly_report_page.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habits_report_usecase.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -18,6 +19,7 @@ class RootGate extends StatefulWidget {
   final ScoringNotifier scoringNotifier;
   final ControlScreenNotifier controlScreenNotifier;
   final CheckAndGenerateWeeklyReportUseCase weeklyReportUseCase;
+  final GetWeeklyHabitsReportUseCase getWeeklyHabitsReportUseCase;
 
   const RootGate({
     super.key,
@@ -27,6 +29,7 @@ class RootGate extends StatefulWidget {
     required this.scoringNotifier,
     required this.controlScreenNotifier,
     required this.weeklyReportUseCase,
+    required this.getWeeklyHabitsReportUseCase,
   });
 
   @override
@@ -118,6 +121,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
                 ? WeeklyReportPage(
               reportData: _pendingWeeklyReport!,
               onContinue: _markWeeklyReportReviewed,
+              getWeeklyHabitsReportUseCase: widget.getWeeklyHabitsReportUseCase,
             )
                 : ControlScreen(controlNotifier: widget.controlScreenNotifier);
           } else {

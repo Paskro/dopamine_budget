@@ -15,6 +15,7 @@ import 'package:dopamine_budget/features/scoring/domain/usecases/calculate_score
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_current_dopamine_balance_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habits_report_usecase.dart';
 
 import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
 import 'package:dopamine_budget/features/habits/data/repositories/habit_repository_impl.dart';
@@ -57,6 +58,8 @@ void main() async {
     sessionRepository: sessionRepository,
   );
 
+  final getWeeklyHabitsReportUseCase = GetWeeklyHabitsReportUseCase(scoringRepository);
+
   // Use Cases — привычки
   final addActionUseCase = AddActionUseCase(database);
 
@@ -96,6 +99,7 @@ void main() async {
     scoringNotifier: scoringNotifier,
     controlScreenNotifier: controlScreenNotifier,
     weeklyReportUseCase: weeklyReportUseCase,
+    getWeeklyHabitsReportUseCase: getWeeklyHabitsReportUseCase,
   ));
 }
 
@@ -106,6 +110,7 @@ class MyApp extends StatelessWidget {
   final ScoringNotifier scoringNotifier;
   final ControlScreenNotifier controlScreenNotifier;
   final CheckAndGenerateWeeklyReportUseCase weeklyReportUseCase;
+  final GetWeeklyHabitsReportUseCase getWeeklyHabitsReportUseCase;
 
   const MyApp({
     super.key,
@@ -115,6 +120,7 @@ class MyApp extends StatelessWidget {
     required this.scoringNotifier,
     required this.controlScreenNotifier,
     required this.weeklyReportUseCase,
+    required this.getWeeklyHabitsReportUseCase,
   });
 
   @override
@@ -130,6 +136,7 @@ class MyApp extends StatelessWidget {
         scoringNotifier: scoringNotifier,
         controlScreenNotifier: controlScreenNotifier,
         weeklyReportUseCase: weeklyReportUseCase,
+        getWeeklyHabitsReportUseCase: getWeeklyHabitsReportUseCase,
       ),
     );
   }
