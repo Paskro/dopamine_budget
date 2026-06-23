@@ -64,32 +64,26 @@ class ScoringRepositoryImpl implements ScoringRepository {
   // ВЫБОРКА УНИКАЛЬНЫХ КАЛЕНДАРНЫХ ДНЕЙ
   // ==========================================
   @override
-  Future<List<DateTime>> getUniqueRecordedDays() async {
+  Future<List<DateTime>> getUniqueRecordedDays({required String sessionId}) async {
     try {
-      // Используем функцию SQLite 'date', чтобы отсечь время (оставить YYYY-MM-DD)
-      final dateFunction = CustomExpression<String>(
-        "date(timestamp)"
-      );
+      final dateFunction = CustomExpression<String>("date(${_db.habitLogsTable.timestamp.name})");
 
-      // Строим запрос: берем только эту вычисляемую колонку дат
       final query = _db.selectOnly(_db.habitLogsTable)
         ..addColumns([dateFunction])
-        ..groupBy([dateFunction]); // Группируем, чтобы исключить дубли
+        ..where(_db.habitLogsTable.sessionId.equals(sessionId))
+        ..groupBy([dateFunction]);
 
       final rows = await query.get();
 
-      // Маппим строки обратно в объекты DateTime
       final List<DateTime> uniqueDays = rows.map((row) {
         final dateString = row.read(dateFunction);
         return DateTime.parse(dateString!);
       }).toList();
 
-      // Сортируем даты от старых к новым (для порядка)
       uniqueDays.sort((a, b) => a.compareTo(b));
       return uniqueDays;
-
     } catch (e) {
-      print('Ошибка при выборке уникальных дней в репозитории: $e');
+      print('Ошибка при выборке уникальных дней: $e');
       return [];
     }
   }
@@ -110,17 +104,23 @@ class ScoringRepositoryImpl implements ScoringRepository {
       return await getScoreForDay(date); // та же логика
     }
 
-    @override
-    Future<void> updateSessionToControl({required String sessionId}) async {
-      await (_db.update(_db.sessionsTable)
-            ..where((t) => t.id.equals(sessionId)))
-          .write(
-        SessionsTableCompanion(
-          phase: const Value(1),
-          isReviewed: const Value(false), // false = пользователь ещё не ознакомился → триггер показа CalibrationResultPage
-        ),
-      );
-    }
+  @override
+  Future<void> updateSessionToControl({required String sessionId}) async {
+    // Читаем текущую сессию чтобы получить avgScore
+    final row = await (_db.select(_db.sessionsTable)
+      ..where((t) => t.id.equals(sessionId)))
+        .getSingleOrNull();
+    if (row == null) return;
+
+    // avgScore уже записан VerifyCalibrationExpiryUseCase —
+    // здесь только переключаем isReviewed в true чтобы RootGate
+    // показал ControlScreen вместо CalibrationResultPage
+    await (_db.update(_db.sessionsTable)
+      ..where((t) => t.id.equals(sessionId)))
+        .write(const SessionsTableCompanion(
+      isReviewed: Value(true),
+    ));
+  }
 
   @override
   Future<List<({int habitId, String habitName, int totalPts})>> getWeeklyHabitTotals({

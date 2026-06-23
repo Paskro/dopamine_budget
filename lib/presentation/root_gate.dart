@@ -11,6 +11,9 @@ import 'package:dopamine_budget/core/debug/developer_overlay.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/weekly_report_page.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habits_report_usecase.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/archive_session_use_case.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
+import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -20,6 +23,9 @@ class RootGate extends StatefulWidget {
   final ControlScreenNotifier controlScreenNotifier;
   final CheckAndGenerateWeeklyReportUseCase weeklyReportUseCase;
   final GetWeeklyHabitsReportUseCase getWeeklyHabitsReportUseCase;
+  final ArchiveSessionUseCase archiveSessionUseCase;
+  final DeleteSessionUseCase deleteSessionUseCase;
+  final SessionRepository sessionRepository;
 
   const RootGate({
     super.key,
@@ -30,6 +36,9 @@ class RootGate extends StatefulWidget {
     required this.controlScreenNotifier,
     required this.weeklyReportUseCase,
     required this.getWeeklyHabitsReportUseCase,
+    required this.archiveSessionUseCase,
+    required this.deleteSessionUseCase,
+    required this.sessionRepository,
   });
 
   @override
@@ -96,6 +105,8 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
           );
         } else if (state.currentSession == null) {
           content = SessionOnboardingScreen(
+            sessionRepository: widget.sessionRepository,
+            deleteSessionUseCase: widget.deleteSessionUseCase,
             onStartCalibration: (days) {
               widget.sessionsNotifier.restartCalibration(durationDays: days);
             },
@@ -123,11 +134,22 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
               onContinue: _markWeeklyReportReviewed,
               getWeeklyHabitsReportUseCase: widget.getWeeklyHabitsReportUseCase,
             )
-                : ControlScreen(controlNotifier: widget.controlScreenNotifier);
+                : ControlScreen(
+              controlNotifier: widget.controlScreenNotifier,
+              session: session,
+              habitsNotifier: widget.habitsNotifier,
+              archiveSessionUseCase: widget.archiveSessionUseCase,
+              deleteSessionUseCase: widget.deleteSessionUseCase,
+              sessionRepository: widget.sessionRepository,
+            );
           } else {
             content = HomePage(
               scoringNotifier: widget.scoringNotifier,
               habitsNotifier: widget.habitsNotifier,
+              session: session,
+              archiveSessionUseCase: widget.archiveSessionUseCase,
+              deleteSessionUseCase: widget.deleteSessionUseCase,
+              sessionRepository: widget.sessionRepository,
             );
           }
         }

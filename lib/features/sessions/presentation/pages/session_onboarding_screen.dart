@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/profile_screen.dart';
 
 class SessionOnboardingScreen extends StatefulWidget {
+  final SessionRepository sessionRepository;
+  final DeleteSessionUseCase deleteSessionUseCase;
   final Function(int days) onStartCalibration;
   final Function({
     required double limit,
@@ -13,6 +18,8 @@ class SessionOnboardingScreen extends StatefulWidget {
     super.key,
     required this.onStartCalibration,
     required this.onStartControl,
+    required this.sessionRepository,
+    required this.deleteSessionUseCase,
   });
 
   @override
@@ -182,6 +189,24 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfileScreen(
+                  sessionRepository: widget.sessionRepository,
+                  deleteSessionUseCase: widget.deleteSessionUseCase,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

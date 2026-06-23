@@ -58,8 +58,10 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
+  @override
   Future<Session?> getActiveSession() async {
     final row = await (_db.select(_db.sessionsTable)
+      ..where((t) => t.phase.isSmallerThanValue(2))
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
       ..limit(1))
         .getSingleOrNull();
@@ -418,6 +420,29 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive) {
     return _db.watchScoreForDay(start, endExclusive);
+  }
+
+  @override
+  Future<void> updateSessionPhase(String sessionId, int newPhase) async {
+    await (_db.update(_db.sessionsTable)
+      ..where((t) => t.id.equals(sessionId)))
+        .write(SessionsTableCompanion(phase: Value(newPhase)));
+  }
+
+  @override
+  Future<void> deleteSession(String sessionId) async {
+    await (_db.delete(_db.sessionsTable)
+      ..where((t) => t.id.equals(sessionId)))
+        .go();
+  }
+
+  @override
+  Future<List<Session>> getPastSessions() async {
+    final rows = await (_db.select(_db.sessionsTable)
+      ..where((t) => t.phase.equals(2))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    return rows.map(_sessionFromRow).toList();
   }
 
   // =========================================================================

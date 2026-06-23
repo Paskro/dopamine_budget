@@ -26,7 +26,9 @@ class VerifyCalibrationExpiryUseCase {
     }
     print('VCE: phase=${currentSession.phase}, ИДЁМ ДАЛЬШЕ — это бы не должно происходить если контроль уже активен');
 
-    final uniqueDays = await _scoringRepository.getUniqueRecordedDays();
+    final uniqueDays = await _scoringRepository.getUniqueRecordedDays(
+      sessionId: currentSession.id,
+    );
     final completedDays = uniqueDays.length;
     final targetDays = currentSession.calibrationDays;
 

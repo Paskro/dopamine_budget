@@ -18,7 +18,7 @@ abstract class ScoringRepository {
   Future<Map<String, int>> getHabitClicksForDay(DateTime date);
 
   /// возвращаем количество реальных дней с записями
-  Future<List<DateTime>> getUniqueRecordedDays();
+  Future<List<DateTime>> getUniqueRecordedDays({required String sessionId});
 
   /// Получить текущую активную сессию пользователя
   Future<Session?> getActiveSession();

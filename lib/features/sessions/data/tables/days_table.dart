@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:dopamine_budget/features/sessions/data/tables/sessions_table.dart';
 
 class DaysTable extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -8,7 +9,7 @@ class DaysTable extends Table {
   TextColumn get date => text().customConstraint('UNIQUE NOT NULL')();
 
   // FK → SessionsTable.id
-  TextColumn get sessionId => text()();
+  TextColumn get sessionId => text().references(SessionsTable, #id, onDelete: KeyAction.cascade)();
 
   // DEPRECATED: не источник правды о срыве. Читать dayStatus == 'broken'.
   // Поле оставлено только для обратной совместимости старых записей в БД,

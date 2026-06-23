@@ -143,6 +143,9 @@ class CalibrationResultPage extends StatelessWidget {
                 ),
                 onPressed: () async {
                   await scoringNotifier.applyDefaultControlSettings();
+                  if (context.mounted) {
+                    Navigator.of(context).popUntil((r) => r.isFirst);
+                  }
                 },
                 child: const Text(
                   'Поехали!',

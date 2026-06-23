@@ -1013,7 +1013,7 @@ class $HabitLogsTableTable extends HabitLogsTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sessions_table (id)',
+      'REFERENCES sessions_table (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _timestampMeta = const VerificationMeta(
@@ -1572,6 +1572,9 @@ class $DaysTableTable extends DaysTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES sessions_table (id) ON DELETE CASCADE',
+    ),
   );
   static const VerificationMeta _isBrokenClickedMeta = const VerificationMeta(
     'isBrokenClicked',
@@ -1968,6 +1971,23 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sessionHabitsTable,
     daysTable,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'sessions_table',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('habit_logs_table', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'sessions_table',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('days_table', kind: UpdateKind.delete)],
+    ),
+  ]);
 }
 
 typedef $$HabitsTableTableCreateCompanionBuilder =
@@ -2294,6 +2314,27 @@ final class $$SessionsTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$DaysTableTable, List<DaysTableData>>
+  _daysTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.daysTable,
+    aliasName: $_aliasNameGenerator(
+      db.sessionsTable.id,
+      db.daysTable.sessionId,
+    ),
+  );
+
+  $$DaysTableTableProcessedTableManager get daysTableRefs {
+    final manager = $$DaysTableTableTableManager(
+      $_db,
+      $_db.daysTable,
+    ).filter((f) => f.sessionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_daysTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$SessionsTableTableFilterComposer
@@ -2376,6 +2417,31 @@ class $$SessionsTableTableFilterComposer
           }) => $$HabitLogsTableTableFilterComposer(
             $db: $db,
             $table: $db.habitLogsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> daysTableRefs(
+    Expression<bool> Function($$DaysTableTableFilterComposer f) f,
+  ) {
+    final $$DaysTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.daysTable,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DaysTableTableFilterComposer(
+            $db: $db,
+            $table: $db.daysTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2531,6 +2597,31 @@ class $$SessionsTableTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> daysTableRefs<T extends Object>(
+    Expression<T> Function($$DaysTableTableAnnotationComposer a) f,
+  ) {
+    final $$DaysTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.daysTable,
+      getReferencedColumn: (t) => t.sessionId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DaysTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.daysTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$SessionsTableTableTableManager
@@ -2546,7 +2637,7 @@ class $$SessionsTableTableTableManager
           $$SessionsTableTableUpdateCompanionBuilder,
           (SessionsTableData, $$SessionsTableTableReferences),
           SessionsTableData,
-          PrefetchHooks Function({bool habitLogsTableRefs})
+          PrefetchHooks Function({bool habitLogsTableRefs, bool daysTableRefs})
         > {
   $$SessionsTableTableTableManager(_$AppDatabase db, $SessionsTableTable table)
     : super(
@@ -2623,38 +2714,63 @@ class $$SessionsTableTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({habitLogsTableRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (habitLogsTableRefs) db.habitLogsTable,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (habitLogsTableRefs)
-                    await $_getPrefetchedData<
-                      SessionsTableData,
-                      $SessionsTableTable,
-                      HabitLogsTableData
-                    >(
-                      currentTable: table,
-                      referencedTable: $$SessionsTableTableReferences
-                          ._habitLogsTableRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$SessionsTableTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).habitLogsTableRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.sessionId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({habitLogsTableRefs = false, daysTableRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (habitLogsTableRefs) db.habitLogsTable,
+                    if (daysTableRefs) db.daysTable,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (habitLogsTableRefs)
+                        await $_getPrefetchedData<
+                          SessionsTableData,
+                          $SessionsTableTable,
+                          HabitLogsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SessionsTableTableReferences
+                              ._habitLogsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SessionsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).habitLogsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (daysTableRefs)
+                        await $_getPrefetchedData<
+                          SessionsTableData,
+                          $SessionsTableTable,
+                          DaysTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$SessionsTableTableReferences
+                              ._daysTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$SessionsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).daysTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sessionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -2671,7 +2787,7 @@ typedef $$SessionsTableTableProcessedTableManager =
       $$SessionsTableTableUpdateCompanionBuilder,
       (SessionsTableData, $$SessionsTableTableReferences),
       SessionsTableData,
-      PrefetchHooks Function({bool habitLogsTableRefs})
+      PrefetchHooks Function({bool habitLogsTableRefs, bool daysTableRefs})
     >;
 typedef $$HabitLogsTableTableCreateCompanionBuilder =
     HabitLogsTableCompanion Function({
@@ -3256,6 +3372,30 @@ typedef $$DaysTableTableUpdateCompanionBuilder =
       Value<String> dayStatus,
     });
 
+final class $$DaysTableTableReferences
+    extends BaseReferences<_$AppDatabase, $DaysTableTable, DaysTableData> {
+  $$DaysTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $SessionsTableTable _sessionIdTable(_$AppDatabase db) =>
+      db.sessionsTable.createAlias(
+        $_aliasNameGenerator(db.daysTable.sessionId, db.sessionsTable.id),
+      );
+
+  $$SessionsTableTableProcessedTableManager get sessionId {
+    final $_column = $_itemColumn<String>('session_id')!;
+
+    final manager = $$SessionsTableTableTableManager(
+      $_db,
+      $_db.sessionsTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sessionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
 class $$DaysTableTableFilterComposer
     extends Composer<_$AppDatabase, $DaysTableTable> {
   $$DaysTableTableFilterComposer({
@@ -3275,11 +3415,6 @@ class $$DaysTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get sessionId => $composableBuilder(
-    column: $table.sessionId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<bool> get isBrokenClicked => $composableBuilder(
     column: $table.isBrokenClicked,
     builder: (column) => ColumnFilters(column),
@@ -3294,6 +3429,29 @@ class $$DaysTableTableFilterComposer
     column: $table.dayStatus,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$SessionsTableTableFilterComposer get sessionId {
+    final $$SessionsTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessionsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableTableFilterComposer(
+            $db: $db,
+            $table: $db.sessionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$DaysTableTableOrderingComposer
@@ -3315,11 +3473,6 @@ class $$DaysTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get sessionId => $composableBuilder(
-    column: $table.sessionId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get isBrokenClicked => $composableBuilder(
     column: $table.isBrokenClicked,
     builder: (column) => ColumnOrderings(column),
@@ -3334,6 +3487,29 @@ class $$DaysTableTableOrderingComposer
     column: $table.dayStatus,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$SessionsTableTableOrderingComposer get sessionId {
+    final $$SessionsTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessionsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.sessionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$DaysTableTableAnnotationComposer
@@ -3351,9 +3527,6 @@ class $$DaysTableTableAnnotationComposer
   GeneratedColumn<String> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
 
-  GeneratedColumn<String> get sessionId =>
-      $composableBuilder(column: $table.sessionId, builder: (column) => column);
-
   GeneratedColumn<bool> get isBrokenClicked => $composableBuilder(
     column: $table.isBrokenClicked,
     builder: (column) => column,
@@ -3366,6 +3539,29 @@ class $$DaysTableTableAnnotationComposer
 
   GeneratedColumn<String> get dayStatus =>
       $composableBuilder(column: $table.dayStatus, builder: (column) => column);
+
+  $$SessionsTableTableAnnotationComposer get sessionId {
+    final $$SessionsTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sessionId,
+      referencedTable: $db.sessionsTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SessionsTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.sessionsTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$DaysTableTableTableManager
@@ -3379,12 +3575,9 @@ class $$DaysTableTableTableManager
           $$DaysTableTableAnnotationComposer,
           $$DaysTableTableCreateCompanionBuilder,
           $$DaysTableTableUpdateCompanionBuilder,
-          (
-            DaysTableData,
-            BaseReferences<_$AppDatabase, $DaysTableTable, DaysTableData>,
-          ),
+          (DaysTableData, $$DaysTableTableReferences),
           DaysTableData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool sessionId})
         > {
   $$DaysTableTableTableManager(_$AppDatabase db, $DaysTableTable table)
     : super(
@@ -3430,9 +3623,54 @@ class $$DaysTableTableTableManager
                 dayStatus: dayStatus,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$DaysTableTableReferences(db, table, e),
+                ),
+              )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({sessionId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (sessionId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.sessionId,
+                                referencedTable: $$DaysTableTableReferences
+                                    ._sessionIdTable(db),
+                                referencedColumn: $$DaysTableTableReferences
+                                    ._sessionIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -3447,12 +3685,9 @@ typedef $$DaysTableTableProcessedTableManager =
       $$DaysTableTableAnnotationComposer,
       $$DaysTableTableCreateCompanionBuilder,
       $$DaysTableTableUpdateCompanionBuilder,
-      (
-        DaysTableData,
-        BaseReferences<_$AppDatabase, $DaysTableTable, DaysTableData>,
-      ),
+      (DaysTableData, $$DaysTableTableReferences),
       DaysTableData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool sessionId})
     >;
 
 class $AppDatabaseManager {

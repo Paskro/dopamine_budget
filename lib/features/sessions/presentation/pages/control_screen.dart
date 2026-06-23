@@ -3,15 +3,33 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/archive_session_use_case.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
+import 'package:dopamine_budget/features/habits/presentation/state/habits_notifier.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/session_summary_screen.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/profile_screen.dart';
+import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
+import 'package:dopamine_budget/features/sessions/presentation/widgets/session_settings_sheet.dart';
 
 // lib/features/sessions/presentation/pages/control_screen.dart
 
 class ControlScreen extends StatefulWidget {
   final ControlScreenNotifier controlNotifier;
+  final Session session;
+  final HabitsNotifier habitsNotifier;
+  final ArchiveSessionUseCase archiveSessionUseCase;
+  final DeleteSessionUseCase deleteSessionUseCase;
+  final SessionRepository sessionRepository;
 
   const ControlScreen({
     Key? key,
     required this.controlNotifier,
+    required this.session,
+    required this.habitsNotifier,
+    required this.archiveSessionUseCase,
+    required this.deleteSessionUseCase,
+    required this.sessionRepository,
   }) : super(key: key);
 
   @override
@@ -56,7 +74,46 @@ class _ControlScreenState extends State<ControlScreen> {
         }
 
         return Scaffold(
-          appBar: AppBar(title: const Text('Контроль')),
+          appBar: AppBar(
+            title: const Text('Контроль'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.person_outline),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProfileScreen(
+                      sessionRepository: widget.sessionRepository,
+                      deleteSessionUseCase: widget.deleteSessionUseCase,
+                    ),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => SessionSettingsSheet.show(
+                  context: context,
+                  session: widget.session,
+                  habitsNotifier: widget.habitsNotifier,
+                  onArchive: () async {
+                    await widget.archiveSessionUseCase.execute(widget.session.id);
+                    if (context.mounted) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (ctx) => SessionSummaryScreen(
+                            session: widget.session,
+                            deleteSessionUseCase: widget.deleteSessionUseCase,
+                            onComplete: () =>
+                                Navigator.of(ctx).popUntil((r) => r.isFirst),
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
           body: state.status == ControlScreenStatus.brokenLocked
               ? _BrokenLockedScreen()
               : _ActiveScreen(

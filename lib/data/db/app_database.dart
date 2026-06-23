@@ -30,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration {
@@ -51,6 +51,14 @@ class AppDatabase extends _$AppDatabase {
         }
         if (from < 7) {
           await m.addColumn(sessionsTable, sessionsTable.lastReviewedControlWeek);
+        }
+        if (from < 8) {
+          await m.recreateAllViews();
+          // Drift не умеет ALTER CONSTRAINT — пересоздаём таблицы с новым FK
+          await m.drop(habitLogsTable);
+          await m.drop(daysTable);
+          await m.createTable(habitLogsTable);
+          await m.createTable(daysTable);
         }
       },
     );
@@ -94,17 +102,19 @@ class AppDatabase extends _$AppDatabase {
   /// триггера при UPDATE (watchSingleOrNull может пропускать обновления).
   Stream<SessionsTableData?> watchActiveSession() {
     return (select(sessionsTable)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-          ..limit(1))
+      ..where((t) => t.phase.isSmallerThanValue(2))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+      ..limit(1))
         .watch()
         .map((rows) => rows.isEmpty ? null : rows.first);
   }
 
   Future<String?> getActiveSessionId() async {
-    final query = select(sessionsTable)
+    final row = await (select(sessionsTable)
+      ..where((t) => t.phase.isSmallerThanValue(2))
       ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-      ..limit(1);
-    final row = await query.getSingleOrNull();
+      ..limit(1))
+        .getSingleOrNull();
     return row?.id;
   }
 
@@ -155,6 +165,11 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'db.sqlite'));
-    return NativeDatabase.createInBackground(file);
+    return NativeDatabase(
+      file,
+      setup: (rawDb) {
+        rawDb.execute('PRAGMA foreign_keys = ON;');
+      },
+    );
   });
 }

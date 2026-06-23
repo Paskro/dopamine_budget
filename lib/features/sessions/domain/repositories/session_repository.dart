@@ -60,4 +60,7 @@ abstract class SessionRepository {
   Stream<Session?> watchActiveSession();
   Stream<DayLog?> watchDayLog(DateTime date);
   Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive);
+  Future<void> updateSessionPhase(String sessionId, int newPhase);
+  Future<void> deleteSession(String sessionId);
+  Future<List<Session>> getPastSessions();
 }

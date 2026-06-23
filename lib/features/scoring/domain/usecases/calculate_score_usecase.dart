@@ -19,7 +19,9 @@ class CalculateScoreUseCase {
       }
 
       try {
-        final List<DateTime> recordedDays = await _repository.getUniqueRecordedDays();
+        final List<DateTime> recordedDays = await _repository.getUniqueRecordedDays(
+          sessionId: session.id,
+        );
         recordedDays.sort((a, b) => a.compareTo(b));
 
         final int targetCalibrationDays = session.calibrationDays;

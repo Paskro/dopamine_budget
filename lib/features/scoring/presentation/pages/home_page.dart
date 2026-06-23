@@ -6,15 +6,30 @@ import 'package:dopamine_budget/features/scoring/presentation/state/scoring_noti
 import 'package:dopamine_budget/features/habits/presentation/state/habits_notifier.dart';
 import '../../../habits/presentation/pages/habit_management_page.dart';
 import '../../../sessions/presentation/pages/calibration_result_page.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/archive_session_use_case.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
+import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/session_summary_screen.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/profile_screen.dart';
+import 'package:dopamine_budget/features/sessions/presentation/widgets/session_settings_sheet.dart';
 
 class HomePage extends StatelessWidget {
   final ScoringNotifier scoringNotifier;
   final HabitsNotifier habitsNotifier;
+  final Session session;
+  final ArchiveSessionUseCase archiveSessionUseCase;
+  final DeleteSessionUseCase deleteSessionUseCase;
+  final SessionRepository sessionRepository;
 
   const HomePage({
     Key? key,
     required this.scoringNotifier,
     required this.habitsNotifier,
+    required this.session,
+    required this.archiveSessionUseCase,
+    required this.deleteSessionUseCase,
+    required this.sessionRepository,
   }) : super(key: key);
 
   @override
@@ -45,20 +60,41 @@ class HomePage extends StatelessWidget {
         appBar: AppBar(
           title: const Text('Дофаминовый Бюджет'),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.playlist_add_check_rounded, size: 28),
-              tooltip: 'Управление привычками',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => HabitManagementPage(
-                      habitsNotifier: habitsNotifier,
-                      sessionId: scoringNotifier.currentSessionId,
-                    ),
-                  ),
-                );
-              },
+        IconButton(
+        icon: const Icon(Icons.person_outline),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProfileScreen(
+              sessionRepository: sessionRepository,
+              deleteSessionUseCase: deleteSessionUseCase,
             ),
+          ),
+        ),
+      ),
+      IconButton(
+        icon: const Icon(Icons.settings_outlined),
+        onPressed: () => SessionSettingsSheet.show(
+          context: context,
+          session: session,
+          habitsNotifier: habitsNotifier,
+          onArchive: () async {
+            await archiveSessionUseCase.execute(session.id);
+            if (context.mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => SessionSummaryScreen(
+                    session: session,
+                    deleteSessionUseCase: deleteSessionUseCase,
+                    onComplete: () =>
+                        Navigator.of(ctx).popUntil((r) => r.isFirst),
+                  ),
+                ),
+              );
+            }
+          },
+        ),
+      ),
           ],
         ),
         body: ListenableBuilder(
