@@ -51,9 +51,8 @@ class CheckAndGenerateWeeklyReportUseCase {
     if (count == 0 || count % 7 != 0) return null;
 
     final currentWeek = count ~/ 7;
-    final lastReviewed = session.lastReviewedControlWeek ?? 0;
-
-    if (currentWeek <= lastReviewed) return null;
+    final lastCompletedDay = completedDays.last;
+    if (lastCompletedDay.isWeeklyReportReviewed) return null;
 
     final controlStart = DateTime(
       session.controlStartedAt!.year,
@@ -107,7 +106,7 @@ class CheckAndGenerateWeeklyReportUseCase {
 
     final honestDaysCount = slots.where((s) => s != null).length;
 
-    final dailyLimit = session.dailyLimit;
+    final dailyLimit = session.baseShrinkingLimit ?? session.avgScore;
     final deviationPercent = (dailyLimit != null && dailyLimit > 0)
         ? ((avgScore - dailyLimit) / dailyLimit) * 100
         : null;

@@ -1,5 +1,6 @@
 import '../entities/session.dart';
 import '../entities/day_log.dart';
+import 'package:drift/drift.dart';
 
 abstract class SessionRepository {
   // === SESSIONS (legacy Future API) ===
@@ -63,4 +64,9 @@ abstract class SessionRepository {
   Future<void> updateSessionPhase(String sessionId, int newPhase);
   Future<void> deleteSession(String sessionId);
   Future<List<Session>> getPastSessions();
+  Future<void> updateShrinkingState({
+    Value<double?> baseShrinkingLimit = const Value.absent(),
+    Value<DateTime?> shrinkingStartedAt = const Value.absent(),
+  });
+  Future<void> markWeeklyReportAsReviewed(DateTime date);
 }

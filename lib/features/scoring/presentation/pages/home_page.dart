@@ -36,9 +36,6 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // 🟢 ПЕРЕХВАТ КАЛИБРОВКИ: если сессия перешла в фазу Контроля (phase == 1),
-    // но пользователь ещё не ознакомился с результатами (isReviewed == false) —
-    // рендерим CalibrationResultPage вместо основного экрана.
     return ListenableBuilder(
       listenable: scoringNotifier,
       builder: (context, child) {
@@ -53,54 +50,53 @@ class HomePage extends StatelessWidget {
           );
         }
 
-        // 🔵 СТАНДАРТНЫЙ ЭКРАН: основной интерфейс привычек и баланса
         return child!;
       },
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Дофаминовый Бюджет'),
           actions: [
-        IconButton(
-        icon: const Icon(Icons.person_outline),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProfileScreen(
-              sessionRepository: sessionRepository,
-              deleteSessionUseCase: deleteSessionUseCase,
-            ),
-          ),
-        ),
-      ),
-      IconButton(
-        icon: const Icon(Icons.settings_outlined),
-        onPressed: () => SessionSettingsSheet.show(
-          context: context,
-          session: session,
-          habitsNotifier: habitsNotifier,
-          onArchive: () async {
-            await archiveSessionUseCase.execute(session.id);
-            if (context.mounted) {
-              Navigator.of(context).push(
+            IconButton(
+              icon: const Icon(Icons.person_outline),
+              onPressed: () => Navigator.push(
+                context,
                 MaterialPageRoute(
-                  builder: (ctx) => SessionSummaryScreen(
-                    session: session,
+                  builder: (_) => ProfileScreen(
+                    sessionRepository: sessionRepository,
                     deleteSessionUseCase: deleteSessionUseCase,
-                    onComplete: () =>
-                        Navigator.of(ctx).popUntil((r) => r.isFirst),
                   ),
                 ),
-              );
-            }
-          },
-        ),
-      ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => SessionSettingsSheet.show(
+                context: context,
+                session: session,
+                habitsNotifier: habitsNotifier,
+                scoringNotifier: scoringNotifier,
+                onArchive: () async {
+                  await archiveSessionUseCase.execute(session.id);
+                  if (context.mounted) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => SessionSummaryScreen(
+                          session: session,
+                          deleteSessionUseCase: deleteSessionUseCase,
+                          onComplete: () =>
+                              Navigator.of(ctx).popUntil((r) => r.isFirst),
+                        ),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
           ],
         ),
         body: ListenableBuilder(
           listenable: Listenable.merge([scoringNotifier, habitsNotifier]),
           builder: (context, child) {
-            // Получаем только те привычки, которые выбраны пользователем (чекнуты в сессии)
             final activeHabits = habitsNotifier.habits.where((habit) {
               final habitIdInt = int.tryParse(habit.id);
               if (habitIdInt == null) return false;
@@ -112,10 +108,10 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Карточка текущего баланса (Score)
                   Card(
                     elevation: 4,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                     color: theme.colorScheme.primaryContainer,
                     child: Padding(
                       padding: const EdgeInsets.all(20.0),
@@ -129,12 +125,12 @@ class HomePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            // ИСПОЛЬЗУЕМ ТВOЙ СУЩЕСТВУЮЩИЙ СТEЙТ:
                             '${scoringNotifier.state.pointsSpentToday} XP',
                             style: theme.textTheme.headlineLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              // Проверяем флаг превышения лимита из твоего ScoringState:
-                              color: scoringNotifier.state.isOverLimit ? Colors.red.shade700 : Colors.green.shade700,
+                              color: scoringNotifier.state.isOverLimit
+                                  ? Colors.red.shade700
+                                  : Colors.green.shade700,
                             ),
                           ),
                         ],
@@ -145,61 +141,54 @@ class HomePage extends StatelessWidget {
 
                   Text(
                     'Зафиксировать действие',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
 
-                  // Динамический список осознанных кнопок-привычек
                   Expanded(
                     child: activeHabits.isEmpty
                         ? Center(
-                            child: Text(
-                              'Нет выбранных привычек.\nНажмите на иконку сверху, чтобы добавить.',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
-                            ),
-                          )
+                      child: Text(
+                        'Нет выбранных привычек.\nНажмите на иконку сверху, чтобы добавить.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: Colors.grey),
+                      ),
+                    )
                         : ListView.separated(
-                            itemCount: activeHabits.length,
-                            separatorBuilder: (context, index) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final habit = activeHabits[index];
+                      itemCount: activeHabits.length,
+                      separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final habit = activeHabits[index];
 
-                              return DopamineHoldButton(
-                                title: habit.title,        // Исправлено: используем .title вместо .name
-                                points: habit.scoreValue,  // Исправлено: используем .scoreValue вместо .points
-
-                                // [АРХИТЕКТОР]: Защита от спама на уровне UI
-                                isLoading: habitsNotifier.isLoading,
-
-                                onTriggered: () async {
-                                  // 1. Пишем лог срыва в ActionsTable через UseCase внутри Notifier
-                                  await habitsNotifier.addActionLog(
-                                    habitId: habit.id,
-                                    points: habit.scoreValue, // Исправлено: передаем .scoreValue вместо .points
-                                    timestamp: TimeProvider.now,
-                                  );
-
-                                  // 2. Обновляем баланс суток (вызываем метод у твоего scoringNotifier)
-                                  await scoringNotifier.refreshTodayState();
-                                },
-                              );
-                            },
-                          ),
+                        return DopamineHoldButton(
+                          title: habit.title,
+                          points: habit.scoreValue,
+                          isLoading: habitsNotifier.isLoading,
+                          onTriggered: () async {
+                            await habitsNotifier.addActionLog(
+                              habitId: habit.id,
+                              points: habit.scoreValue,
+                              timestamp: TimeProvider.now,
+                            );
+                            await scoringNotifier.refreshTodayState();
+                          },
+                        );
+                      },
+                    ),
                   ),
-
-
                 ],
               ),
             );
           },
         ),
-      ),   // Scaffold
-    ); // ListenableBuilder
+      ),
+    );
   }
 }
 
-/// Внутренний интерактивный виджет для удержания с прогресс-баром и haptic-откликом
 class DopamineHoldButton extends StatefulWidget {
   final String title;
   final int points;
@@ -222,29 +211,18 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
 
-  // Динамическая взаимосвязь времени удержания от тяжести баллов
   Duration get _holdDuration {
-    if (widget.points <= 3) {
-      return const Duration(milliseconds: 600);   // Легкая: "комарик" (0.6с)
-    } else if (widget.points <= 7) {
-      return const Duration(milliseconds: 1300);  // Средняя
-    } else {
-      return const Duration(milliseconds: 2200);  // Тяжелая: сильное сопротивление (2.2с)
-    }
+    if (widget.points <= 3) return const Duration(milliseconds: 600);
+    if (widget.points <= 7) return const Duration(milliseconds: 1300);
+    return const Duration(milliseconds: 2200);
   }
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: _holdDuration,
-    );
-
+    _animationController = AnimationController(vsync: this, duration: _holdDuration);
     _animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _triggerSuccess();
-      }
+      if (status == AnimationStatus.completed) _triggerSuccess();
     });
   }
 
@@ -268,14 +246,13 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
     widget.onTriggered();
   }
 
-  // Дифференцированная вибрация в зависимости от тяжести проступка
   void _executeDifferentiatedHaptic() {
     if (widget.points <= 3) {
-      HapticFeedback.lightImpact(); // Легкий быстрый отклик
+      HapticFeedback.lightImpact();
     } else if (widget.points <= 7) {
-      HapticFeedback.mediumImpact(); // Средний щелчок
+      HapticFeedback.mediumImpact();
     } else {
-      HapticFeedback.vibrate(); // Тяжелая системная вибрация
+      HapticFeedback.vibrate();
     }
   }
 
@@ -286,7 +263,7 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
 
   void _onTapUp(TapUpDetails details) {
     if (_animationController.status != AnimationStatus.completed) {
-      _animationController.reverse(); // Отпустил раньше времени — плавный откат назад
+      _animationController.reverse();
     }
   }
 
@@ -306,19 +283,14 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
       onTapCancel: _onTapCancel,
       child: Stack(
         children: [
-          // 1. Подложка кнопки (Базовая форма)
           Container(
             height: 62,
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.15),
-              ),
+              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.15)),
             ),
           ),
-
-          // 2. Наполняющийся бар внутри кнопки
           AnimatedBuilder(
             animation: _animationController,
             builder: (context, child) {
@@ -327,7 +299,6 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
                 child: Container(
                   height: 62,
                   decoration: BoxDecoration(
-                    // Окрашиваем в красный деструктивные привычки с большим весом
                     color: widget.points >= 8
                         ? Colors.redAccent.withOpacity(0.25)
                         : theme.colorScheme.primary.withOpacity(0.25),
@@ -337,8 +308,6 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
               );
             },
           ),
-
-          // 3. Контентная часть (Текст и индикатор очков)
           Container(
             height: 62,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -348,9 +317,8 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
                 Expanded(
                   child: Text(
                     widget.title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -364,7 +332,8 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
                   )
                 else
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.errorContainer.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(12),

@@ -40,12 +40,13 @@ class SessionRepositoryImpl implements SessionRepository {
         phase: Value(session.phase),
         avgScore: Value(session.avgScore),
         shouldDecrease: Value(session.shouldDecrease),
-        decreasePercentage: Value(session.decreasePercentage?.toDouble()),
-        decreaseInterval: Value(session.decreaseInterval),
         isReviewed: Value(session.isReviewed),
         calibrationDays: Value(session.calibrationDays),
         controlStartedAt: Value(session.controlStartedAt),
-        lastReviewedControlWeek: Value(session.lastReviewedControlWeek),
+        baseShrinkingLimit: Value(session.baseShrinkingLimit),
+        shrinkingStartedAt: Value(session.shrinkingStartedAt),
+        decreasePercentage: Value(session.decreasePercentage),
+        decreaseIntervalDays: Value(session.decreaseIntervalDays),
       );
       await (_db.update(_db.sessionsTable)
         ..where((t) => t.id.equals(session.id)))
@@ -146,15 +147,31 @@ class SessionRepositoryImpl implements SessionRepository {
       phase: Value(session.phase),
       avgScore: Value(session.avgScore),
       shouldDecrease: Value(session.shouldDecrease),
-      decreasePercentage: Value(session.decreasePercentage?.toDouble()),
-      decreaseInterval: Value(session.decreaseInterval),
       isReviewed: Value(session.isReviewed),
       calibrationDays: Value(session.calibrationDays),
       controlStartedAt: Value(session.controlStartedAt),
-      lastReviewedControlWeek: Value(session.lastReviewedControlWeek),
+      baseShrinkingLimit: Value(session.baseShrinkingLimit),
+      shrinkingStartedAt: Value(session.shrinkingStartedAt),
+      decreasePercentage: Value(session.decreasePercentage),
+      decreaseIntervalDays: Value(session.decreaseIntervalDays),
     );
 
     await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
+  }
+
+  @override
+  Future<void> updateShrinkingState({
+    Value<double?> baseShrinkingLimit = const Value.absent(),
+    Value<DateTime?> shrinkingStartedAt = const Value.absent(),
+  }) async {
+    final affectedRows = await (_db.update(_db.sessionsTable)
+      ..where((t) => t.phase.isSmallerThanValue(2)))
+        .write(SessionsTableCompanion(
+      baseShrinkingLimit: baseShrinkingLimit,
+      shrinkingStartedAt: shrinkingStartedAt,
+    ));
+
+    if (affectedRows == 0) throw StateError('Нет активной сессии');
   }
 
   Future<List<Session>> getAllSessions() async {
@@ -306,6 +323,7 @@ class SessionRepositoryImpl implements SessionRepository {
       isBrokenClicked: false,
       isGoodBoyClicked: false,
       dayStatus: 'regular',
+      isWeeklyReportReviewed: false,
     );
   }
 
@@ -445,6 +463,16 @@ class SessionRepositoryImpl implements SessionRepository {
     return rows.map(_sessionFromRow).toList();
   }
 
+  @override
+  Future<void> markWeeklyReportAsReviewed(DateTime date) async {
+    final dateStr = DayLogMapper.dateToString(date);
+    await (_db.update(_db.daysTable)
+      ..where((t) => t.date.equals(dateStr)))
+        .write(const DaysTableCompanion(
+      isWeeklyReportReviewed: Value(true),
+    ));
+  }
+
   // =========================================================================
   // PRIVATE HELPERS
   // =========================================================================
@@ -456,12 +484,13 @@ class SessionRepositoryImpl implements SessionRepository {
       phase: row.phase,
       avgScore: row.avgScore,
       shouldDecrease: row.shouldDecrease,
-      decreasePercentage: row.decreasePercentage?.toInt(),
-      decreaseInterval: row.decreaseInterval,
       isReviewed: row.isReviewed,
       calibrationDays: row.calibrationDays,
       controlStartedAt: row.controlStartedAt,
-      lastReviewedControlWeek: row.lastReviewedControlWeek,
+      baseShrinkingLimit: row.baseShrinkingLimit,
+      shrinkingStartedAt: row.shrinkingStartedAt,
+      decreasePercentage: row.decreasePercentage,
+      decreaseIntervalDays: row.decreaseIntervalDays,
     );
   }
 }

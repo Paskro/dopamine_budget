@@ -26,4 +26,6 @@ class DaysTable extends Table {
   // markDayAsGoodBoy, logHabitClickWithStatusCheck).
   TextColumn get dayStatus =>
       text().withDefault(const Constant('regular'))();
+  BoolColumn get isWeeklyReportReviewed =>
+      boolean().withDefault(const Constant(false))();
 }

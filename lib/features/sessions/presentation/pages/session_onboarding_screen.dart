@@ -8,10 +8,11 @@ class SessionOnboardingScreen extends StatefulWidget {
   final DeleteSessionUseCase deleteSessionUseCase;
   final Function(int days) onStartCalibration;
   final Function({
-    required double limit,
-    required bool shouldDecrease,
-    double? percentage,
-    String? interval,
+  required double limit,
+  required bool shouldDecrease,
+  double? percentage,
+  String? interval,
+  bool enableShrinking,
   }) onStartControl;
 
   const SessionOnboardingScreen({
@@ -33,6 +34,7 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
   // Для диалога контроля
   final TextEditingController _limitController = TextEditingController(text: '100');
   final TextEditingController _percentController = TextEditingController(text: '5');
+  bool _isShrinkingEnabled = false;
   bool _shouldDecrease = false;
   String _decreaseInterval = 'week';
 
@@ -158,6 +160,17 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
                     },
                   ),
                 ],
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text('Усыхание бюджета', style: TextStyle(fontSize: 14)),
+                  subtitle: const Text('Лимит автоматически снижается со временем',
+                      style: TextStyle(fontSize: 12)),
+                  value: _isShrinkingEnabled,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: (val) {
+                    setDialogState(() => _isShrinkingEnabled = val);
+                  },
+                ),
               ],
             ),
           ),
@@ -176,6 +189,7 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
                   shouldDecrease: _shouldDecrease,
                   percentage: _shouldDecrease ? percent : null,
                   interval: _shouldDecrease ? _decreaseInterval : null,
+                  enableShrinking: _isShrinkingEnabled,
                 );
               },
               child: const Text('Погнали!'),

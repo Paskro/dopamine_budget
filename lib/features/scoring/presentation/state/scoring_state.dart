@@ -1,5 +1,7 @@
+import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
+
 class ScoringState {
-  final int dailyLimit;
+  final double dailyLimit;
   final int pointsSpentToday;
   final int gamificationPoints;
   final bool isOverLimit;
@@ -8,8 +10,11 @@ class ScoringState {
   final Map<String, int> habitClicksToday;
   final DateTime? lastUpdateDate;
   final String? currentSessionId;
-  final dynamic currentSession;         // активная Session-сущность (или null)
-  final List<double>? historicalScores; // баллы за дни калибровки для графика
+  final Session? currentSession;
+  final List<double>? historicalScores;
+  final bool isShrinkingEnabled;
+  final double? decreasePercentage;
+  final String? decreaseInterval;
 
   const ScoringState({
     required this.dailyLimit,
@@ -23,26 +28,26 @@ class ScoringState {
     this.currentSessionId,
     this.currentSession,
     this.historicalScores,
+    this.isShrinkingEnabled = false,
+    this.decreasePercentage,
+    this.decreaseInterval,
   });
 
   factory ScoringState.initial() {
     return const ScoringState(
-      dailyLimit: 0,
+      dailyLimit: 0.0,
       pointsSpentToday: 0,
       gamificationPoints: 0,
       isOverLimit: false,
       isLoading: false,
       phase: 'control',
       habitClicksToday: {},
-      lastUpdateDate: null,
-      currentSessionId: null,
-      currentSession: null,
-      historicalScores: null,
+      isShrinkingEnabled: false,
     );
   }
 
   ScoringState copyWith({
-    int? dailyLimit,
+    double? dailyLimit,
     int? pointsSpentToday,
     int? gamificationPoints,
     bool? isOverLimit,
@@ -51,8 +56,11 @@ class ScoringState {
     Map<String, int>? habitClicksToday,
     DateTime? lastUpdateDate,
     String? currentSessionId,
-    dynamic currentSession,
+    Session? currentSession,
     List<double>? historicalScores,
+    bool? isShrinkingEnabled,
+    double? decreasePercentage,
+    String? decreaseInterval,
   }) {
     return ScoringState(
       dailyLimit: dailyLimit ?? this.dailyLimit,
@@ -66,6 +74,9 @@ class ScoringState {
       currentSessionId: currentSessionId ?? this.currentSessionId,
       currentSession: currentSession ?? this.currentSession,
       historicalScores: historicalScores ?? this.historicalScores,
+      isShrinkingEnabled: isShrinkingEnabled ?? this.isShrinkingEnabled,
+      decreasePercentage: decreasePercentage ?? this.decreasePercentage,
+      decreaseInterval: decreaseInterval ?? this.decreaseInterval,
     );
   }
 }

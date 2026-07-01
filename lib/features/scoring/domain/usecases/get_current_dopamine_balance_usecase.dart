@@ -33,7 +33,7 @@ class GetCurrentDopamineBalanceUseCase {
     final session = await _sessionRepository.getActiveSession();
     if (session == null) return 0;
 
-    final dailyLimit = (session.dailyLimit ?? 0).toInt();
+    final dailyLimit = ((session.baseShrinkingLimit ?? session.avgScore) ?? 0).toInt();
     final spent = await _scoringRepository.getScoreForDay(TimeProvider.now);
     final balance = (dailyLimit - spent).clamp(0, dailyLimit);
 

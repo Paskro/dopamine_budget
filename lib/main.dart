@@ -22,6 +22,8 @@ import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/archive_session_use_case.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/toggle_shrinking_mode_usecase.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,8 +47,12 @@ void main() async {
   final archiveSessionUseCase = ArchiveSessionUseCase(sessionRepository);
   final deleteSessionUseCase = DeleteSessionUseCase(sessionRepository);
 
-  // Use Cases — скоринг
-  final calculateScoreUseCase = CalculateScoreUseCase(scoringRepository);
+  final getDailyLimitUseCase = GetDailyLimitUseCase(sessionRepository);
+  final toggleShrinkingModeUseCase = ToggleShrinkingModeUseCase(
+    sessionRepository: sessionRepository,
+    getDailyLimitUseCase: getDailyLimitUseCase,
+  );
+  final calculateScoreUseCase = CalculateScoreUseCase(scoringRepository, getDailyLimitUseCase);
   final verifyCalibrationExpiryUseCase = VerifyCalibrationExpiryUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
@@ -80,18 +86,19 @@ void main() async {
   );
 
   final scoringNotifier = ScoringNotifier(
-
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
-
     verifyCalibrationExpiry: verifyCalibrationExpiryUseCase,
     getDopamineBalance: getDopamineBalanceUseCase,
+    toggleShrinkingMode: toggleShrinkingModeUseCase,
+    getDailyLimitUseCase: getDailyLimitUseCase,
   );
 
   // ControlScreenNotifier не нужен getDopamineBalance — сам считает из стримов
   final controlScreenNotifier = ControlScreenNotifier(
     sessionRepository: sessionRepository,
     habitRepository: habitRepository,
+    getDailyLimitUseCase: getDailyLimitUseCase,
   );
 
   runApp(MyApp(

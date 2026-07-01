@@ -32,8 +32,8 @@ class InitializeSessionUseCase {
               phase: latestRow.phase,
               avgScore: latestRow.avgScore,
               shouldDecrease: latestRow.shouldDecrease,
-              decreasePercentage: latestRow.decreasePercentage?.toInt(),
-              decreaseInterval: latestRow.decreaseInterval,
+              decreasePercentage: latestRow.decreasePercentage,
+              decreaseIntervalDays: latestRow.decreaseIntervalDays,
               isReviewed: latestRow.isReviewed,
               calibrationDays: latestRow.calibrationDays,
               controlStartedAt: latestRow.controlStartedAt,
@@ -59,7 +59,7 @@ class InitializeSessionUseCase {
           avgScore: const Value(null),
           shouldDecrease: const Value(false),
           decreasePercentage: const Value(null),
-          decreaseInterval: const Value(null),
+          decreaseIntervalDays: const Value(null),
           calibrationDays: Value(durationDays),
         );
 
@@ -74,7 +74,7 @@ class InitializeSessionUseCase {
           avgScore: null,
           shouldDecrease: false,
           decreasePercentage: null,
-          decreaseInterval: null,
+          decreaseIntervalDays: null,
           calibrationDays: durationDays,
         );
       } catch (e) {

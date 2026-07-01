@@ -1,11 +1,13 @@
 import '../../../sessions/domain/entities/session.dart'; // Корректируй путь, если сессии лежат в другом месте
 import '../repositories/scoring_repository.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
 
 class CalculateScoreUseCase {
   final ScoringRepository _repository;
+  final GetDailyLimitUseCase _getDailyLimitUseCase;
 
-  CalculateScoreUseCase(this._repository);
+  CalculateScoreUseCase(this._repository, this._getDailyLimitUseCase);
 
   // ==========================================
   // БЛОК 1: БИЗНЕС-ЛОГИКА РАСЧЕТА БЮДЖЕТА И ФАЗ
@@ -80,7 +82,7 @@ class CalculateScoreUseCase {
     required int scoreValue,
     DateTime? timestamp,
   }) async {
-    final executionTime = timestamp ?? DateTime.now();
+    final executionTime = timestamp ?? TimeProvider.now;
 
     await _repository.saveAction(
       habitType: habitType,
@@ -102,26 +104,16 @@ class CalculateScoreUseCase {
     return typedClicks;
   }
   /// Расчет текущего баланса Score на лету по логам из базы данных за выбранную дату
-    Future<double> execute({DateTime? forDate}) async {
-      // 1. Берем дату (используем виртуальное "сегодня" через TimeProvider)
-      final targetDate = forDate ?? TimeProvider.now;
+  Future<double> execute({DateTime? forDate}) async {
+    final targetDate = forDate ?? TimeProvider.now;
+    final currentSession = await _repository.getActiveSession();
+    if (currentSession == null) return 0.0;
 
-      // 2. Получаем текущую активную сессию через единый репозиторий
-      final currentSession = await _repository.getActiveSession();
-      if (currentSession == null) return 0.0;
+    final totalSpent = (await _repository.getTotalScoreCostForDate(targetDate)).toDouble();
 
-      // 3. Запрашиваем из базы сумму стоимости всех штрафных действий за эти сутки
-      final totalSpentInt = await _repository.getTotalScoreCostForDate(targetDate);
-      final totalSpent = totalSpentInt.toDouble();
+    if (currentSession.phase == 0) return -totalSpent;
 
-      // 4. Бизнес-логика расчета в зависимости от фазы сессии
-      if (currentSession.phase == 0) {
-        // На этапе калибровки лимита нет — показываем чистый расход со знаком минус
-        return -totalSpent;
-      } else {
-        // На этапе контроля вычитаем расход из доступного динамического лимита дня
-        final limit = currentSession.dailyLimit ?? 0.0;
-        return limit - totalSpent;
-      }
-    }
+    final limit = await _getDailyLimitUseCase.execute() ?? 0.0;
+    return limit - totalSpent;
+  }
 }

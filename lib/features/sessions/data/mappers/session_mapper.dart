@@ -1,63 +1,40 @@
-class Session {
-  final String id;
-  final DateTime createdAt;
-  final int phase; // 0 = Калибровка, 1 = Контроль
-  final double? avgScore; // Средний балл, вычисляется после калибровки
-  final bool shouldDecrease;
-  final int? decreasePercentage;
-  final String? decreaseInterval; // Интервал снижения: 'week' или 'month'
-  final bool isReviewed;
-  final int calibrationDays; // Количество дней калибровки
+import 'package:drift/drift.dart';
+import 'package:dopamine_budget/features/sessions/data/tables/sessions_table.dart';
+import 'package:dopamine_budget/data/db/app_database.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 
-  const Session({
-    required this.id,
-    required this.createdAt,
-    required this.phase,
-    this.avgScore,
-    this.shouldDecrease = false,
-    this.decreasePercentage,
-    this.decreaseInterval,
-    this.isReviewed = false,
-    this.calibrationDays = 3,
-  });
-
-Session copyWith({
-    String? id,
-    DateTime? createdAt,
-    int? phase,
-    double? avgScore,
-    bool? shouldDecrease,
-    int? decreasePercentage,
-    String? decreaseInterval,
-    bool? isReviewed,
-    int? calibrationDays,
-  }) {
+class SessionMapper {
+  static Session fromDb(SessionsTableData data) {
     return Session(
-      id: id ?? this.id,
-      createdAt: createdAt ?? this.createdAt,
-      phase: phase ?? this.phase,
-      avgScore: avgScore ?? this.avgScore,
-      shouldDecrease: shouldDecrease ?? this.shouldDecrease,
-      decreasePercentage: decreasePercentage ?? this.decreasePercentage,
-      decreaseInterval: decreaseInterval ?? this.decreaseInterval,
-      isReviewed: isReviewed ?? this.isReviewed,
-      calibrationDays: calibrationDays ?? this.calibrationDays,
+      id: data.id,
+      createdAt: data.createdAt,
+      phase: data.phase,
+      avgScore: data.avgScore,
+      isReviewed: data.isReviewed,
+      shouldDecrease: data.shouldDecrease,
+      calibrationDays: data.calibrationDays,
+      controlStartedAt: data.controlStartedAt,
+      baseShrinkingLimit: data.baseShrinkingLimit,
+      shrinkingStartedAt: data.shrinkingStartedAt,
+      decreasePercentage: data.decreasePercentage,
+      decreaseIntervalDays: data.decreaseIntervalDays,
     );
   }
 
-  /// Бизнес-логика: Вычисляем текущий дневной лимит дофамина
-  /// Если фаза калибровки (0) или AVG еще не посчитан — лимита нет (возвращаем null)
-  double? get dailyLimit {
-    if (phase == 0 || avgScore == null) return null;
-
-    if (shouldDecrease && decreasePercentage != null) {
-      // Формула: LIMIT = AVG - %снижения
-      // Например: 50 баллов - 20% = 40 баллов
-      final reduction = avgScore! * (decreasePercentage! / 100);
-      return avgScore! - reduction;
-    }
-
-    // Если снижение не включено, лимит равен среднему баллу калибровки
-    return avgScore;
+  static SessionsTableCompanion toCompanion(Session session) {
+    return SessionsTableCompanion.insert(
+      id: session.id,
+      createdAt: session.createdAt,
+      phase: session.phase,
+      avgScore: Value(session.avgScore),
+      isReviewed: Value(session.isReviewed),
+      shouldDecrease: Value(session.shouldDecrease),
+      calibrationDays: Value(session.calibrationDays),
+      controlStartedAt: Value(session.controlStartedAt),
+      baseShrinkingLimit: Value(session.baseShrinkingLimit),
+      shrinkingStartedAt: Value(session.shrinkingStartedAt),
+      decreasePercentage: Value(session.decreasePercentage),
+      decreaseIntervalDays: Value(session.decreaseIntervalDays),
+    );
   }
 }

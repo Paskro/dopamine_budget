@@ -25,12 +25,11 @@ class WeeklyReportPage extends StatelessWidget {
     final period =
         '${_fmt(reportData.weekStart)} — ${_fmt(reportData.weekEnd)}';
     final deviation = reportData.deviationPercent;
-    final isWeekly = reportData.session.decreaseInterval == 'week';
-    final dailyLimit = reportData.session.dailyLimit?.round() ?? 0;
+    final isWeekly = reportData.session.decreaseIntervalDays == 7;
+    final baseLimit = reportData.session.baseShrinkingLimit ?? reportData.session.avgScore;
+    final dailyLimit = baseLimit?.round() ?? 0;
     final newLimit = isWeekly && reportData.session.decreasePercentage != null
-        ? (dailyLimit -
-        (dailyLimit * reportData.session.decreasePercentage! / 100))
-        .round()
+        ? (dailyLimit - (dailyLimit * reportData.session.decreasePercentage!)).round()
         : null;
     final weekStartNormalized = DateTime(
       reportData.weekStart.year,

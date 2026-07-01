@@ -23,11 +23,9 @@ class GetWeeklyHabitsReportUseCase {
     required DateTime weekStart,
     required Session session,
   }) async {
-    final dailyLimit = session.dailyLimit;
-    if (dailyLimit == null) throw StateError('Session not in control phase');
-
-    final totalLimit = (dailyLimit * 7).round();
-
+    final baseLimit = session.baseShrinkingLimit ?? session.avgScore;
+    if (baseLimit == null) throw StateError('Session not in control phase');
+    final totalLimit = (baseLimit * 7).round();
     final rows = await _repo.getWeeklyHabitTotals(weekStart: weekStart);
 
     final totalSpent = rows.fold<int>(0, (sum, r) => sum + r.totalPts);

@@ -7,15 +7,14 @@ class SessionsTable extends Table {
   RealColumn get avgScore => real().nullable()();
   BoolColumn get isReviewed => boolean().withDefault(const Constant(false))();
   BoolColumn get shouldDecrease => boolean().withDefault(const Constant(false))();
-  RealColumn get decreasePercentage => real().nullable()();
-  TextColumn get decreaseInterval => text().nullable()();
   IntColumn get calibrationDays => integer().withDefault(const Constant(3))();
-  IntColumn get lastReviewedControlWeek => integer().nullable()();
-
-  // Момент перехода в фазу контроля. null пока сессия в калибровке.
-  // Используется для фильтрации ActionsTable — считаем только клики
-  // ПОСЛЕ этой метки, чтобы не включать баллы калибровки в баланс контроля.
   DateTimeColumn get controlStartedAt => dateTime().nullable()();
+
+  // Shrinking Mode (ТЗ v3)
+  RealColumn get baseShrinkingLimit => real().nullable()();
+  DateTimeColumn get shrinkingStartedAt => dateTime().nullable()();
+  RealColumn get decreasePercentage => real().nullable()();
+  IntColumn get decreaseIntervalDays => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

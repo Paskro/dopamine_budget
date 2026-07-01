@@ -11,6 +11,7 @@ import 'package:dopamine_budget/features/sessions/presentation/pages/session_sum
 import 'package:dopamine_budget/features/sessions/presentation/pages/profile_screen.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/sessions/presentation/widgets/session_settings_sheet.dart';
+import 'package:dopamine_budget/features/scoring/presentation/state/scoring_notifier.dart';
 
 // lib/features/sessions/presentation/pages/control_screen.dart
 
@@ -21,6 +22,7 @@ class ControlScreen extends StatefulWidget {
   final ArchiveSessionUseCase archiveSessionUseCase;
   final DeleteSessionUseCase deleteSessionUseCase;
   final SessionRepository sessionRepository;
+  final ScoringNotifier scoringNotifier;
 
   const ControlScreen({
     Key? key,
@@ -30,6 +32,7 @@ class ControlScreen extends StatefulWidget {
     required this.archiveSessionUseCase,
     required this.deleteSessionUseCase,
     required this.sessionRepository,
+    required this.scoringNotifier,
   }) : super(key: key);
 
   @override
@@ -43,8 +46,6 @@ class _ControlScreenState extends State<ControlScreen> {
   void initState() {
     super.initState();
     widget.controlNotifier.checkAndResetDayIfNeeded();
-    // Подписка на one-shot события ошибок (StateError из репозитория,
-    // например попытка клика/отметки после фиксации срыва дня).
     _errorSub = widget.controlNotifier.errorEvents.listen((message) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -95,6 +96,7 @@ class _ControlScreenState extends State<ControlScreen> {
                   context: context,
                   session: widget.session,
                   habitsNotifier: widget.habitsNotifier,
+                  scoringNotifier: widget.scoringNotifier,
                   onArchive: () async {
                     await widget.archiveSessionUseCase.execute(widget.session.id);
                     if (context.mounted) {
@@ -140,9 +142,7 @@ class _ActiveScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final habits = state.sessionHabits;
 
-    final hasUnaffordableHabit =
-    habits.any((h) => state.balance < h.scoreValue);
-
+    final hasUnaffordableHabit = habits.any((h) => state.balance < h.scoreValue);
     final showBrokenButton = state.balance <= 0 || hasUnaffordableHabit;
     final itemCount = habits.length + (showBrokenButton ? 1 : 0);
 
@@ -162,8 +162,7 @@ class _ActiveScreen extends StatelessWidget {
 
           Text(
             'Зафиксировать действие',
-            style: theme.textTheme.titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
 
@@ -172,16 +171,13 @@ class _ActiveScreen extends StatelessWidget {
                 ? Center(
               child: Text(
                 'Нет привязанных привычек.',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: Colors.grey),
+                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
               ),
             )
                 : ListView.separated(
               itemCount: itemCount,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                // ВРЕМЕННО: "Я сорвался" — последний элемент списка,
-                // а не зафиксирована у низа экрана, чтобы её не перекрывал DeveloperOverlay.
                 if (index == habits.length) {
                   return _BrokenHoldButton(
                     onConfirmed: () => controlNotifier.confirmBreak(),
@@ -216,10 +212,6 @@ class _ActiveScreen extends StatelessWidget {
   }
 }
 
-/// Баннер «Я сегодня молодец». Простой тап (без механики удержания —
-/// «терапевтическое трение» 2.5с относится только к кнопке «Я сорвался»).
-/// Исчезает реактивно через стрим watchDayLog, как только dayStatus
-/// перестаёт быть 'regular'.
 class _GoodBoyBanner extends StatelessWidget {
   final VoidCallback onTap;
   const _GoodBoyBanner({required this.onTap});
@@ -281,8 +273,7 @@ class _BrokenLockedScreen extends StatelessWidget {
           const SizedBox(height: 32),
           Text(
             'Спасибо. Этот день зафиксирован.',
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -313,8 +304,7 @@ class _FuelTankCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final fillRatio =
-    dailyLimit > 0 ? (balance / dailyLimit).clamp(0.0, 1.0) : 0.0;
+    final fillRatio = dailyLimit > 0 ? (balance / dailyLimit).clamp(0.0, 1.0) : 0.0;
 
     final tankColor = fillRatio > 0.5
         ? Colors.green.shade600
@@ -342,8 +332,7 @@ class _FuelTankCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: fillRatio,
                 minHeight: 16,
-                backgroundColor:
-                theme.colorScheme.onPrimaryContainer.withOpacity(0.1),
+                backgroundColor: theme.colorScheme.onPrimaryContainer.withOpacity(0.1),
                 valueColor: AlwaysStoppedAnimation<Color>(tankColor),
               ),
             ),
@@ -426,14 +415,10 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) {
-        if (_controller.status != AnimationStatus.completed) {
-          _controller.reverse();
-        }
+        if (_controller.status != AnimationStatus.completed) _controller.reverse();
       },
       onTapCancel: () {
-        if (_controller.status != AnimationStatus.completed) {
-          _controller.reverse();
-        }
+        if (_controller.status != AnimationStatus.completed) _controller.reverse();
       },
       child: Stack(
         children: [
@@ -442,8 +427,7 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                  color: theme.colorScheme.outline.withOpacity(0.15)),
+              border: Border.all(color: theme.colorScheme.outline.withOpacity(0.15)),
             ),
           ),
           AnimatedBuilder(
@@ -470,16 +454,14 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
                 Expanded(
                   child: Text(
                     widget.title,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.errorContainer.withOpacity(0.8),
                     borderRadius: BorderRadius.circular(12),
@@ -563,14 +545,10 @@ class _BrokenHoldButtonState extends State<_BrokenHoldButton>
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) {
-        if (_controller.status != AnimationStatus.completed) {
-          _controller.reverse();
-        }
+        if (_controller.status != AnimationStatus.completed) _controller.reverse();
       },
       onTapCancel: () {
-        if (_controller.status != AnimationStatus.completed) {
-          _controller.reverse();
-        }
+        if (_controller.status != AnimationStatus.completed) _controller.reverse();
       },
       child: AnimatedBuilder(
         animation: _controller,

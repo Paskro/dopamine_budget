@@ -330,28 +330,6 @@ class $SessionsTableTable extends SessionsTable
     ),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _decreasePercentageMeta =
-      const VerificationMeta('decreasePercentage');
-  @override
-  late final GeneratedColumn<double> decreasePercentage =
-      GeneratedColumn<double>(
-        'decrease_percentage',
-        aliasedName,
-        true,
-        type: DriftSqlType.double,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _decreaseIntervalMeta = const VerificationMeta(
-    'decreaseInterval',
-  );
-  @override
-  late final GeneratedColumn<String> decreaseInterval = GeneratedColumn<String>(
-    'decrease_interval',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _calibrationDaysMeta = const VerificationMeta(
     'calibrationDays',
   );
@@ -364,17 +342,6 @@ class $SessionsTableTable extends SessionsTable
     requiredDuringInsert: false,
     defaultValue: const Constant(3),
   );
-  static const VerificationMeta _lastReviewedControlWeekMeta =
-      const VerificationMeta('lastReviewedControlWeek');
-  @override
-  late final GeneratedColumn<int> lastReviewedControlWeek =
-      GeneratedColumn<int>(
-        'last_reviewed_control_week',
-        aliasedName,
-        true,
-        type: DriftSqlType.int,
-        requiredDuringInsert: false,
-      );
   static const VerificationMeta _controlStartedAtMeta = const VerificationMeta(
     'controlStartedAt',
   );
@@ -387,6 +354,49 @@ class $SessionsTableTable extends SessionsTable
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _baseShrinkingLimitMeta =
+      const VerificationMeta('baseShrinkingLimit');
+  @override
+  late final GeneratedColumn<double> baseShrinkingLimit =
+      GeneratedColumn<double>(
+        'base_shrinking_limit',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _shrinkingStartedAtMeta =
+      const VerificationMeta('shrinkingStartedAt');
+  @override
+  late final GeneratedColumn<DateTime> shrinkingStartedAt =
+      GeneratedColumn<DateTime>(
+        'shrinking_started_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _decreasePercentageMeta =
+      const VerificationMeta('decreasePercentage');
+  @override
+  late final GeneratedColumn<double> decreasePercentage =
+      GeneratedColumn<double>(
+        'decrease_percentage',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _decreaseIntervalDaysMeta =
+      const VerificationMeta('decreaseIntervalDays');
+  @override
+  late final GeneratedColumn<int> decreaseIntervalDays = GeneratedColumn<int>(
+    'decrease_interval_days',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -395,11 +405,12 @@ class $SessionsTableTable extends SessionsTable
     avgScore,
     isReviewed,
     shouldDecrease,
-    decreasePercentage,
-    decreaseInterval,
     calibrationDays,
-    lastReviewedControlWeek,
     controlStartedAt,
+    baseShrinkingLimit,
+    shrinkingStartedAt,
+    decreasePercentage,
+    decreaseIntervalDays,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -455,24 +466,6 @@ class $SessionsTableTable extends SessionsTable
         ),
       );
     }
-    if (data.containsKey('decrease_percentage')) {
-      context.handle(
-        _decreasePercentageMeta,
-        decreasePercentage.isAcceptableOrUnknown(
-          data['decrease_percentage']!,
-          _decreasePercentageMeta,
-        ),
-      );
-    }
-    if (data.containsKey('decrease_interval')) {
-      context.handle(
-        _decreaseIntervalMeta,
-        decreaseInterval.isAcceptableOrUnknown(
-          data['decrease_interval']!,
-          _decreaseIntervalMeta,
-        ),
-      );
-    }
     if (data.containsKey('calibration_days')) {
       context.handle(
         _calibrationDaysMeta,
@@ -482,21 +475,48 @@ class $SessionsTableTable extends SessionsTable
         ),
       );
     }
-    if (data.containsKey('last_reviewed_control_week')) {
-      context.handle(
-        _lastReviewedControlWeekMeta,
-        lastReviewedControlWeek.isAcceptableOrUnknown(
-          data['last_reviewed_control_week']!,
-          _lastReviewedControlWeekMeta,
-        ),
-      );
-    }
     if (data.containsKey('control_started_at')) {
       context.handle(
         _controlStartedAtMeta,
         controlStartedAt.isAcceptableOrUnknown(
           data['control_started_at']!,
           _controlStartedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('base_shrinking_limit')) {
+      context.handle(
+        _baseShrinkingLimitMeta,
+        baseShrinkingLimit.isAcceptableOrUnknown(
+          data['base_shrinking_limit']!,
+          _baseShrinkingLimitMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shrinking_started_at')) {
+      context.handle(
+        _shrinkingStartedAtMeta,
+        shrinkingStartedAt.isAcceptableOrUnknown(
+          data['shrinking_started_at']!,
+          _shrinkingStartedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('decrease_percentage')) {
+      context.handle(
+        _decreasePercentageMeta,
+        decreasePercentage.isAcceptableOrUnknown(
+          data['decrease_percentage']!,
+          _decreasePercentageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('decrease_interval_days')) {
+      context.handle(
+        _decreaseIntervalDaysMeta,
+        decreaseIntervalDays.isAcceptableOrUnknown(
+          data['decrease_interval_days']!,
+          _decreaseIntervalDaysMeta,
         ),
       );
     }
@@ -533,25 +553,29 @@ class $SessionsTableTable extends SessionsTable
         DriftSqlType.bool,
         data['${effectivePrefix}should_decrease'],
       )!,
-      decreasePercentage: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}decrease_percentage'],
-      ),
-      decreaseInterval: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}decrease_interval'],
-      ),
       calibrationDays: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}calibration_days'],
       )!,
-      lastReviewedControlWeek: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}last_reviewed_control_week'],
-      ),
       controlStartedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}control_started_at'],
+      ),
+      baseShrinkingLimit: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}base_shrinking_limit'],
+      ),
+      shrinkingStartedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}shrinking_started_at'],
+      ),
+      decreasePercentage: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}decrease_percentage'],
+      ),
+      decreaseIntervalDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}decrease_interval_days'],
       ),
     );
   }
@@ -570,11 +594,12 @@ class SessionsTableData extends DataClass
   final double? avgScore;
   final bool isReviewed;
   final bool shouldDecrease;
-  final double? decreasePercentage;
-  final String? decreaseInterval;
   final int calibrationDays;
-  final int? lastReviewedControlWeek;
   final DateTime? controlStartedAt;
+  final double? baseShrinkingLimit;
+  final DateTime? shrinkingStartedAt;
+  final double? decreasePercentage;
+  final int? decreaseIntervalDays;
   const SessionsTableData({
     required this.id,
     required this.createdAt,
@@ -582,11 +607,12 @@ class SessionsTableData extends DataClass
     this.avgScore,
     required this.isReviewed,
     required this.shouldDecrease,
-    this.decreasePercentage,
-    this.decreaseInterval,
     required this.calibrationDays,
-    this.lastReviewedControlWeek,
     this.controlStartedAt,
+    this.baseShrinkingLimit,
+    this.shrinkingStartedAt,
+    this.decreasePercentage,
+    this.decreaseIntervalDays,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -599,20 +625,21 @@ class SessionsTableData extends DataClass
     }
     map['is_reviewed'] = Variable<bool>(isReviewed);
     map['should_decrease'] = Variable<bool>(shouldDecrease);
+    map['calibration_days'] = Variable<int>(calibrationDays);
+    if (!nullToAbsent || controlStartedAt != null) {
+      map['control_started_at'] = Variable<DateTime>(controlStartedAt);
+    }
+    if (!nullToAbsent || baseShrinkingLimit != null) {
+      map['base_shrinking_limit'] = Variable<double>(baseShrinkingLimit);
+    }
+    if (!nullToAbsent || shrinkingStartedAt != null) {
+      map['shrinking_started_at'] = Variable<DateTime>(shrinkingStartedAt);
+    }
     if (!nullToAbsent || decreasePercentage != null) {
       map['decrease_percentage'] = Variable<double>(decreasePercentage);
     }
-    if (!nullToAbsent || decreaseInterval != null) {
-      map['decrease_interval'] = Variable<String>(decreaseInterval);
-    }
-    map['calibration_days'] = Variable<int>(calibrationDays);
-    if (!nullToAbsent || lastReviewedControlWeek != null) {
-      map['last_reviewed_control_week'] = Variable<int>(
-        lastReviewedControlWeek,
-      );
-    }
-    if (!nullToAbsent || controlStartedAt != null) {
-      map['control_started_at'] = Variable<DateTime>(controlStartedAt);
+    if (!nullToAbsent || decreaseIntervalDays != null) {
+      map['decrease_interval_days'] = Variable<int>(decreaseIntervalDays);
     }
     return map;
   }
@@ -627,19 +654,22 @@ class SessionsTableData extends DataClass
           : Value(avgScore),
       isReviewed: Value(isReviewed),
       shouldDecrease: Value(shouldDecrease),
-      decreasePercentage: decreasePercentage == null && nullToAbsent
-          ? const Value.absent()
-          : Value(decreasePercentage),
-      decreaseInterval: decreaseInterval == null && nullToAbsent
-          ? const Value.absent()
-          : Value(decreaseInterval),
       calibrationDays: Value(calibrationDays),
-      lastReviewedControlWeek: lastReviewedControlWeek == null && nullToAbsent
-          ? const Value.absent()
-          : Value(lastReviewedControlWeek),
       controlStartedAt: controlStartedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(controlStartedAt),
+      baseShrinkingLimit: baseShrinkingLimit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(baseShrinkingLimit),
+      shrinkingStartedAt: shrinkingStartedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shrinkingStartedAt),
+      decreasePercentage: decreasePercentage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decreasePercentage),
+      decreaseIntervalDays: decreaseIntervalDays == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decreaseIntervalDays),
     );
   }
 
@@ -655,16 +685,21 @@ class SessionsTableData extends DataClass
       avgScore: serializer.fromJson<double?>(json['avgScore']),
       isReviewed: serializer.fromJson<bool>(json['isReviewed']),
       shouldDecrease: serializer.fromJson<bool>(json['shouldDecrease']),
+      calibrationDays: serializer.fromJson<int>(json['calibrationDays']),
+      controlStartedAt: serializer.fromJson<DateTime?>(
+        json['controlStartedAt'],
+      ),
+      baseShrinkingLimit: serializer.fromJson<double?>(
+        json['baseShrinkingLimit'],
+      ),
+      shrinkingStartedAt: serializer.fromJson<DateTime?>(
+        json['shrinkingStartedAt'],
+      ),
       decreasePercentage: serializer.fromJson<double?>(
         json['decreasePercentage'],
       ),
-      decreaseInterval: serializer.fromJson<String?>(json['decreaseInterval']),
-      calibrationDays: serializer.fromJson<int>(json['calibrationDays']),
-      lastReviewedControlWeek: serializer.fromJson<int?>(
-        json['lastReviewedControlWeek'],
-      ),
-      controlStartedAt: serializer.fromJson<DateTime?>(
-        json['controlStartedAt'],
+      decreaseIntervalDays: serializer.fromJson<int?>(
+        json['decreaseIntervalDays'],
       ),
     );
   }
@@ -678,13 +713,12 @@ class SessionsTableData extends DataClass
       'avgScore': serializer.toJson<double?>(avgScore),
       'isReviewed': serializer.toJson<bool>(isReviewed),
       'shouldDecrease': serializer.toJson<bool>(shouldDecrease),
-      'decreasePercentage': serializer.toJson<double?>(decreasePercentage),
-      'decreaseInterval': serializer.toJson<String?>(decreaseInterval),
       'calibrationDays': serializer.toJson<int>(calibrationDays),
-      'lastReviewedControlWeek': serializer.toJson<int?>(
-        lastReviewedControlWeek,
-      ),
       'controlStartedAt': serializer.toJson<DateTime?>(controlStartedAt),
+      'baseShrinkingLimit': serializer.toJson<double?>(baseShrinkingLimit),
+      'shrinkingStartedAt': serializer.toJson<DateTime?>(shrinkingStartedAt),
+      'decreasePercentage': serializer.toJson<double?>(decreasePercentage),
+      'decreaseIntervalDays': serializer.toJson<int?>(decreaseIntervalDays),
     };
   }
 
@@ -695,11 +729,12 @@ class SessionsTableData extends DataClass
     Value<double?> avgScore = const Value.absent(),
     bool? isReviewed,
     bool? shouldDecrease,
-    Value<double?> decreasePercentage = const Value.absent(),
-    Value<String?> decreaseInterval = const Value.absent(),
     int? calibrationDays,
-    Value<int?> lastReviewedControlWeek = const Value.absent(),
     Value<DateTime?> controlStartedAt = const Value.absent(),
+    Value<double?> baseShrinkingLimit = const Value.absent(),
+    Value<DateTime?> shrinkingStartedAt = const Value.absent(),
+    Value<double?> decreasePercentage = const Value.absent(),
+    Value<int?> decreaseIntervalDays = const Value.absent(),
   }) => SessionsTableData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -707,19 +742,22 @@ class SessionsTableData extends DataClass
     avgScore: avgScore.present ? avgScore.value : this.avgScore,
     isReviewed: isReviewed ?? this.isReviewed,
     shouldDecrease: shouldDecrease ?? this.shouldDecrease,
-    decreasePercentage: decreasePercentage.present
-        ? decreasePercentage.value
-        : this.decreasePercentage,
-    decreaseInterval: decreaseInterval.present
-        ? decreaseInterval.value
-        : this.decreaseInterval,
     calibrationDays: calibrationDays ?? this.calibrationDays,
-    lastReviewedControlWeek: lastReviewedControlWeek.present
-        ? lastReviewedControlWeek.value
-        : this.lastReviewedControlWeek,
     controlStartedAt: controlStartedAt.present
         ? controlStartedAt.value
         : this.controlStartedAt,
+    baseShrinkingLimit: baseShrinkingLimit.present
+        ? baseShrinkingLimit.value
+        : this.baseShrinkingLimit,
+    shrinkingStartedAt: shrinkingStartedAt.present
+        ? shrinkingStartedAt.value
+        : this.shrinkingStartedAt,
+    decreasePercentage: decreasePercentage.present
+        ? decreasePercentage.value
+        : this.decreasePercentage,
+    decreaseIntervalDays: decreaseIntervalDays.present
+        ? decreaseIntervalDays.value
+        : this.decreaseIntervalDays,
   );
   SessionsTableData copyWithCompanion(SessionsTableCompanion data) {
     return SessionsTableData(
@@ -733,21 +771,24 @@ class SessionsTableData extends DataClass
       shouldDecrease: data.shouldDecrease.present
           ? data.shouldDecrease.value
           : this.shouldDecrease,
-      decreasePercentage: data.decreasePercentage.present
-          ? data.decreasePercentage.value
-          : this.decreasePercentage,
-      decreaseInterval: data.decreaseInterval.present
-          ? data.decreaseInterval.value
-          : this.decreaseInterval,
       calibrationDays: data.calibrationDays.present
           ? data.calibrationDays.value
           : this.calibrationDays,
-      lastReviewedControlWeek: data.lastReviewedControlWeek.present
-          ? data.lastReviewedControlWeek.value
-          : this.lastReviewedControlWeek,
       controlStartedAt: data.controlStartedAt.present
           ? data.controlStartedAt.value
           : this.controlStartedAt,
+      baseShrinkingLimit: data.baseShrinkingLimit.present
+          ? data.baseShrinkingLimit.value
+          : this.baseShrinkingLimit,
+      shrinkingStartedAt: data.shrinkingStartedAt.present
+          ? data.shrinkingStartedAt.value
+          : this.shrinkingStartedAt,
+      decreasePercentage: data.decreasePercentage.present
+          ? data.decreasePercentage.value
+          : this.decreasePercentage,
+      decreaseIntervalDays: data.decreaseIntervalDays.present
+          ? data.decreaseIntervalDays.value
+          : this.decreaseIntervalDays,
     );
   }
 
@@ -760,11 +801,12 @@ class SessionsTableData extends DataClass
           ..write('avgScore: $avgScore, ')
           ..write('isReviewed: $isReviewed, ')
           ..write('shouldDecrease: $shouldDecrease, ')
-          ..write('decreasePercentage: $decreasePercentage, ')
-          ..write('decreaseInterval: $decreaseInterval, ')
           ..write('calibrationDays: $calibrationDays, ')
-          ..write('lastReviewedControlWeek: $lastReviewedControlWeek, ')
-          ..write('controlStartedAt: $controlStartedAt')
+          ..write('controlStartedAt: $controlStartedAt, ')
+          ..write('baseShrinkingLimit: $baseShrinkingLimit, ')
+          ..write('shrinkingStartedAt: $shrinkingStartedAt, ')
+          ..write('decreasePercentage: $decreasePercentage, ')
+          ..write('decreaseIntervalDays: $decreaseIntervalDays')
           ..write(')'))
         .toString();
   }
@@ -777,11 +819,12 @@ class SessionsTableData extends DataClass
     avgScore,
     isReviewed,
     shouldDecrease,
-    decreasePercentage,
-    decreaseInterval,
     calibrationDays,
-    lastReviewedControlWeek,
     controlStartedAt,
+    baseShrinkingLimit,
+    shrinkingStartedAt,
+    decreasePercentage,
+    decreaseIntervalDays,
   );
   @override
   bool operator ==(Object other) =>
@@ -793,11 +836,12 @@ class SessionsTableData extends DataClass
           other.avgScore == this.avgScore &&
           other.isReviewed == this.isReviewed &&
           other.shouldDecrease == this.shouldDecrease &&
-          other.decreasePercentage == this.decreasePercentage &&
-          other.decreaseInterval == this.decreaseInterval &&
           other.calibrationDays == this.calibrationDays &&
-          other.lastReviewedControlWeek == this.lastReviewedControlWeek &&
-          other.controlStartedAt == this.controlStartedAt);
+          other.controlStartedAt == this.controlStartedAt &&
+          other.baseShrinkingLimit == this.baseShrinkingLimit &&
+          other.shrinkingStartedAt == this.shrinkingStartedAt &&
+          other.decreasePercentage == this.decreasePercentage &&
+          other.decreaseIntervalDays == this.decreaseIntervalDays);
 }
 
 class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
@@ -807,11 +851,12 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
   final Value<double?> avgScore;
   final Value<bool> isReviewed;
   final Value<bool> shouldDecrease;
-  final Value<double?> decreasePercentage;
-  final Value<String?> decreaseInterval;
   final Value<int> calibrationDays;
-  final Value<int?> lastReviewedControlWeek;
   final Value<DateTime?> controlStartedAt;
+  final Value<double?> baseShrinkingLimit;
+  final Value<DateTime?> shrinkingStartedAt;
+  final Value<double?> decreasePercentage;
+  final Value<int?> decreaseIntervalDays;
   final Value<int> rowid;
   const SessionsTableCompanion({
     this.id = const Value.absent(),
@@ -820,11 +865,12 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.avgScore = const Value.absent(),
     this.isReviewed = const Value.absent(),
     this.shouldDecrease = const Value.absent(),
-    this.decreasePercentage = const Value.absent(),
-    this.decreaseInterval = const Value.absent(),
     this.calibrationDays = const Value.absent(),
-    this.lastReviewedControlWeek = const Value.absent(),
     this.controlStartedAt = const Value.absent(),
+    this.baseShrinkingLimit = const Value.absent(),
+    this.shrinkingStartedAt = const Value.absent(),
+    this.decreasePercentage = const Value.absent(),
+    this.decreaseIntervalDays = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SessionsTableCompanion.insert({
@@ -834,11 +880,12 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.avgScore = const Value.absent(),
     this.isReviewed = const Value.absent(),
     this.shouldDecrease = const Value.absent(),
-    this.decreasePercentage = const Value.absent(),
-    this.decreaseInterval = const Value.absent(),
     this.calibrationDays = const Value.absent(),
-    this.lastReviewedControlWeek = const Value.absent(),
     this.controlStartedAt = const Value.absent(),
+    this.baseShrinkingLimit = const Value.absent(),
+    this.shrinkingStartedAt = const Value.absent(),
+    this.decreasePercentage = const Value.absent(),
+    this.decreaseIntervalDays = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -850,11 +897,12 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Expression<double>? avgScore,
     Expression<bool>? isReviewed,
     Expression<bool>? shouldDecrease,
-    Expression<double>? decreasePercentage,
-    Expression<String>? decreaseInterval,
     Expression<int>? calibrationDays,
-    Expression<int>? lastReviewedControlWeek,
     Expression<DateTime>? controlStartedAt,
+    Expression<double>? baseShrinkingLimit,
+    Expression<DateTime>? shrinkingStartedAt,
+    Expression<double>? decreasePercentage,
+    Expression<int>? decreaseIntervalDays,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -864,12 +912,15 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       if (avgScore != null) 'avg_score': avgScore,
       if (isReviewed != null) 'is_reviewed': isReviewed,
       if (shouldDecrease != null) 'should_decrease': shouldDecrease,
-      if (decreasePercentage != null) 'decrease_percentage': decreasePercentage,
-      if (decreaseInterval != null) 'decrease_interval': decreaseInterval,
       if (calibrationDays != null) 'calibration_days': calibrationDays,
-      if (lastReviewedControlWeek != null)
-        'last_reviewed_control_week': lastReviewedControlWeek,
       if (controlStartedAt != null) 'control_started_at': controlStartedAt,
+      if (baseShrinkingLimit != null)
+        'base_shrinking_limit': baseShrinkingLimit,
+      if (shrinkingStartedAt != null)
+        'shrinking_started_at': shrinkingStartedAt,
+      if (decreasePercentage != null) 'decrease_percentage': decreasePercentage,
+      if (decreaseIntervalDays != null)
+        'decrease_interval_days': decreaseIntervalDays,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -881,11 +932,12 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Value<double?>? avgScore,
     Value<bool>? isReviewed,
     Value<bool>? shouldDecrease,
-    Value<double?>? decreasePercentage,
-    Value<String?>? decreaseInterval,
     Value<int>? calibrationDays,
-    Value<int?>? lastReviewedControlWeek,
     Value<DateTime?>? controlStartedAt,
+    Value<double?>? baseShrinkingLimit,
+    Value<DateTime?>? shrinkingStartedAt,
+    Value<double?>? decreasePercentage,
+    Value<int?>? decreaseIntervalDays,
     Value<int>? rowid,
   }) {
     return SessionsTableCompanion(
@@ -895,12 +947,12 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       avgScore: avgScore ?? this.avgScore,
       isReviewed: isReviewed ?? this.isReviewed,
       shouldDecrease: shouldDecrease ?? this.shouldDecrease,
-      decreasePercentage: decreasePercentage ?? this.decreasePercentage,
-      decreaseInterval: decreaseInterval ?? this.decreaseInterval,
       calibrationDays: calibrationDays ?? this.calibrationDays,
-      lastReviewedControlWeek:
-          lastReviewedControlWeek ?? this.lastReviewedControlWeek,
       controlStartedAt: controlStartedAt ?? this.controlStartedAt,
+      baseShrinkingLimit: baseShrinkingLimit ?? this.baseShrinkingLimit,
+      shrinkingStartedAt: shrinkingStartedAt ?? this.shrinkingStartedAt,
+      decreasePercentage: decreasePercentage ?? this.decreasePercentage,
+      decreaseIntervalDays: decreaseIntervalDays ?? this.decreaseIntervalDays,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -926,22 +978,25 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     if (shouldDecrease.present) {
       map['should_decrease'] = Variable<bool>(shouldDecrease.value);
     }
-    if (decreasePercentage.present) {
-      map['decrease_percentage'] = Variable<double>(decreasePercentage.value);
-    }
-    if (decreaseInterval.present) {
-      map['decrease_interval'] = Variable<String>(decreaseInterval.value);
-    }
     if (calibrationDays.present) {
       map['calibration_days'] = Variable<int>(calibrationDays.value);
     }
-    if (lastReviewedControlWeek.present) {
-      map['last_reviewed_control_week'] = Variable<int>(
-        lastReviewedControlWeek.value,
-      );
-    }
     if (controlStartedAt.present) {
       map['control_started_at'] = Variable<DateTime>(controlStartedAt.value);
+    }
+    if (baseShrinkingLimit.present) {
+      map['base_shrinking_limit'] = Variable<double>(baseShrinkingLimit.value);
+    }
+    if (shrinkingStartedAt.present) {
+      map['shrinking_started_at'] = Variable<DateTime>(
+        shrinkingStartedAt.value,
+      );
+    }
+    if (decreasePercentage.present) {
+      map['decrease_percentage'] = Variable<double>(decreasePercentage.value);
+    }
+    if (decreaseIntervalDays.present) {
+      map['decrease_interval_days'] = Variable<int>(decreaseIntervalDays.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -958,11 +1013,12 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
           ..write('avgScore: $avgScore, ')
           ..write('isReviewed: $isReviewed, ')
           ..write('shouldDecrease: $shouldDecrease, ')
-          ..write('decreasePercentage: $decreasePercentage, ')
-          ..write('decreaseInterval: $decreaseInterval, ')
           ..write('calibrationDays: $calibrationDays, ')
-          ..write('lastReviewedControlWeek: $lastReviewedControlWeek, ')
           ..write('controlStartedAt: $controlStartedAt, ')
+          ..write('baseShrinkingLimit: $baseShrinkingLimit, ')
+          ..write('shrinkingStartedAt: $shrinkingStartedAt, ')
+          ..write('decreasePercentage: $decreasePercentage, ')
+          ..write('decreaseIntervalDays: $decreaseIntervalDays, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1618,6 +1674,21 @@ class $DaysTableTable extends DaysTable
     requiredDuringInsert: false,
     defaultValue: const Constant('regular'),
   );
+  static const VerificationMeta _isWeeklyReportReviewedMeta =
+      const VerificationMeta('isWeeklyReportReviewed');
+  @override
+  late final GeneratedColumn<bool> isWeeklyReportReviewed =
+      GeneratedColumn<bool>(
+        'is_weekly_report_reviewed',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_weekly_report_reviewed" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1626,6 +1697,7 @@ class $DaysTableTable extends DaysTable
     isBrokenClicked,
     isGoodBoyClicked,
     dayStatus,
+    isWeeklyReportReviewed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1682,6 +1754,15 @@ class $DaysTableTable extends DaysTable
         dayStatus.isAcceptableOrUnknown(data['day_status']!, _dayStatusMeta),
       );
     }
+    if (data.containsKey('is_weekly_report_reviewed')) {
+      context.handle(
+        _isWeeklyReportReviewedMeta,
+        isWeeklyReportReviewed.isAcceptableOrUnknown(
+          data['is_weekly_report_reviewed']!,
+          _isWeeklyReportReviewedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1715,6 +1796,10 @@ class $DaysTableTable extends DaysTable
         DriftSqlType.string,
         data['${effectivePrefix}day_status'],
       )!,
+      isWeeklyReportReviewed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_weekly_report_reviewed'],
+      )!,
     );
   }
 
@@ -1731,6 +1816,7 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
   final bool isBrokenClicked;
   final bool isGoodBoyClicked;
   final String dayStatus;
+  final bool isWeeklyReportReviewed;
   const DaysTableData({
     required this.id,
     required this.date,
@@ -1738,6 +1824,7 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
     required this.isBrokenClicked,
     required this.isGoodBoyClicked,
     required this.dayStatus,
+    required this.isWeeklyReportReviewed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1748,6 +1835,7 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
     map['is_broken_clicked'] = Variable<bool>(isBrokenClicked);
     map['is_good_boy_clicked'] = Variable<bool>(isGoodBoyClicked);
     map['day_status'] = Variable<String>(dayStatus);
+    map['is_weekly_report_reviewed'] = Variable<bool>(isWeeklyReportReviewed);
     return map;
   }
 
@@ -1759,6 +1847,7 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
       isBrokenClicked: Value(isBrokenClicked),
       isGoodBoyClicked: Value(isGoodBoyClicked),
       dayStatus: Value(dayStatus),
+      isWeeklyReportReviewed: Value(isWeeklyReportReviewed),
     );
   }
 
@@ -1774,6 +1863,9 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
       isBrokenClicked: serializer.fromJson<bool>(json['isBrokenClicked']),
       isGoodBoyClicked: serializer.fromJson<bool>(json['isGoodBoyClicked']),
       dayStatus: serializer.fromJson<String>(json['dayStatus']),
+      isWeeklyReportReviewed: serializer.fromJson<bool>(
+        json['isWeeklyReportReviewed'],
+      ),
     );
   }
   @override
@@ -1786,6 +1878,7 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
       'isBrokenClicked': serializer.toJson<bool>(isBrokenClicked),
       'isGoodBoyClicked': serializer.toJson<bool>(isGoodBoyClicked),
       'dayStatus': serializer.toJson<String>(dayStatus),
+      'isWeeklyReportReviewed': serializer.toJson<bool>(isWeeklyReportReviewed),
     };
   }
 
@@ -1796,6 +1889,7 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
     bool? isBrokenClicked,
     bool? isGoodBoyClicked,
     String? dayStatus,
+    bool? isWeeklyReportReviewed,
   }) => DaysTableData(
     id: id ?? this.id,
     date: date ?? this.date,
@@ -1803,6 +1897,8 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
     isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,
     isGoodBoyClicked: isGoodBoyClicked ?? this.isGoodBoyClicked,
     dayStatus: dayStatus ?? this.dayStatus,
+    isWeeklyReportReviewed:
+        isWeeklyReportReviewed ?? this.isWeeklyReportReviewed,
   );
   DaysTableData copyWithCompanion(DaysTableCompanion data) {
     return DaysTableData(
@@ -1816,6 +1912,9 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
           ? data.isGoodBoyClicked.value
           : this.isGoodBoyClicked,
       dayStatus: data.dayStatus.present ? data.dayStatus.value : this.dayStatus,
+      isWeeklyReportReviewed: data.isWeeklyReportReviewed.present
+          ? data.isWeeklyReportReviewed.value
+          : this.isWeeklyReportReviewed,
     );
   }
 
@@ -1827,7 +1926,8 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
           ..write('sessionId: $sessionId, ')
           ..write('isBrokenClicked: $isBrokenClicked, ')
           ..write('isGoodBoyClicked: $isGoodBoyClicked, ')
-          ..write('dayStatus: $dayStatus')
+          ..write('dayStatus: $dayStatus, ')
+          ..write('isWeeklyReportReviewed: $isWeeklyReportReviewed')
           ..write(')'))
         .toString();
   }
@@ -1840,6 +1940,7 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
     isBrokenClicked,
     isGoodBoyClicked,
     dayStatus,
+    isWeeklyReportReviewed,
   );
   @override
   bool operator ==(Object other) =>
@@ -1850,7 +1951,8 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
           other.sessionId == this.sessionId &&
           other.isBrokenClicked == this.isBrokenClicked &&
           other.isGoodBoyClicked == this.isGoodBoyClicked &&
-          other.dayStatus == this.dayStatus);
+          other.dayStatus == this.dayStatus &&
+          other.isWeeklyReportReviewed == this.isWeeklyReportReviewed);
 }
 
 class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
@@ -1860,6 +1962,7 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
   final Value<bool> isBrokenClicked;
   final Value<bool> isGoodBoyClicked;
   final Value<String> dayStatus;
+  final Value<bool> isWeeklyReportReviewed;
   const DaysTableCompanion({
     this.id = const Value.absent(),
     this.date = const Value.absent(),
@@ -1867,6 +1970,7 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
     this.isBrokenClicked = const Value.absent(),
     this.isGoodBoyClicked = const Value.absent(),
     this.dayStatus = const Value.absent(),
+    this.isWeeklyReportReviewed = const Value.absent(),
   });
   DaysTableCompanion.insert({
     this.id = const Value.absent(),
@@ -1875,6 +1979,7 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
     this.isBrokenClicked = const Value.absent(),
     this.isGoodBoyClicked = const Value.absent(),
     this.dayStatus = const Value.absent(),
+    this.isWeeklyReportReviewed = const Value.absent(),
   }) : date = Value(date),
        sessionId = Value(sessionId);
   static Insertable<DaysTableData> custom({
@@ -1884,6 +1989,7 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
     Expression<bool>? isBrokenClicked,
     Expression<bool>? isGoodBoyClicked,
     Expression<String>? dayStatus,
+    Expression<bool>? isWeeklyReportReviewed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1892,6 +1998,8 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
       if (isBrokenClicked != null) 'is_broken_clicked': isBrokenClicked,
       if (isGoodBoyClicked != null) 'is_good_boy_clicked': isGoodBoyClicked,
       if (dayStatus != null) 'day_status': dayStatus,
+      if (isWeeklyReportReviewed != null)
+        'is_weekly_report_reviewed': isWeeklyReportReviewed,
     });
   }
 
@@ -1902,6 +2010,7 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
     Value<bool>? isBrokenClicked,
     Value<bool>? isGoodBoyClicked,
     Value<String>? dayStatus,
+    Value<bool>? isWeeklyReportReviewed,
   }) {
     return DaysTableCompanion(
       id: id ?? this.id,
@@ -1910,6 +2019,8 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
       isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,
       isGoodBoyClicked: isGoodBoyClicked ?? this.isGoodBoyClicked,
       dayStatus: dayStatus ?? this.dayStatus,
+      isWeeklyReportReviewed:
+          isWeeklyReportReviewed ?? this.isWeeklyReportReviewed,
     );
   }
 
@@ -1934,6 +2045,11 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
     if (dayStatus.present) {
       map['day_status'] = Variable<String>(dayStatus.value);
     }
+    if (isWeeklyReportReviewed.present) {
+      map['is_weekly_report_reviewed'] = Variable<bool>(
+        isWeeklyReportReviewed.value,
+      );
+    }
     return map;
   }
 
@@ -1945,7 +2061,8 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
           ..write('sessionId: $sessionId, ')
           ..write('isBrokenClicked: $isBrokenClicked, ')
           ..write('isGoodBoyClicked: $isGoodBoyClicked, ')
-          ..write('dayStatus: $dayStatus')
+          ..write('dayStatus: $dayStatus, ')
+          ..write('isWeeklyReportReviewed: $isWeeklyReportReviewed')
           ..write(')'))
         .toString();
   }
@@ -2262,11 +2379,12 @@ typedef $$SessionsTableTableCreateCompanionBuilder =
       Value<double?> avgScore,
       Value<bool> isReviewed,
       Value<bool> shouldDecrease,
-      Value<double?> decreasePercentage,
-      Value<String?> decreaseInterval,
       Value<int> calibrationDays,
-      Value<int?> lastReviewedControlWeek,
       Value<DateTime?> controlStartedAt,
+      Value<double?> baseShrinkingLimit,
+      Value<DateTime?> shrinkingStartedAt,
+      Value<double?> decreasePercentage,
+      Value<int?> decreaseIntervalDays,
       Value<int> rowid,
     });
 typedef $$SessionsTableTableUpdateCompanionBuilder =
@@ -2277,11 +2395,12 @@ typedef $$SessionsTableTableUpdateCompanionBuilder =
       Value<double?> avgScore,
       Value<bool> isReviewed,
       Value<bool> shouldDecrease,
-      Value<double?> decreasePercentage,
-      Value<String?> decreaseInterval,
       Value<int> calibrationDays,
-      Value<int?> lastReviewedControlWeek,
       Value<DateTime?> controlStartedAt,
+      Value<double?> baseShrinkingLimit,
+      Value<DateTime?> shrinkingStartedAt,
+      Value<double?> decreasePercentage,
+      Value<int?> decreaseIntervalDays,
       Value<int> rowid,
     });
 
@@ -2376,28 +2495,33 @@ class $$SessionsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get decreasePercentage => $composableBuilder(
-    column: $table.decreasePercentage,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get decreaseInterval => $composableBuilder(
-    column: $table.decreaseInterval,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<int> get calibrationDays => $composableBuilder(
     column: $table.calibrationDays,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get lastReviewedControlWeek => $composableBuilder(
-    column: $table.lastReviewedControlWeek,
+  ColumnFilters<DateTime> get controlStartedAt => $composableBuilder(
+    column: $table.controlStartedAt,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<DateTime> get controlStartedAt => $composableBuilder(
-    column: $table.controlStartedAt,
+  ColumnFilters<double> get baseShrinkingLimit => $composableBuilder(
+    column: $table.baseShrinkingLimit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get shrinkingStartedAt => $composableBuilder(
+    column: $table.shrinkingStartedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get decreasePercentage => $composableBuilder(
+    column: $table.decreasePercentage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get decreaseIntervalDays => $composableBuilder(
+    column: $table.decreaseIntervalDays,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2491,28 +2615,33 @@ class $$SessionsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get decreasePercentage => $composableBuilder(
-    column: $table.decreasePercentage,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get decreaseInterval => $composableBuilder(
-    column: $table.decreaseInterval,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get calibrationDays => $composableBuilder(
     column: $table.calibrationDays,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get lastReviewedControlWeek => $composableBuilder(
-    column: $table.lastReviewedControlWeek,
+  ColumnOrderings<DateTime> get controlStartedAt => $composableBuilder(
+    column: $table.controlStartedAt,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<DateTime> get controlStartedAt => $composableBuilder(
-    column: $table.controlStartedAt,
+  ColumnOrderings<double> get baseShrinkingLimit => $composableBuilder(
+    column: $table.baseShrinkingLimit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get shrinkingStartedAt => $composableBuilder(
+    column: $table.shrinkingStartedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get decreasePercentage => $composableBuilder(
+    column: $table.decreasePercentage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get decreaseIntervalDays => $composableBuilder(
+    column: $table.decreaseIntervalDays,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -2548,28 +2677,33 @@ class $$SessionsTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<double> get decreasePercentage => $composableBuilder(
-    column: $table.decreasePercentage,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get decreaseInterval => $composableBuilder(
-    column: $table.decreaseInterval,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<int> get calibrationDays => $composableBuilder(
     column: $table.calibrationDays,
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get lastReviewedControlWeek => $composableBuilder(
-    column: $table.lastReviewedControlWeek,
+  GeneratedColumn<DateTime> get controlStartedAt => $composableBuilder(
+    column: $table.controlStartedAt,
     builder: (column) => column,
   );
 
-  GeneratedColumn<DateTime> get controlStartedAt => $composableBuilder(
-    column: $table.controlStartedAt,
+  GeneratedColumn<double> get baseShrinkingLimit => $composableBuilder(
+    column: $table.baseShrinkingLimit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get shrinkingStartedAt => $composableBuilder(
+    column: $table.shrinkingStartedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get decreasePercentage => $composableBuilder(
+    column: $table.decreasePercentage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get decreaseIntervalDays => $composableBuilder(
+    column: $table.decreaseIntervalDays,
     builder: (column) => column,
   );
 
@@ -2658,11 +2792,12 @@ class $$SessionsTableTableTableManager
                 Value<double?> avgScore = const Value.absent(),
                 Value<bool> isReviewed = const Value.absent(),
                 Value<bool> shouldDecrease = const Value.absent(),
-                Value<double?> decreasePercentage = const Value.absent(),
-                Value<String?> decreaseInterval = const Value.absent(),
                 Value<int> calibrationDays = const Value.absent(),
-                Value<int?> lastReviewedControlWeek = const Value.absent(),
                 Value<DateTime?> controlStartedAt = const Value.absent(),
+                Value<double?> baseShrinkingLimit = const Value.absent(),
+                Value<DateTime?> shrinkingStartedAt = const Value.absent(),
+                Value<double?> decreasePercentage = const Value.absent(),
+                Value<int?> decreaseIntervalDays = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion(
                 id: id,
@@ -2671,11 +2806,12 @@ class $$SessionsTableTableTableManager
                 avgScore: avgScore,
                 isReviewed: isReviewed,
                 shouldDecrease: shouldDecrease,
-                decreasePercentage: decreasePercentage,
-                decreaseInterval: decreaseInterval,
                 calibrationDays: calibrationDays,
-                lastReviewedControlWeek: lastReviewedControlWeek,
                 controlStartedAt: controlStartedAt,
+                baseShrinkingLimit: baseShrinkingLimit,
+                shrinkingStartedAt: shrinkingStartedAt,
+                decreasePercentage: decreasePercentage,
+                decreaseIntervalDays: decreaseIntervalDays,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2686,11 +2822,12 @@ class $$SessionsTableTableTableManager
                 Value<double?> avgScore = const Value.absent(),
                 Value<bool> isReviewed = const Value.absent(),
                 Value<bool> shouldDecrease = const Value.absent(),
-                Value<double?> decreasePercentage = const Value.absent(),
-                Value<String?> decreaseInterval = const Value.absent(),
                 Value<int> calibrationDays = const Value.absent(),
-                Value<int?> lastReviewedControlWeek = const Value.absent(),
                 Value<DateTime?> controlStartedAt = const Value.absent(),
+                Value<double?> baseShrinkingLimit = const Value.absent(),
+                Value<DateTime?> shrinkingStartedAt = const Value.absent(),
+                Value<double?> decreasePercentage = const Value.absent(),
+                Value<int?> decreaseIntervalDays = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion.insert(
                 id: id,
@@ -2699,11 +2836,12 @@ class $$SessionsTableTableTableManager
                 avgScore: avgScore,
                 isReviewed: isReviewed,
                 shouldDecrease: shouldDecrease,
-                decreasePercentage: decreasePercentage,
-                decreaseInterval: decreaseInterval,
                 calibrationDays: calibrationDays,
-                lastReviewedControlWeek: lastReviewedControlWeek,
                 controlStartedAt: controlStartedAt,
+                baseShrinkingLimit: baseShrinkingLimit,
+                shrinkingStartedAt: shrinkingStartedAt,
+                decreasePercentage: decreasePercentage,
+                decreaseIntervalDays: decreaseIntervalDays,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3361,6 +3499,7 @@ typedef $$DaysTableTableCreateCompanionBuilder =
       Value<bool> isBrokenClicked,
       Value<bool> isGoodBoyClicked,
       Value<String> dayStatus,
+      Value<bool> isWeeklyReportReviewed,
     });
 typedef $$DaysTableTableUpdateCompanionBuilder =
     DaysTableCompanion Function({
@@ -3370,6 +3509,7 @@ typedef $$DaysTableTableUpdateCompanionBuilder =
       Value<bool> isBrokenClicked,
       Value<bool> isGoodBoyClicked,
       Value<String> dayStatus,
+      Value<bool> isWeeklyReportReviewed,
     });
 
 final class $$DaysTableTableReferences
@@ -3427,6 +3567,11 @@ class $$DaysTableTableFilterComposer
 
   ColumnFilters<String> get dayStatus => $composableBuilder(
     column: $table.dayStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isWeeklyReportReviewed => $composableBuilder(
+    column: $table.isWeeklyReportReviewed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3488,6 +3633,11 @@ class $$DaysTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isWeeklyReportReviewed => $composableBuilder(
+    column: $table.isWeeklyReportReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$SessionsTableTableOrderingComposer get sessionId {
     final $$SessionsTableTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3539,6 +3689,11 @@ class $$DaysTableTableAnnotationComposer
 
   GeneratedColumn<String> get dayStatus =>
       $composableBuilder(column: $table.dayStatus, builder: (column) => column);
+
+  GeneratedColumn<bool> get isWeeklyReportReviewed => $composableBuilder(
+    column: $table.isWeeklyReportReviewed,
+    builder: (column) => column,
+  );
 
   $$SessionsTableTableAnnotationComposer get sessionId {
     final $$SessionsTableTableAnnotationComposer composer = $composerBuilder(
@@ -3598,6 +3753,7 @@ class $$DaysTableTableTableManager
                 Value<bool> isBrokenClicked = const Value.absent(),
                 Value<bool> isGoodBoyClicked = const Value.absent(),
                 Value<String> dayStatus = const Value.absent(),
+                Value<bool> isWeeklyReportReviewed = const Value.absent(),
               }) => DaysTableCompanion(
                 id: id,
                 date: date,
@@ -3605,6 +3761,7 @@ class $$DaysTableTableTableManager
                 isBrokenClicked: isBrokenClicked,
                 isGoodBoyClicked: isGoodBoyClicked,
                 dayStatus: dayStatus,
+                isWeeklyReportReviewed: isWeeklyReportReviewed,
               ),
           createCompanionCallback:
               ({
@@ -3614,6 +3771,7 @@ class $$DaysTableTableTableManager
                 Value<bool> isBrokenClicked = const Value.absent(),
                 Value<bool> isGoodBoyClicked = const Value.absent(),
                 Value<String> dayStatus = const Value.absent(),
+                Value<bool> isWeeklyReportReviewed = const Value.absent(),
               }) => DaysTableCompanion.insert(
                 id: id,
                 date: date,
@@ -3621,6 +3779,7 @@ class $$DaysTableTableTableManager
                 isBrokenClicked: isBrokenClicked,
                 isGoodBoyClicked: isGoodBoyClicked,
                 dayStatus: dayStatus,
+                isWeeklyReportReviewed: isWeeklyReportReviewed,
               ),
           withReferenceMapper: (p0) => p0
               .map(

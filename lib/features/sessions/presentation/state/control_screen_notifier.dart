@@ -6,6 +6,7 @@ import 'package:dopamine_budget/features/sessions/domain/entities/day_log.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/habits/domain/repositories/habit_repository.dart';
 import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
 
 enum ControlScreenStatus { active, brokenLocked }
 
@@ -85,6 +86,7 @@ class ControlScreenState {
 class ControlScreenNotifier extends ChangeNotifier {
   final SessionRepository _sessionRepository;
   final HabitRepository _habitRepository;
+  final GetDailyLimitUseCase _getDailyLimitUseCase;
 
   ControlScreenState _state = ControlScreenState.initial();
   ControlScreenState get state => _state;
@@ -114,15 +116,17 @@ class ControlScreenNotifier extends ChangeNotifier {
   ControlScreenNotifier({
     required SessionRepository sessionRepository,
     required HabitRepository habitRepository,
+    required GetDailyLimitUseCase getDailyLimitUseCase,
   })  : _sessionRepository = sessionRepository,
-        _habitRepository = habitRepository {
+        _habitRepository = habitRepository,
+        _getDailyLimitUseCase = getDailyLimitUseCase {
     _habitsSub = _habitRepository.watchHabits().listen((habits) {
       _habits = habits;
       _recompute();
     });
 
     _sessionSub = _sessionRepository.watchActiveSession().listen((session) {
-      debugPrint('[ControlScreen] watchActiveSession emit: phase=${session?.phase}, avgScore=${session?.avgScore}, dailyLimit=${session?.dailyLimit}');
+      debugPrint('[ControlScreen] watchActiveSession emit: phase=${session?.phase}, avgScore=${session?.avgScore}');
       _session = session;
       _subscribeToScore();
 
@@ -199,28 +203,51 @@ class ControlScreenNotifier extends ChangeNotifier {
   /// Псевдоним для control_screen.dart
   void checkAndResetDayIfNeeded() => checkForNewDay();
 
-  void _recompute() {
-    // Источник правды о срыве — dayStatus, а не legacy-поле isBrokenClicked.
-    final String dayStatus = _dayLog?.dayStatus ?? 'regular';
-    final bool isBroken = dayStatus == 'broken';
-    final int dailyLimit = (_session?.dailyLimit ?? 0).toInt();
-    final int balance = isBroken
-        ? 0
-        : (dailyLimit - _spentToday).clamp(0, dailyLimit > 0 ? dailyLimit : 0);
+  bool _isRecomputing = false;
+  bool _recomputeQueued = false;
 
-    debugPrint('[ControlScreen] _recompute: phase=${_session?.phase}, dailyLimit=$dailyLimit, spent=$_spentToday, balance=$balance, dayStatus=$dayStatus');
+  Future<void> _recompute() async {
+    if (_isRecomputing) {
+      _recomputeQueued = true;
+      return;
+    }
+    _isRecomputing = true;
 
-    _state = _state.copyWith(
-      status: isBroken ? ControlScreenStatus.brokenLocked : ControlScreenStatus.active,
-      balance: balance,
-      dailyLimit: dailyLimit,
-      habits: _habits,
-      selectedIds: _selectedIds,
-      isLoading: false,
-      dayStatus: dayStatus,
-      hasHabitClickToday: _spentToday > 0,
-    );
-    notifyListeners();
+    try {
+      final session = _session;
+      if (session == null) return;
+
+      final String dayStatus = _dayLog?.dayStatus ?? 'regular';
+      final bool isBroken = dayStatus == 'broken';
+
+      final double? currentLimit = await _getDailyLimitUseCase.execute();
+      if (currentLimit == null) return;
+
+      final int dailyLimit = currentLimit.round();
+      final int balance = isBroken
+          ? 0
+          : (dailyLimit - _spentToday).clamp(0, dailyLimit);
+
+      debugPrint('[ControlScreen] _recompute: phase=${session.phase}, dailyLimit=$dailyLimit, spent=$_spentToday, balance=$balance, dayStatus=$dayStatus');
+
+      _state = _state.copyWith(
+        status: isBroken ? ControlScreenStatus.brokenLocked : ControlScreenStatus.active,
+        balance: balance,
+        dailyLimit: dailyLimit,
+        habits: _habits,
+        selectedIds: _selectedIds,
+        isLoading: false,
+        dayStatus: dayStatus,
+        hasHabitClickToday: _spentToday > 0,
+      );
+      notifyListeners();
+    } finally {
+      _isRecomputing = false;
+      if (_recomputeQueued) {
+        _recomputeQueued = false;
+        await _recompute();
+      }
+    }
   }
 
   @override

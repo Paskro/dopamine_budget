@@ -8,6 +8,8 @@ import 'package:dopamine_budget/features/sessions/domain/repositories/session_re
 import 'package:dopamine_budget/features/scoring/domain/repositories/scoring_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_current_dopamine_balance_usecase.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/toggle_shrinking_mode_usecase.dart';
+import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
 
 // lib/features/scoring/presentation/state/scoring_notifier.dart
 
@@ -16,6 +18,7 @@ class ScoringNotifier extends ChangeNotifier {
   final ScoringRepository _scoringRepository;
   final VerifyCalibrationExpiryUseCase _verifyCalibrationExpiry;
   final GetCurrentDopamineBalanceUseCase _getDopamineBalance;
+  final GetDailyLimitUseCase _getDailyLimitUseCase;
 
   ScoringState _state = ScoringState.initial();
   ScoringState get state => _state;
@@ -28,26 +31,27 @@ class ScoringNotifier extends ChangeNotifier {
   StreamSubscription<Session?>? _sessionSub;
   StreamSubscription<int>? _spentSub;
 
+  final ToggleShrinkingModeUseCase _toggleShrinkingMode;
+
   ScoringNotifier({
     required SessionRepository sessionRepository,
     required ScoringRepository scoringRepository,
     required VerifyCalibrationExpiryUseCase verifyCalibrationExpiry,
     required GetCurrentDopamineBalanceUseCase getDopamineBalance,
+    required ToggleShrinkingModeUseCase toggleShrinkingMode,
+    required GetDailyLimitUseCase getDailyLimitUseCase,
   })  : _sessionRepository = sessionRepository,
         _scoringRepository = scoringRepository,
         _verifyCalibrationExpiry = verifyCalibrationExpiry,
-        _getDopamineBalance = getDopamineBalance {
-
-    // Главная подписка на активную сессию
+        _getDopamineBalance = getDopamineBalance,
+        _toggleShrinkingMode = toggleShrinkingMode,
+        _getDailyLimitUseCase = getDailyLimitUseCase {
     _sessionSub = _sessionRepository.watchActiveSession().listen((session) {
       debugPrint('[ScoringNotifier] watchActiveSession emit: phase=${session?.phase}');
       _session = session;
-
-      // При обновлении сессии проверяем калибровку и обновляем подписку на баланс
       _verifyCalibrationAndSync();
     });
   }
-
   // ==========================================
   // БЛОК 1: УПРАВЛЕНИЕ СМЕНОЙ СУТОК (РЕАКТИВНОЕ ПЕРЕПОДКЛЮЧЕНИЕ)
   // ==========================================
@@ -156,13 +160,10 @@ class ScoringNotifier extends ChangeNotifier {
 
       final balance = await _getDopamineBalance.execute();
       final clicksToday = await _scoringRepository.getHabitClicksForDay(TimeProvider.now);
+      final currentLimit = await _getDailyLimitUseCase.execute() ?? 0.0;
 
-      // Токен: если за время обоих await кто-то успел увеличить счётчик —
-      // наш расчёт устарел. Не пишем его в _state и не зовём notifyListeners,
-      // именно это убирает "мигание" старой фазой.
       if (currentExecutionId != _executionCounter) return;
 
-      final int currentLimit = (session.dailyLimit ?? 0).toInt();
       final String currentPhase = session.phase == 0 ? 'stats' : 'control';
 
       _state = _state.copyWith(
@@ -176,6 +177,13 @@ class ScoringNotifier extends ChangeNotifier {
         currentSession: session,
         currentSessionId: session.id,
         lastUpdateDate: _currentDay,
+        isShrinkingEnabled: session.shrinkingStartedAt != null,
+        decreasePercentage: session.decreasePercentage != null
+            ? (session.decreasePercentage! * 100).roundToDouble()
+            : _state.decreasePercentage,
+        decreaseInterval: session.decreaseIntervalDays != null
+            ? (session.decreaseIntervalDays == 7 ? 'week' : 'month')
+            : _state.decreaseInterval,
       );
 
       notifyListeners();
@@ -232,6 +240,53 @@ class ScoringNotifier extends ChangeNotifier {
       return await _sessionRepository.getMostFrequentHabitSince(sessionStartDate);
     } catch (_) {
       return null;
+    }
+  }
+
+  Future<void> toggleShrinking(bool isEnabled) async {
+    if (isEnabled && _session != null) {
+      final percentage = _state.decreasePercentage ?? 2.0;
+      final interval = _state.decreaseInterval ?? 'week';
+      await _sessionRepository.updateSession(
+        _session!.copyWith(
+          shrinkingStartedAt: isEnabled ? TimeProvider.now : null,
+          baseShrinkingLimit: _session!.avgScore,
+          decreasePercentage: percentage / 100.0,
+          decreaseIntervalDays: interval == 'week' ? 7 : 30,
+        ),
+      );
+    } else if (!isEnabled && _session != null) {
+      await _sessionRepository.updateSession(
+        _session!.copyWith(
+          shrinkingStartedAt: null,
+          baseShrinkingLimit: null,
+          decreasePercentage: null,
+          decreaseIntervalDays: null,
+        ),
+      );
+    }
+    _state = _state.copyWith(isShrinkingEnabled: isEnabled);
+    notifyListeners();
+    await _recompute();
+  }
+
+  Future<void> updateDecreaseSettings({
+    required double percentage,
+    required String interval,
+  }) async {
+    _state = _state.copyWith(
+      decreasePercentage: percentage,
+      decreaseInterval: interval,
+    );
+    notifyListeners();
+
+    if (_state.isShrinkingEnabled && _session != null) {
+      await _sessionRepository.updateSession(
+        _session!.copyWith(
+          decreasePercentage: percentage / 100.0,
+          decreaseIntervalDays: interval == 'week' ? 7 : 30,
+        ),
+      );
     }
   }
 

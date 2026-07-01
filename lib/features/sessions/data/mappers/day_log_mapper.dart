@@ -16,6 +16,7 @@ class DayLogMapper {
       isBrokenClicked: data.isBrokenClicked,
       isGoodBoyClicked: data.isGoodBoyClicked,
       dayStatus: data.dayStatus,
+      isWeeklyReportReviewed: data.isWeeklyReportReviewed,
     );
   }
 
@@ -27,6 +28,7 @@ class DayLogMapper {
       isBrokenClicked: Value(dayLog.isBrokenClicked),
       isGoodBoyClicked: Value(dayLog.isGoodBoyClicked),
       dayStatus: Value(dayLog.dayStatus),
+      isWeeklyReportReviewed: Value(dayLog.isWeeklyReportReviewed),
     );
   }
 
@@ -39,6 +41,7 @@ class DayLogMapper {
       isBrokenClicked: Value(dayLog.isBrokenClicked),
       isGoodBoyClicked: Value(dayLog.isGoodBoyClicked),
       dayStatus: Value(dayLog.dayStatus),
+      isWeeklyReportReviewed: Value(dayLog.isWeeklyReportReviewed),
     );
   }
 

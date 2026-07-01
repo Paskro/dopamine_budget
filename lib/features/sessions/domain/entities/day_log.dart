@@ -14,6 +14,7 @@ class DayLog {
 
   final bool isGoodBoyClicked;
   final String dayStatus;  // 'regular' | 'ideal' | 'almost_ideal' | 'broken' (терминальный)
+  final bool isWeeklyReportReviewed;
 
   const DayLog({
     required this.id,
@@ -22,6 +23,7 @@ class DayLog {
     required this.isBrokenClicked,
     required this.isGoodBoyClicked,
     required this.dayStatus,
+    required this.isWeeklyReportReviewed,
   });
 
   /// Единственный корректный способ проверки срыва дня.
@@ -34,6 +36,7 @@ class DayLog {
     bool? isBrokenClicked,
     bool? isGoodBoyClicked,
     String? dayStatus,
+    bool? isWeeklyReportReviewed,
   }) {
     return DayLog(
       id: id ?? this.id,
@@ -42,6 +45,7 @@ class DayLog {
       isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,
       isGoodBoyClicked: isGoodBoyClicked ?? this.isGoodBoyClicked,
       dayStatus: dayStatus ?? this.dayStatus,
+      isWeeklyReportReviewed: isWeeklyReportReviewed ?? this.isWeeklyReportReviewed,
     );
   }
 }

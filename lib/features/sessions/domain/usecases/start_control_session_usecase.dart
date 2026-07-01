@@ -25,7 +25,7 @@ class StartControlSessionUseCase {
         avgScore: Value(manualLimit),
         shouldDecrease: Value(shouldDecrease),
         decreasePercentage: Value(decreasePercentage),
-        decreaseInterval: Value(decreaseInterval),
+        decreaseIntervalDays: const Value(null),
         // Для ручного контроля controlStartedAt = момент создания сессии
         controlStartedAt: Value(now),
       );
@@ -38,8 +38,8 @@ class StartControlSessionUseCase {
         phase: 1,
         avgScore: manualLimit,
         shouldDecrease: shouldDecrease,
-        decreasePercentage: decreasePercentage?.toInt(),
-        decreaseInterval: decreaseInterval,
+        decreasePercentage: decreasePercentage,
+        decreaseIntervalDays: null,
         controlStartedAt: now,
       );
     } catch (e) {

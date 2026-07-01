@@ -49,9 +49,6 @@ class AppDatabase extends _$AppDatabase {
           // Добавляем колонку для фиксации момента старта фазы контроля
           await m.addColumn(sessionsTable, sessionsTable.controlStartedAt);
         }
-        if (from < 7) {
-          await m.addColumn(sessionsTable, sessionsTable.lastReviewedControlWeek);
-        }
         if (from < 8) {
           await m.recreateAllViews();
           // Drift не умеет ALTER CONSTRAINT — пересоздаём таблицы с новым FK

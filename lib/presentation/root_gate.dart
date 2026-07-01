@@ -80,13 +80,8 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
 
   Future<void> _markWeeklyReportReviewed() async {
     final report = _pendingWeeklyReport;
-    final session = widget.sessionsNotifier.state.currentSession;
-    if (report == null || session == null) return;
-
-    final updated = session.copyWith(
-      lastReviewedControlWeek: report.weekNumber,
-    );
-    await widget.sessionsNotifier.updateSession(updated);
+    if (report == null) return;
+    await widget.sessionRepository.markWeeklyReportAsReviewed(report.weekEnd);
     if (mounted) setState(() => _pendingWeeklyReport = null);
   }
 
@@ -110,13 +105,26 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
             onStartCalibration: (days) {
               widget.sessionsNotifier.restartCalibration(durationDays: days);
             },
-            onStartControl: ({required limit, required shouldDecrease, percentage, interval}) {
-              widget.sessionsNotifier.startManualControl(
-                limit: limit,
-                shouldDecrease: shouldDecrease,
-                decreasePercentage: percentage,
-                decreaseInterval: interval,
-              );
+            onStartControl: ({
+              required limit,
+              required shouldDecrease,
+              percentage,
+              interval,
+              bool enableShrinking = false,
+            }) async {
+              try {
+                await widget.sessionsNotifier.startManualControl(
+                  limit: limit,
+                  shouldDecrease: shouldDecrease,
+                  decreasePercentage: percentage,
+                  decreaseInterval: interval,
+                );
+                if (enableShrinking) {
+                  await widget.scoringNotifier.toggleShrinking(true);
+                }
+              } catch (e) {
+                debugPrint('[RootGate] onStartControl failed: $e');
+              }
             },
           );
         } else {
@@ -141,6 +149,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
               archiveSessionUseCase: widget.archiveSessionUseCase,
               deleteSessionUseCase: widget.deleteSessionUseCase,
               sessionRepository: widget.sessionRepository,
+              scoringNotifier: widget.scoringNotifier,
             );
           } else {
             content = HomePage(
