@@ -7,14 +7,12 @@ import 'package:dopamine_budget/features/scoring/presentation/state/scoring_noti
 class SessionSettingsSheet extends StatelessWidget {
   final Session session;
   final HabitsNotifier habitsNotifier;
-  final Future<void> Function() onArchive;
   final ScoringNotifier scoringNotifier;
 
   const SessionSettingsSheet({
     super.key,
     required this.session,
     required this.habitsNotifier,
-    required this.onArchive,
     required this.scoringNotifier,
   });
 
@@ -22,7 +20,6 @@ class SessionSettingsSheet extends StatelessWidget {
     required BuildContext context,
     required Session session,
     required HabitsNotifier habitsNotifier,
-    required Future<void> Function() onArchive,
     required ScoringNotifier scoringNotifier,
   }) {
     return showModalBottomSheet(
@@ -34,19 +31,20 @@ class SessionSettingsSheet extends StatelessWidget {
       builder: (_) => SessionSettingsSheet(
         session: session,
         habitsNotifier: habitsNotifier,
-        onArchive: onArchive,
         scoringNotifier: scoringNotifier,
       ),
     );
   }
 
-  Future<void> _confirmArchive(BuildContext context) async {
+  Future<void> _confirmDisableShrinking(
+      BuildContext context, ScoringNotifier scoringNotifier) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Завершить сессию?'),
+        title: const Text('Отключить усыхание?'),
         content: const Text(
-          'Сессия будет закрыта. Для продолжения нужно будет начать новую сессию.',
+          'Текущий лимит будет зафиксирован как новая база. '
+              'Повторное включение начнёт отсчёт от этого значения.',
         ),
         actions: [
           TextButton(
@@ -55,13 +53,13 @@ class SessionSettingsSheet extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Завершить', style: TextStyle(color: Colors.red)),
+            child: const Text('Отключить', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
     if (confirmed == true) {
-      await onArchive();
+      await scoringNotifier.toggleShrinking(false);
     }
   }
 
@@ -111,7 +109,6 @@ class SessionSettingsSheet extends StatelessWidget {
                     child: ListenableBuilder(
                       listenable: scoringNotifier,
                       builder: (context, _) {
-                        final isShrinking = scoringNotifier.state.isShrinkingEnabled;
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -120,20 +117,11 @@ class SessionSettingsSheet extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleSmall,
                             ),
                             const SizedBox(height: 8),
-                            SwitchListTile(
-                              title: const Text('Усыхание активно',
-                                  style: TextStyle(fontSize: 14)),
-                              subtitle: const Text(
-                                  'Лимит снижается согласно заданному темпу',
-                                  style: TextStyle(fontSize: 12)),
-                              value: isShrinking,
-                              contentPadding: EdgeInsets.zero,
-                              onChanged: (val) => scoringNotifier.toggleShrinking(val),
+                            _ShrinkingSettings(
+                              scoringNotifier: scoringNotifier,
+                              isEditAllowed: scoringNotifier.state.isShrinkEditAllowed,
+                              onDisable: () => _confirmDisableShrinking(context, scoringNotifier),
                             ),
-                            if (isShrinking) ...[
-                              const SizedBox(height: 16),
-                              _ShrinkingSettings(scoringNotifier: scoringNotifier),
-                            ],
                           ],
                         );
                       },
@@ -141,28 +129,7 @@ class SessionSettingsSheet extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: const Divider(),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              child: SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.stop_circle_outlined, color: Colors.red),
-                  label: const Text(
-                    'Завершить сессию',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.red),
-                  ),
-                  onPressed: () => _confirmArchive(context),
-                ),
-              ),
-            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -172,7 +139,14 @@ class SessionSettingsSheet extends StatelessWidget {
 
 class _ShrinkingSettings extends StatefulWidget {
   final ScoringNotifier scoringNotifier;
-  const _ShrinkingSettings({required this.scoringNotifier});
+  final bool isEditAllowed;
+  final VoidCallback onDisable;
+
+  const _ShrinkingSettings({
+    required this.scoringNotifier,
+    required this.isEditAllowed,
+    required this.onDisable,
+  });
 
   @override
   State<_ShrinkingSettings> createState() => _ShrinkingSettingsState();
@@ -181,7 +155,6 @@ class _ShrinkingSettings extends StatefulWidget {
 class _ShrinkingSettingsState extends State<_ShrinkingSettings> {
   late double _pct;
   late String _interval;
-  bool _isDirty = false;
 
   @override
   void initState() {
@@ -190,36 +163,32 @@ class _ShrinkingSettingsState extends State<_ShrinkingSettings> {
     _interval = widget.scoringNotifier.state.decreaseInterval ?? 'week';
   }
 
-  void _onPctChanged(double val) {
-    setState(() {
-      _pct = val;
-      _isDirty = _hasChanges();
-    });
+  String get _previewText {
+    final base = widget.scoringNotifier.state.dailyLimit;
+    final next = base * (1 - _pct / 100);
+    final periodLabel = _interval == 'week' ? '7 дней' : '1 месяц';
+    return 'Сейчас: ${base.round()} баллов. '
+        'Через $periodLabel станет: ${next.round()} баллов';
   }
 
-  void _onIntervalChanged(String val) {
-    setState(() {
-      _interval = val;
-      _isDirty = _hasChanges();
-    });
-  }
-
-  bool _hasChanges() {
-    final state = widget.scoringNotifier.state;
-    return _pct != (state.decreasePercentage ?? 2.0) ||
-        _interval != (state.decreaseInterval ?? 'week');
-  }
-
-  Future<void> _apply() async {
-    await widget.scoringNotifier.updateDecreaseSettings(
-      percentage: _pct,
+  Future<void> _confirm() async {
+    await widget.scoringNotifier.toggleShrinking(
+      true,
+      pct: _pct,
       interval: _interval,
     );
-    if (mounted) setState(() => _isDirty = false);
+  }
+
+  Future<void> _applyEdit() async {
+    await widget.scoringNotifier.toggleShrinking(false);
+    await widget.scoringNotifier.toggleShrinking(true, pct: _pct, interval: _interval);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isShrinkingActive = widget.scoringNotifier.state.isShrinkingEnabled;
+    final canEdit = !isShrinkingActive || widget.isEditAllowed;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -227,7 +196,8 @@ class _ShrinkingSettingsState extends State<_ShrinkingSettings> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Снижение:', style: TextStyle(fontSize: 13)),
-            Text('${_pct.round()}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('${_pct.round()}%',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         Slider(
@@ -236,7 +206,7 @@ class _ShrinkingSettingsState extends State<_ShrinkingSettings> {
           max: 30,
           divisions: 28,
           label: '${_pct.round()}%',
-          onChanged: _onPctChanged,
+          onChanged: canEdit ? (val) => setState(() => _pct = val) : null,
         ),
         if (_pct > 15)
           const Padding(
@@ -254,14 +224,51 @@ class _ShrinkingSettingsState extends State<_ShrinkingSettings> {
             ButtonSegment(value: 'month', label: Text('Месяц')),
           ],
           selected: {_interval},
-          onSelectionChanged: (val) => _onIntervalChanged(val.first),
+          onSelectionChanged: canEdit
+              ? (val) => setState(() => _interval = val.first)
+              : null,
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            _previewText,
+            style: TextStyle(fontSize: 12, color: Colors.blue.shade800),
+          ),
         ),
         const SizedBox(height: 16),
+        if (!isShrinkingActive)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _confirm,
+              child: const Text('Активировать'),
+            ),
+          ),
+        if (isShrinkingActive && widget.isEditAllowed)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _applyEdit,
+              child: const Text('Применить'),
+            ),
+          ),
+
+        if (isShrinkingActive && !widget.isEditAllowed)
+          Text(
+            'Изменение параметров доступно в первый день нового периода.',
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          ),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
-          child: FilledButton(
-            onPressed: _isDirty ? _apply : null,
-            child: const Text('Применить'),
+          child: OutlinedButton(
+            onPressed: widget.onDisable,
+            child: const Text('Отключить'),
           ),
         ),
       ],

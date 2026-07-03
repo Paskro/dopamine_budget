@@ -18,6 +18,7 @@ class SessionMapper {
       shrinkingStartedAt: data.shrinkingStartedAt,
       decreasePercentage: data.decreasePercentage,
       decreaseIntervalDays: data.decreaseIntervalDays,
+      shrunkenLimit: data.shrunkenLimit,
     );
   }
 
@@ -35,6 +36,7 @@ class SessionMapper {
       shrinkingStartedAt: Value(session.shrinkingStartedAt),
       decreasePercentage: Value(session.decreasePercentage),
       decreaseIntervalDays: Value(session.decreaseIntervalDays),
+      shrunkenLimit: Value(session.shrunkenLimit),
     );
   }
 }

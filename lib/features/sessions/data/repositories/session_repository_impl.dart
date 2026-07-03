@@ -5,6 +5,10 @@ import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/day_log.dart';
 import 'package:dopamine_budget/features/sessions/data/mappers/day_log_mapper.dart';
+import 'package:dopamine_budget/features/sessions/data/mappers/shrinking_period_mapper.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/day_stats.dart';
+
 
 class SessionRepositoryImpl implements SessionRepository {
   final AppDatabase _db;
@@ -47,6 +51,7 @@ class SessionRepositoryImpl implements SessionRepository {
         shrinkingStartedAt: Value(session.shrinkingStartedAt),
         decreasePercentage: Value(session.decreasePercentage),
         decreaseIntervalDays: Value(session.decreaseIntervalDays),
+        shrunkenLimit: Value(session.shrunkenLimit),
       );
       await (_db.update(_db.sessionsTable)
         ..where((t) => t.id.equals(session.id)))
@@ -154,6 +159,7 @@ class SessionRepositoryImpl implements SessionRepository {
       shrinkingStartedAt: Value(session.shrinkingStartedAt),
       decreasePercentage: Value(session.decreasePercentage),
       decreaseIntervalDays: Value(session.decreaseIntervalDays),
+      shrunkenLimit: Value(session.shrunkenLimit),
     );
 
     await _db.into(_db.sessionsTable).insertOnConflictUpdate(companion);
@@ -473,6 +479,124 @@ class SessionRepositoryImpl implements SessionRepository {
     ));
   }
 
+  @override
+  Future<ShrinkingPeriod?> getActiveShrinkingPeriod(String sessionId) async {
+    final row = await (_db.select(_db.shrinkingPeriodsTable)
+      ..where((t) => t.sessionId.equals(sessionId) & t.endedAt.isNull())
+      ..orderBy([(t) => OrderingTerm.desc(t.id)])
+      ..limit(1))
+        .getSingleOrNull();
+    return row == null ? null : ShrinkingPeriodMapper.fromDb(row);
+  }
+
+  @override
+  Future<void> insertShrinkingPeriod(ShrinkingPeriod period) async {
+    await _db.into(_db.shrinkingPeriodsTable)
+        .insert(ShrinkingPeriodMapper.toCompanion(period));
+  }
+
+  @override
+  Future<void> closeShrinkingPeriod({
+    required int periodId,
+    required String endedAt,
+    required double shrunkenLimit,
+  }) async {
+    await _db.transaction(() async {
+      await (_db.update(_db.shrinkingPeriodsTable)
+        ..where((t) => t.id.equals(periodId)))
+          .write(ShrinkingPeriodsTableCompanion(endedAt: Value(endedAt)));
+
+      await (_db.update(_db.sessionsTable)
+        ..where((t) => t.phase.isSmallerThanValue(2)))
+          .write(SessionsTableCompanion(
+        shrunkenLimit: Value(shrunkenLimit),
+        shrinkingStartedAt: const Value(null),
+        decreasePercentage: const Value(null),
+        decreaseIntervalDays: const Value(null),
+      ));
+    });
+  }
+
+  @override
+  Future<bool> isShrinkingReportReviewed(String sessionId, DateTime periodStart) async {
+    final dateStr = DayLogMapper.dateToString(periodStart);
+    final row = await (_db.select(_db.shrinkingReportsLogTable)
+      ..where((t) => t.sessionId.equals(sessionId) & t.periodWeekStart.equals(dateStr)))
+        .getSingleOrNull();
+    return row?.isReviewed ?? false;
+  }
+
+  @override
+  Future<void> markShrinkingReportReviewed(String sessionId, DateTime periodStart) async {
+    final dateStr = DayLogMapper.dateToString(periodStart);
+    final existing = await (_db.select(_db.shrinkingReportsLogTable)
+      ..where((t) => t.sessionId.equals(sessionId) & t.periodWeekStart.equals(dateStr)))
+        .getSingleOrNull();
+
+    if (existing != null) {
+      await (_db.update(_db.shrinkingReportsLogTable)
+        ..where((t) => t.id.equals(existing.id)))
+          .write(const ShrinkingReportsLogTableCompanion(isReviewed: Value(true)));
+    } else {
+      await _db.into(_db.shrinkingReportsLogTable).insert(
+        ShrinkingReportsLogTableCompanion.insert(
+          sessionId: sessionId,
+          periodWeekStart: dateStr,
+          isReviewed: const Value(true),
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<int> getShrinkingPeriodsCount(String sessionId) async {
+    final rows = await (_db.select(_db.shrinkingPeriodsTable)
+      ..where((t) => t.sessionId.equals(sessionId)))
+        .get();
+    return rows.length;
+  }
+
+  @override
+  Future<List<DayStats>> getDayStatsForRange(DateTime from, DateTime to) async {
+    final fromStr = DayLogMapper.dateToString(from);
+    final toStr = DayLogMapper.dateToString(to);
+
+    final dayRows = await (_db.select(_db.daysTable)
+      ..where((t) => t.date.isBiggerOrEqualValue(fromStr) & t.date.isSmallerOrEqualValue(toStr)))
+        .get();
+
+    final startTs = DateTime(from.year, from.month, from.day);
+    final endTs = DateTime(to.year, to.month, to.day, 23, 59, 59, 999);
+
+    final logRows = await (_db.select(_db.habitLogsTable).join([
+      innerJoin(_db.habitsTable, _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId)),
+    ])..where(_db.habitLogsTable.timestamp.isBetweenValues(startTs, endTs))).get();
+
+    final spentByDate = <String, int>{};
+    for (final row in logRows) {
+      final dateStr = DayLogMapper.dateToString(row.readTable(_db.habitLogsTable).timestamp);
+      spentByDate[dateStr] = (spentByDate[dateStr] ?? 0) + row.readTable(_db.habitsTable).scoreValue;
+    }
+
+    final brokenByDate = <String, bool>{
+      for (final d in dayRows) d.date: d.dayStatus == 'broken',
+    };
+
+    final results = <DayStats>[];
+    var current = DateTime(from.year, from.month, from.day);
+    final end = DateTime(to.year, to.month, to.day);
+    while (!current.isAfter(end)) {
+      final dateStr = DayLogMapper.dateToString(current);
+      results.add(DayStats(
+        date: current,
+        spent: spentByDate[dateStr] ?? 0,
+        isBroken: brokenByDate[dateStr] ?? false,
+      ));
+      current = current.add(const Duration(days: 1));
+    }
+    return results;
+  }
+
   // =========================================================================
   // PRIVATE HELPERS
   // =========================================================================
@@ -491,6 +615,7 @@ class SessionRepositoryImpl implements SessionRepository {
       shrinkingStartedAt: row.shrinkingStartedAt,
       decreasePercentage: row.decreasePercentage,
       decreaseIntervalDays: row.decreaseIntervalDays,
+      shrunkenLimit: row.shrunkenLimit,
     );
   }
 }

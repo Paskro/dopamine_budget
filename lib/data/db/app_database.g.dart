@@ -397,6 +397,17 @@ class $SessionsTableTable extends SessionsTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _shrunkenLimitMeta = const VerificationMeta(
+    'shrunkenLimit',
+  );
+  @override
+  late final GeneratedColumn<double> shrunkenLimit = GeneratedColumn<double>(
+    'shrunken_limit',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -411,6 +422,7 @@ class $SessionsTableTable extends SessionsTable
     shrinkingStartedAt,
     decreasePercentage,
     decreaseIntervalDays,
+    shrunkenLimit,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -520,6 +532,15 @@ class $SessionsTableTable extends SessionsTable
         ),
       );
     }
+    if (data.containsKey('shrunken_limit')) {
+      context.handle(
+        _shrunkenLimitMeta,
+        shrunkenLimit.isAcceptableOrUnknown(
+          data['shrunken_limit']!,
+          _shrunkenLimitMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -577,6 +598,10 @@ class $SessionsTableTable extends SessionsTable
         DriftSqlType.int,
         data['${effectivePrefix}decrease_interval_days'],
       ),
+      shrunkenLimit: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}shrunken_limit'],
+      ),
     );
   }
 
@@ -600,6 +625,7 @@ class SessionsTableData extends DataClass
   final DateTime? shrinkingStartedAt;
   final double? decreasePercentage;
   final int? decreaseIntervalDays;
+  final double? shrunkenLimit;
   const SessionsTableData({
     required this.id,
     required this.createdAt,
@@ -613,6 +639,7 @@ class SessionsTableData extends DataClass
     this.shrinkingStartedAt,
     this.decreasePercentage,
     this.decreaseIntervalDays,
+    this.shrunkenLimit,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -640,6 +667,9 @@ class SessionsTableData extends DataClass
     }
     if (!nullToAbsent || decreaseIntervalDays != null) {
       map['decrease_interval_days'] = Variable<int>(decreaseIntervalDays);
+    }
+    if (!nullToAbsent || shrunkenLimit != null) {
+      map['shrunken_limit'] = Variable<double>(shrunkenLimit);
     }
     return map;
   }
@@ -670,6 +700,9 @@ class SessionsTableData extends DataClass
       decreaseIntervalDays: decreaseIntervalDays == null && nullToAbsent
           ? const Value.absent()
           : Value(decreaseIntervalDays),
+      shrunkenLimit: shrunkenLimit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shrunkenLimit),
     );
   }
 
@@ -701,6 +734,7 @@ class SessionsTableData extends DataClass
       decreaseIntervalDays: serializer.fromJson<int?>(
         json['decreaseIntervalDays'],
       ),
+      shrunkenLimit: serializer.fromJson<double?>(json['shrunkenLimit']),
     );
   }
   @override
@@ -719,6 +753,7 @@ class SessionsTableData extends DataClass
       'shrinkingStartedAt': serializer.toJson<DateTime?>(shrinkingStartedAt),
       'decreasePercentage': serializer.toJson<double?>(decreasePercentage),
       'decreaseIntervalDays': serializer.toJson<int?>(decreaseIntervalDays),
+      'shrunkenLimit': serializer.toJson<double?>(shrunkenLimit),
     };
   }
 
@@ -735,6 +770,7 @@ class SessionsTableData extends DataClass
     Value<DateTime?> shrinkingStartedAt = const Value.absent(),
     Value<double?> decreasePercentage = const Value.absent(),
     Value<int?> decreaseIntervalDays = const Value.absent(),
+    Value<double?> shrunkenLimit = const Value.absent(),
   }) => SessionsTableData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -758,6 +794,9 @@ class SessionsTableData extends DataClass
     decreaseIntervalDays: decreaseIntervalDays.present
         ? decreaseIntervalDays.value
         : this.decreaseIntervalDays,
+    shrunkenLimit: shrunkenLimit.present
+        ? shrunkenLimit.value
+        : this.shrunkenLimit,
   );
   SessionsTableData copyWithCompanion(SessionsTableCompanion data) {
     return SessionsTableData(
@@ -789,6 +828,9 @@ class SessionsTableData extends DataClass
       decreaseIntervalDays: data.decreaseIntervalDays.present
           ? data.decreaseIntervalDays.value
           : this.decreaseIntervalDays,
+      shrunkenLimit: data.shrunkenLimit.present
+          ? data.shrunkenLimit.value
+          : this.shrunkenLimit,
     );
   }
 
@@ -806,7 +848,8 @@ class SessionsTableData extends DataClass
           ..write('baseShrinkingLimit: $baseShrinkingLimit, ')
           ..write('shrinkingStartedAt: $shrinkingStartedAt, ')
           ..write('decreasePercentage: $decreasePercentage, ')
-          ..write('decreaseIntervalDays: $decreaseIntervalDays')
+          ..write('decreaseIntervalDays: $decreaseIntervalDays, ')
+          ..write('shrunkenLimit: $shrunkenLimit')
           ..write(')'))
         .toString();
   }
@@ -825,6 +868,7 @@ class SessionsTableData extends DataClass
     shrinkingStartedAt,
     decreasePercentage,
     decreaseIntervalDays,
+    shrunkenLimit,
   );
   @override
   bool operator ==(Object other) =>
@@ -841,7 +885,8 @@ class SessionsTableData extends DataClass
           other.baseShrinkingLimit == this.baseShrinkingLimit &&
           other.shrinkingStartedAt == this.shrinkingStartedAt &&
           other.decreasePercentage == this.decreasePercentage &&
-          other.decreaseIntervalDays == this.decreaseIntervalDays);
+          other.decreaseIntervalDays == this.decreaseIntervalDays &&
+          other.shrunkenLimit == this.shrunkenLimit);
 }
 
 class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
@@ -857,6 +902,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
   final Value<DateTime?> shrinkingStartedAt;
   final Value<double?> decreasePercentage;
   final Value<int?> decreaseIntervalDays;
+  final Value<double?> shrunkenLimit;
   final Value<int> rowid;
   const SessionsTableCompanion({
     this.id = const Value.absent(),
@@ -871,6 +917,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.shrinkingStartedAt = const Value.absent(),
     this.decreasePercentage = const Value.absent(),
     this.decreaseIntervalDays = const Value.absent(),
+    this.shrunkenLimit = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SessionsTableCompanion.insert({
@@ -886,6 +933,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.shrinkingStartedAt = const Value.absent(),
     this.decreasePercentage = const Value.absent(),
     this.decreaseIntervalDays = const Value.absent(),
+    this.shrunkenLimit = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -903,6 +951,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Expression<DateTime>? shrinkingStartedAt,
     Expression<double>? decreasePercentage,
     Expression<int>? decreaseIntervalDays,
+    Expression<double>? shrunkenLimit,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -921,6 +970,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       if (decreasePercentage != null) 'decrease_percentage': decreasePercentage,
       if (decreaseIntervalDays != null)
         'decrease_interval_days': decreaseIntervalDays,
+      if (shrunkenLimit != null) 'shrunken_limit': shrunkenLimit,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -938,6 +988,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Value<DateTime?>? shrinkingStartedAt,
     Value<double?>? decreasePercentage,
     Value<int?>? decreaseIntervalDays,
+    Value<double?>? shrunkenLimit,
     Value<int>? rowid,
   }) {
     return SessionsTableCompanion(
@@ -953,6 +1004,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       shrinkingStartedAt: shrinkingStartedAt ?? this.shrinkingStartedAt,
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseIntervalDays: decreaseIntervalDays ?? this.decreaseIntervalDays,
+      shrunkenLimit: shrunkenLimit ?? this.shrunkenLimit,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -998,6 +1050,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     if (decreaseIntervalDays.present) {
       map['decrease_interval_days'] = Variable<int>(decreaseIntervalDays.value);
     }
+    if (shrunkenLimit.present) {
+      map['shrunken_limit'] = Variable<double>(shrunkenLimit.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1019,6 +1074,7 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
           ..write('shrinkingStartedAt: $shrinkingStartedAt, ')
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseIntervalDays: $decreaseIntervalDays, ')
+          ..write('shrunkenLimit: $shrunkenLimit, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2068,6 +2124,802 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
   }
 }
 
+class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
+    with TableInfo<$ShrinkingPeriodsTableTable, ShrinkingPeriodsTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ShrinkingPeriodsTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<String> startedAt = GeneratedColumn<String>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<String> endedAt = GeneratedColumn<String>(
+    'ended_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _baseLimitMeta = const VerificationMeta(
+    'baseLimit',
+  );
+  @override
+  late final GeneratedColumn<double> baseLimit = GeneratedColumn<double>(
+    'base_limit',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _decreasePctMeta = const VerificationMeta(
+    'decreasePct',
+  );
+  @override
+  late final GeneratedColumn<double> decreasePct = GeneratedColumn<double>(
+    'decrease_pct',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _intervalDaysMeta = const VerificationMeta(
+    'intervalDays',
+  );
+  @override
+  late final GeneratedColumn<int> intervalDays = GeneratedColumn<int>(
+    'interval_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    startedAt,
+    endedAt,
+    baseLimit,
+    decreasePct,
+    intervalDays,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shrinking_periods_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ShrinkingPeriodsTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    }
+    if (data.containsKey('base_limit')) {
+      context.handle(
+        _baseLimitMeta,
+        baseLimit.isAcceptableOrUnknown(data['base_limit']!, _baseLimitMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_baseLimitMeta);
+    }
+    if (data.containsKey('decrease_pct')) {
+      context.handle(
+        _decreasePctMeta,
+        decreasePct.isAcceptableOrUnknown(
+          data['decrease_pct']!,
+          _decreasePctMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_decreasePctMeta);
+    }
+    if (data.containsKey('interval_days')) {
+      context.handle(
+        _intervalDaysMeta,
+        intervalDays.isAcceptableOrUnknown(
+          data['interval_days']!,
+          _intervalDaysMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_intervalDaysMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ShrinkingPeriodsTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ShrinkingPeriodsTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}started_at'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ended_at'],
+      ),
+      baseLimit: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}base_limit'],
+      )!,
+      decreasePct: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}decrease_pct'],
+      )!,
+      intervalDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}interval_days'],
+      )!,
+    );
+  }
+
+  @override
+  $ShrinkingPeriodsTableTable createAlias(String alias) {
+    return $ShrinkingPeriodsTableTable(attachedDatabase, alias);
+  }
+}
+
+class ShrinkingPeriodsTableData extends DataClass
+    implements Insertable<ShrinkingPeriodsTableData> {
+  final int id;
+  final String sessionId;
+  final String startedAt;
+  final String? endedAt;
+  final double baseLimit;
+  final double decreasePct;
+  final int intervalDays;
+  const ShrinkingPeriodsTableData({
+    required this.id,
+    required this.sessionId,
+    required this.startedAt,
+    this.endedAt,
+    required this.baseLimit,
+    required this.decreasePct,
+    required this.intervalDays,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['started_at'] = Variable<String>(startedAt);
+    if (!nullToAbsent || endedAt != null) {
+      map['ended_at'] = Variable<String>(endedAt);
+    }
+    map['base_limit'] = Variable<double>(baseLimit);
+    map['decrease_pct'] = Variable<double>(decreasePct);
+    map['interval_days'] = Variable<int>(intervalDays);
+    return map;
+  }
+
+  ShrinkingPeriodsTableCompanion toCompanion(bool nullToAbsent) {
+    return ShrinkingPeriodsTableCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      startedAt: Value(startedAt),
+      endedAt: endedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endedAt),
+      baseLimit: Value(baseLimit),
+      decreasePct: Value(decreasePct),
+      intervalDays: Value(intervalDays),
+    );
+  }
+
+  factory ShrinkingPeriodsTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ShrinkingPeriodsTableData(
+      id: serializer.fromJson<int>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      startedAt: serializer.fromJson<String>(json['startedAt']),
+      endedAt: serializer.fromJson<String?>(json['endedAt']),
+      baseLimit: serializer.fromJson<double>(json['baseLimit']),
+      decreasePct: serializer.fromJson<double>(json['decreasePct']),
+      intervalDays: serializer.fromJson<int>(json['intervalDays']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'startedAt': serializer.toJson<String>(startedAt),
+      'endedAt': serializer.toJson<String?>(endedAt),
+      'baseLimit': serializer.toJson<double>(baseLimit),
+      'decreasePct': serializer.toJson<double>(decreasePct),
+      'intervalDays': serializer.toJson<int>(intervalDays),
+    };
+  }
+
+  ShrinkingPeriodsTableData copyWith({
+    int? id,
+    String? sessionId,
+    String? startedAt,
+    Value<String?> endedAt = const Value.absent(),
+    double? baseLimit,
+    double? decreasePct,
+    int? intervalDays,
+  }) => ShrinkingPeriodsTableData(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    startedAt: startedAt ?? this.startedAt,
+    endedAt: endedAt.present ? endedAt.value : this.endedAt,
+    baseLimit: baseLimit ?? this.baseLimit,
+    decreasePct: decreasePct ?? this.decreasePct,
+    intervalDays: intervalDays ?? this.intervalDays,
+  );
+  ShrinkingPeriodsTableData copyWithCompanion(
+    ShrinkingPeriodsTableCompanion data,
+  ) {
+    return ShrinkingPeriodsTableData(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      baseLimit: data.baseLimit.present ? data.baseLimit.value : this.baseLimit,
+      decreasePct: data.decreasePct.present
+          ? data.decreasePct.value
+          : this.decreasePct,
+      intervalDays: data.intervalDays.present
+          ? data.intervalDays.value
+          : this.intervalDays,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShrinkingPeriodsTableData(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('baseLimit: $baseLimit, ')
+          ..write('decreasePct: $decreasePct, ')
+          ..write('intervalDays: $intervalDays')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    startedAt,
+    endedAt,
+    baseLimit,
+    decreasePct,
+    intervalDays,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ShrinkingPeriodsTableData &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.startedAt == this.startedAt &&
+          other.endedAt == this.endedAt &&
+          other.baseLimit == this.baseLimit &&
+          other.decreasePct == this.decreasePct &&
+          other.intervalDays == this.intervalDays);
+}
+
+class ShrinkingPeriodsTableCompanion
+    extends UpdateCompanion<ShrinkingPeriodsTableData> {
+  final Value<int> id;
+  final Value<String> sessionId;
+  final Value<String> startedAt;
+  final Value<String?> endedAt;
+  final Value<double> baseLimit;
+  final Value<double> decreasePct;
+  final Value<int> intervalDays;
+  const ShrinkingPeriodsTableCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.baseLimit = const Value.absent(),
+    this.decreasePct = const Value.absent(),
+    this.intervalDays = const Value.absent(),
+  });
+  ShrinkingPeriodsTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String sessionId,
+    required String startedAt,
+    this.endedAt = const Value.absent(),
+    required double baseLimit,
+    required double decreasePct,
+    required int intervalDays,
+  }) : sessionId = Value(sessionId),
+       startedAt = Value(startedAt),
+       baseLimit = Value(baseLimit),
+       decreasePct = Value(decreasePct),
+       intervalDays = Value(intervalDays);
+  static Insertable<ShrinkingPeriodsTableData> custom({
+    Expression<int>? id,
+    Expression<String>? sessionId,
+    Expression<String>? startedAt,
+    Expression<String>? endedAt,
+    Expression<double>? baseLimit,
+    Expression<double>? decreasePct,
+    Expression<int>? intervalDays,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (startedAt != null) 'started_at': startedAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (baseLimit != null) 'base_limit': baseLimit,
+      if (decreasePct != null) 'decrease_pct': decreasePct,
+      if (intervalDays != null) 'interval_days': intervalDays,
+    });
+  }
+
+  ShrinkingPeriodsTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? sessionId,
+    Value<String>? startedAt,
+    Value<String?>? endedAt,
+    Value<double>? baseLimit,
+    Value<double>? decreasePct,
+    Value<int>? intervalDays,
+  }) {
+    return ShrinkingPeriodsTableCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      baseLimit: baseLimit ?? this.baseLimit,
+      decreasePct: decreasePct ?? this.decreasePct,
+      intervalDays: intervalDays ?? this.intervalDays,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<String>(startedAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<String>(endedAt.value);
+    }
+    if (baseLimit.present) {
+      map['base_limit'] = Variable<double>(baseLimit.value);
+    }
+    if (decreasePct.present) {
+      map['decrease_pct'] = Variable<double>(decreasePct.value);
+    }
+    if (intervalDays.present) {
+      map['interval_days'] = Variable<int>(intervalDays.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShrinkingPeriodsTableCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('baseLimit: $baseLimit, ')
+          ..write('decreasePct: $decreasePct, ')
+          ..write('intervalDays: $intervalDays')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
+    with
+        TableInfo<
+          $ShrinkingReportsLogTableTable,
+          ShrinkingReportsLogTableData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ShrinkingReportsLogTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _sessionIdMeta = const VerificationMeta(
+    'sessionId',
+  );
+  @override
+  late final GeneratedColumn<String> sessionId = GeneratedColumn<String>(
+    'session_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _periodWeekStartMeta = const VerificationMeta(
+    'periodWeekStart',
+  );
+  @override
+  late final GeneratedColumn<String> periodWeekStart = GeneratedColumn<String>(
+    'period_week_start',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isReviewedMeta = const VerificationMeta(
+    'isReviewed',
+  );
+  @override
+  late final GeneratedColumn<bool> isReviewed = GeneratedColumn<bool>(
+    'is_reviewed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_reviewed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    periodWeekStart,
+    isReviewed,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shrinking_reports_log_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ShrinkingReportsLogTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('session_id')) {
+      context.handle(
+        _sessionIdMeta,
+        sessionId.isAcceptableOrUnknown(data['session_id']!, _sessionIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sessionIdMeta);
+    }
+    if (data.containsKey('period_week_start')) {
+      context.handle(
+        _periodWeekStartMeta,
+        periodWeekStart.isAcceptableOrUnknown(
+          data['period_week_start']!,
+          _periodWeekStartMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_periodWeekStartMeta);
+    }
+    if (data.containsKey('is_reviewed')) {
+      context.handle(
+        _isReviewedMeta,
+        isReviewed.isAcceptableOrUnknown(data['is_reviewed']!, _isReviewedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ShrinkingReportsLogTableData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ShrinkingReportsLogTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      sessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}session_id'],
+      )!,
+      periodWeekStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}period_week_start'],
+      )!,
+      isReviewed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_reviewed'],
+      )!,
+    );
+  }
+
+  @override
+  $ShrinkingReportsLogTableTable createAlias(String alias) {
+    return $ShrinkingReportsLogTableTable(attachedDatabase, alias);
+  }
+}
+
+class ShrinkingReportsLogTableData extends DataClass
+    implements Insertable<ShrinkingReportsLogTableData> {
+  final int id;
+  final String sessionId;
+  final String periodWeekStart;
+  final bool isReviewed;
+  const ShrinkingReportsLogTableData({
+    required this.id,
+    required this.sessionId,
+    required this.periodWeekStart,
+    required this.isReviewed,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['session_id'] = Variable<String>(sessionId);
+    map['period_week_start'] = Variable<String>(periodWeekStart);
+    map['is_reviewed'] = Variable<bool>(isReviewed);
+    return map;
+  }
+
+  ShrinkingReportsLogTableCompanion toCompanion(bool nullToAbsent) {
+    return ShrinkingReportsLogTableCompanion(
+      id: Value(id),
+      sessionId: Value(sessionId),
+      periodWeekStart: Value(periodWeekStart),
+      isReviewed: Value(isReviewed),
+    );
+  }
+
+  factory ShrinkingReportsLogTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ShrinkingReportsLogTableData(
+      id: serializer.fromJson<int>(json['id']),
+      sessionId: serializer.fromJson<String>(json['sessionId']),
+      periodWeekStart: serializer.fromJson<String>(json['periodWeekStart']),
+      isReviewed: serializer.fromJson<bool>(json['isReviewed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'sessionId': serializer.toJson<String>(sessionId),
+      'periodWeekStart': serializer.toJson<String>(periodWeekStart),
+      'isReviewed': serializer.toJson<bool>(isReviewed),
+    };
+  }
+
+  ShrinkingReportsLogTableData copyWith({
+    int? id,
+    String? sessionId,
+    String? periodWeekStart,
+    bool? isReviewed,
+  }) => ShrinkingReportsLogTableData(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    periodWeekStart: periodWeekStart ?? this.periodWeekStart,
+    isReviewed: isReviewed ?? this.isReviewed,
+  );
+  ShrinkingReportsLogTableData copyWithCompanion(
+    ShrinkingReportsLogTableCompanion data,
+  ) {
+    return ShrinkingReportsLogTableData(
+      id: data.id.present ? data.id.value : this.id,
+      sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
+      periodWeekStart: data.periodWeekStart.present
+          ? data.periodWeekStart.value
+          : this.periodWeekStart,
+      isReviewed: data.isReviewed.present
+          ? data.isReviewed.value
+          : this.isReviewed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShrinkingReportsLogTableData(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('periodWeekStart: $periodWeekStart, ')
+          ..write('isReviewed: $isReviewed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, sessionId, periodWeekStart, isReviewed);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ShrinkingReportsLogTableData &&
+          other.id == this.id &&
+          other.sessionId == this.sessionId &&
+          other.periodWeekStart == this.periodWeekStart &&
+          other.isReviewed == this.isReviewed);
+}
+
+class ShrinkingReportsLogTableCompanion
+    extends UpdateCompanion<ShrinkingReportsLogTableData> {
+  final Value<int> id;
+  final Value<String> sessionId;
+  final Value<String> periodWeekStart;
+  final Value<bool> isReviewed;
+  const ShrinkingReportsLogTableCompanion({
+    this.id = const Value.absent(),
+    this.sessionId = const Value.absent(),
+    this.periodWeekStart = const Value.absent(),
+    this.isReviewed = const Value.absent(),
+  });
+  ShrinkingReportsLogTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String sessionId,
+    required String periodWeekStart,
+    this.isReviewed = const Value.absent(),
+  }) : sessionId = Value(sessionId),
+       periodWeekStart = Value(periodWeekStart);
+  static Insertable<ShrinkingReportsLogTableData> custom({
+    Expression<int>? id,
+    Expression<String>? sessionId,
+    Expression<String>? periodWeekStart,
+    Expression<bool>? isReviewed,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (sessionId != null) 'session_id': sessionId,
+      if (periodWeekStart != null) 'period_week_start': periodWeekStart,
+      if (isReviewed != null) 'is_reviewed': isReviewed,
+    });
+  }
+
+  ShrinkingReportsLogTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? sessionId,
+    Value<String>? periodWeekStart,
+    Value<bool>? isReviewed,
+  }) {
+    return ShrinkingReportsLogTableCompanion(
+      id: id ?? this.id,
+      sessionId: sessionId ?? this.sessionId,
+      periodWeekStart: periodWeekStart ?? this.periodWeekStart,
+      isReviewed: isReviewed ?? this.isReviewed,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (sessionId.present) {
+      map['session_id'] = Variable<String>(sessionId.value);
+    }
+    if (periodWeekStart.present) {
+      map['period_week_start'] = Variable<String>(periodWeekStart.value);
+    }
+    if (isReviewed.present) {
+      map['is_reviewed'] = Variable<bool>(isReviewed.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShrinkingReportsLogTableCompanion(')
+          ..write('id: $id, ')
+          ..write('sessionId: $sessionId, ')
+          ..write('periodWeekStart: $periodWeekStart, ')
+          ..write('isReviewed: $isReviewed')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2077,6 +2929,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SessionHabitsTableTable sessionHabitsTable =
       $SessionHabitsTableTable(this);
   late final $DaysTableTable daysTable = $DaysTableTable(this);
+  late final $ShrinkingPeriodsTableTable shrinkingPeriodsTable =
+      $ShrinkingPeriodsTableTable(this);
+  late final $ShrinkingReportsLogTableTable shrinkingReportsLogTable =
+      $ShrinkingReportsLogTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2087,6 +2943,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     habitLogsTable,
     sessionHabitsTable,
     daysTable,
+    shrinkingPeriodsTable,
+    shrinkingReportsLogTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2385,6 +3243,7 @@ typedef $$SessionsTableTableCreateCompanionBuilder =
       Value<DateTime?> shrinkingStartedAt,
       Value<double?> decreasePercentage,
       Value<int?> decreaseIntervalDays,
+      Value<double?> shrunkenLimit,
       Value<int> rowid,
     });
 typedef $$SessionsTableTableUpdateCompanionBuilder =
@@ -2401,6 +3260,7 @@ typedef $$SessionsTableTableUpdateCompanionBuilder =
       Value<DateTime?> shrinkingStartedAt,
       Value<double?> decreasePercentage,
       Value<int?> decreaseIntervalDays,
+      Value<double?> shrunkenLimit,
       Value<int> rowid,
     });
 
@@ -2525,6 +3385,11 @@ class $$SessionsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get shrunkenLimit => $composableBuilder(
+    column: $table.shrunkenLimit,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> habitLogsTableRefs(
     Expression<bool> Function($$HabitLogsTableTableFilterComposer f) f,
   ) {
@@ -2644,6 +3509,11 @@ class $$SessionsTableTableOrderingComposer
     column: $table.decreaseIntervalDays,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get shrunkenLimit => $composableBuilder(
+    column: $table.shrunkenLimit,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SessionsTableTableAnnotationComposer
@@ -2704,6 +3574,11 @@ class $$SessionsTableTableAnnotationComposer
 
   GeneratedColumn<int> get decreaseIntervalDays => $composableBuilder(
     column: $table.decreaseIntervalDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get shrunkenLimit => $composableBuilder(
+    column: $table.shrunkenLimit,
     builder: (column) => column,
   );
 
@@ -2798,6 +3673,7 @@ class $$SessionsTableTableTableManager
                 Value<DateTime?> shrinkingStartedAt = const Value.absent(),
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<int?> decreaseIntervalDays = const Value.absent(),
+                Value<double?> shrunkenLimit = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion(
                 id: id,
@@ -2812,6 +3688,7 @@ class $$SessionsTableTableTableManager
                 shrinkingStartedAt: shrinkingStartedAt,
                 decreasePercentage: decreasePercentage,
                 decreaseIntervalDays: decreaseIntervalDays,
+                shrunkenLimit: shrunkenLimit,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2828,6 +3705,7 @@ class $$SessionsTableTableTableManager
                 Value<DateTime?> shrinkingStartedAt = const Value.absent(),
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<int?> decreaseIntervalDays = const Value.absent(),
+                Value<double?> shrunkenLimit = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion.insert(
                 id: id,
@@ -2842,6 +3720,7 @@ class $$SessionsTableTableTableManager
                 shrinkingStartedAt: shrinkingStartedAt,
                 decreasePercentage: decreasePercentage,
                 decreaseIntervalDays: decreaseIntervalDays,
+                shrunkenLimit: shrunkenLimit,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3848,6 +4727,459 @@ typedef $$DaysTableTableProcessedTableManager =
       DaysTableData,
       PrefetchHooks Function({bool sessionId})
     >;
+typedef $$ShrinkingPeriodsTableTableCreateCompanionBuilder =
+    ShrinkingPeriodsTableCompanion Function({
+      Value<int> id,
+      required String sessionId,
+      required String startedAt,
+      Value<String?> endedAt,
+      required double baseLimit,
+      required double decreasePct,
+      required int intervalDays,
+    });
+typedef $$ShrinkingPeriodsTableTableUpdateCompanionBuilder =
+    ShrinkingPeriodsTableCompanion Function({
+      Value<int> id,
+      Value<String> sessionId,
+      Value<String> startedAt,
+      Value<String?> endedAt,
+      Value<double> baseLimit,
+      Value<double> decreasePct,
+      Value<int> intervalDays,
+    });
+
+class $$ShrinkingPeriodsTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ShrinkingPeriodsTableTable> {
+  $$ShrinkingPeriodsTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get baseLimit => $composableBuilder(
+    column: $table.baseLimit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get decreasePct => $composableBuilder(
+    column: $table.decreasePct,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get intervalDays => $composableBuilder(
+    column: $table.intervalDays,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ShrinkingPeriodsTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ShrinkingPeriodsTableTable> {
+  $$ShrinkingPeriodsTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endedAt => $composableBuilder(
+    column: $table.endedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get baseLimit => $composableBuilder(
+    column: $table.baseLimit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get decreasePct => $composableBuilder(
+    column: $table.decreasePct,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get intervalDays => $composableBuilder(
+    column: $table.intervalDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ShrinkingPeriodsTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ShrinkingPeriodsTableTable> {
+  $$ShrinkingPeriodsTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get endedAt =>
+      $composableBuilder(column: $table.endedAt, builder: (column) => column);
+
+  GeneratedColumn<double> get baseLimit =>
+      $composableBuilder(column: $table.baseLimit, builder: (column) => column);
+
+  GeneratedColumn<double> get decreasePct => $composableBuilder(
+    column: $table.decreasePct,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get intervalDays => $composableBuilder(
+    column: $table.intervalDays,
+    builder: (column) => column,
+  );
+}
+
+class $$ShrinkingPeriodsTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ShrinkingPeriodsTableTable,
+          ShrinkingPeriodsTableData,
+          $$ShrinkingPeriodsTableTableFilterComposer,
+          $$ShrinkingPeriodsTableTableOrderingComposer,
+          $$ShrinkingPeriodsTableTableAnnotationComposer,
+          $$ShrinkingPeriodsTableTableCreateCompanionBuilder,
+          $$ShrinkingPeriodsTableTableUpdateCompanionBuilder,
+          (
+            ShrinkingPeriodsTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $ShrinkingPeriodsTableTable,
+              ShrinkingPeriodsTableData
+            >,
+          ),
+          ShrinkingPeriodsTableData,
+          PrefetchHooks Function()
+        > {
+  $$ShrinkingPeriodsTableTableTableManager(
+    _$AppDatabase db,
+    $ShrinkingPeriodsTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ShrinkingPeriodsTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ShrinkingPeriodsTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ShrinkingPeriodsTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> startedAt = const Value.absent(),
+                Value<String?> endedAt = const Value.absent(),
+                Value<double> baseLimit = const Value.absent(),
+                Value<double> decreasePct = const Value.absent(),
+                Value<int> intervalDays = const Value.absent(),
+              }) => ShrinkingPeriodsTableCompanion(
+                id: id,
+                sessionId: sessionId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                baseLimit: baseLimit,
+                decreasePct: decreasePct,
+                intervalDays: intervalDays,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String sessionId,
+                required String startedAt,
+                Value<String?> endedAt = const Value.absent(),
+                required double baseLimit,
+                required double decreasePct,
+                required int intervalDays,
+              }) => ShrinkingPeriodsTableCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                baseLimit: baseLimit,
+                decreasePct: decreasePct,
+                intervalDays: intervalDays,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ShrinkingPeriodsTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ShrinkingPeriodsTableTable,
+      ShrinkingPeriodsTableData,
+      $$ShrinkingPeriodsTableTableFilterComposer,
+      $$ShrinkingPeriodsTableTableOrderingComposer,
+      $$ShrinkingPeriodsTableTableAnnotationComposer,
+      $$ShrinkingPeriodsTableTableCreateCompanionBuilder,
+      $$ShrinkingPeriodsTableTableUpdateCompanionBuilder,
+      (
+        ShrinkingPeriodsTableData,
+        BaseReferences<
+          _$AppDatabase,
+          $ShrinkingPeriodsTableTable,
+          ShrinkingPeriodsTableData
+        >,
+      ),
+      ShrinkingPeriodsTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$ShrinkingReportsLogTableTableCreateCompanionBuilder =
+    ShrinkingReportsLogTableCompanion Function({
+      Value<int> id,
+      required String sessionId,
+      required String periodWeekStart,
+      Value<bool> isReviewed,
+    });
+typedef $$ShrinkingReportsLogTableTableUpdateCompanionBuilder =
+    ShrinkingReportsLogTableCompanion Function({
+      Value<int> id,
+      Value<String> sessionId,
+      Value<String> periodWeekStart,
+      Value<bool> isReviewed,
+    });
+
+class $$ShrinkingReportsLogTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ShrinkingReportsLogTableTable> {
+  $$ShrinkingReportsLogTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodWeekStart => $composableBuilder(
+    column: $table.periodWeekStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ShrinkingReportsLogTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ShrinkingReportsLogTableTable> {
+  $$ShrinkingReportsLogTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sessionId => $composableBuilder(
+    column: $table.sessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get periodWeekStart => $composableBuilder(
+    column: $table.periodWeekStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ShrinkingReportsLogTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ShrinkingReportsLogTableTable> {
+  $$ShrinkingReportsLogTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sessionId =>
+      $composableBuilder(column: $table.sessionId, builder: (column) => column);
+
+  GeneratedColumn<String> get periodWeekStart => $composableBuilder(
+    column: $table.periodWeekStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isReviewed => $composableBuilder(
+    column: $table.isReviewed,
+    builder: (column) => column,
+  );
+}
+
+class $$ShrinkingReportsLogTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ShrinkingReportsLogTableTable,
+          ShrinkingReportsLogTableData,
+          $$ShrinkingReportsLogTableTableFilterComposer,
+          $$ShrinkingReportsLogTableTableOrderingComposer,
+          $$ShrinkingReportsLogTableTableAnnotationComposer,
+          $$ShrinkingReportsLogTableTableCreateCompanionBuilder,
+          $$ShrinkingReportsLogTableTableUpdateCompanionBuilder,
+          (
+            ShrinkingReportsLogTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $ShrinkingReportsLogTableTable,
+              ShrinkingReportsLogTableData
+            >,
+          ),
+          ShrinkingReportsLogTableData,
+          PrefetchHooks Function()
+        > {
+  $$ShrinkingReportsLogTableTableTableManager(
+    _$AppDatabase db,
+    $ShrinkingReportsLogTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ShrinkingReportsLogTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ShrinkingReportsLogTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ShrinkingReportsLogTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> sessionId = const Value.absent(),
+                Value<String> periodWeekStart = const Value.absent(),
+                Value<bool> isReviewed = const Value.absent(),
+              }) => ShrinkingReportsLogTableCompanion(
+                id: id,
+                sessionId: sessionId,
+                periodWeekStart: periodWeekStart,
+                isReviewed: isReviewed,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String sessionId,
+                required String periodWeekStart,
+                Value<bool> isReviewed = const Value.absent(),
+              }) => ShrinkingReportsLogTableCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                periodWeekStart: periodWeekStart,
+                isReviewed: isReviewed,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ShrinkingReportsLogTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ShrinkingReportsLogTableTable,
+      ShrinkingReportsLogTableData,
+      $$ShrinkingReportsLogTableTableFilterComposer,
+      $$ShrinkingReportsLogTableTableOrderingComposer,
+      $$ShrinkingReportsLogTableTableAnnotationComposer,
+      $$ShrinkingReportsLogTableTableCreateCompanionBuilder,
+      $$ShrinkingReportsLogTableTableUpdateCompanionBuilder,
+      (
+        ShrinkingReportsLogTableData,
+        BaseReferences<
+          _$AppDatabase,
+          $ShrinkingReportsLogTableTable,
+          ShrinkingReportsLogTableData
+        >,
+      ),
+      ShrinkingReportsLogTableData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3862,4 +5194,11 @@ class $AppDatabaseManager {
       $$SessionHabitsTableTableTableManager(_db, _db.sessionHabitsTable);
   $$DaysTableTableTableManager get daysTable =>
       $$DaysTableTableTableManager(_db, _db.daysTable);
+  $$ShrinkingPeriodsTableTableTableManager get shrinkingPeriodsTable =>
+      $$ShrinkingPeriodsTableTableTableManager(_db, _db.shrinkingPeriodsTable);
+  $$ShrinkingReportsLogTableTableTableManager get shrinkingReportsLogTable =>
+      $$ShrinkingReportsLogTableTableTableManager(
+        _db,
+        _db.shrinkingReportsLogTable,
+      );
 }

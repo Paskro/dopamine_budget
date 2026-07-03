@@ -8,17 +8,21 @@ import 'package:dopamine_budget/features/habits/data/tables/habits_table.dart';
 import 'package:dopamine_budget/features/actions/data/tables/habit_logs_table.dart';
 import 'package:dopamine_budget/features/sessions/data/tables/sessions_table.dart';
 import 'package:dopamine_budget/features/sessions/data/tables/days_table.dart';
+import 'package:dopamine_budget/features/sessions/data/tables/shrinking_periods_table.dart';
+import 'package:dopamine_budget/features/sessions/data/tables/shrinking_reports_log_table.dart';
 
 part 'app_database.g.dart';
 
 
 
 @DriftDatabase(tables: [
-  HabitLogsTable, // было ActionsTable
+  HabitLogsTable,
   HabitsTable,
   SessionsTable,
   SessionHabitsTable,
   DaysTable,
+  ShrinkingPeriodsTable,
+  ShrinkingReportsLogTable,
 ])
 class AppDatabase extends _$AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
@@ -30,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -56,6 +60,11 @@ class AppDatabase extends _$AppDatabase {
           await m.drop(daysTable);
           await m.createTable(habitLogsTable);
           await m.createTable(daysTable);
+        }
+        if (from < 9) {
+          await m.createTable(shrinkingPeriodsTable);
+          await m.createTable(shrinkingReportsLogTable);
+          await m.addColumn(sessionsTable, sessionsTable.shrunkenLimit);
         }
       },
     );

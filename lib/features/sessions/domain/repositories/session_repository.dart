@@ -1,5 +1,7 @@
 import '../entities/session.dart';
 import '../entities/day_log.dart';
+import '../entities/shrinking_period.dart';
+import '../entities/day_stats.dart';
 import 'package:drift/drift.dart';
 
 abstract class SessionRepository {
@@ -14,12 +16,23 @@ abstract class SessionRepository {
   Future<bool> hasHabitClicksForDate(DateTime date);
   Future<Map<DateTime, int>> getScoresPerDateRange(
       DateTime from, DateTime to);
+  Future<bool> isShrinkingReportReviewed(String sessionId, DateTime periodStart);
+  Future<void> markShrinkingReportReviewed(String sessionId, DateTime periodStart);
+  Future<int> getShrinkingPeriodsCount(String sessionId);
+  Future<List<DayStats>> getDayStatsForRange(DateTime from, DateTime to);
 
   Future<int> getTotalScoreSpentByDay(DateTime date);
   Future<void> recordActionLog({
     required String habitId,
     required int scoreCost,
     required DateTime createdAt,
+  });
+  Future<ShrinkingPeriod?> getActiveShrinkingPeriod(String sessionId);
+  Future<void> insertShrinkingPeriod(ShrinkingPeriod period);
+  Future<void> closeShrinkingPeriod({
+    required int periodId,
+    required String endedAt,
+    required double shrunkenLimit,
   });
 
   Future<List<double>> getScoresPerDaySince(DateTime startDate, int maxDays);

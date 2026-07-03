@@ -24,11 +24,23 @@ import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/toggle_shrinking_mode_usecase.dart';
+import 'package:dopamine_budget/core/notifications/notification_permission_helper.dart';
+import 'package:dopamine_budget/core/notifications/notification_scheduler.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_shrinking_report_usecase.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru', null);
   await TimeProvider.restore();
+  tz_data.initializeTimeZones();
+  final tzName = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(tzName));
+  await NotificationScheduler.init();
+  await NotificationPermissionHelper.requestPermission();
+  await NotificationPermissionHelper.requestExactAlarmPermission();
 
   final database = AppDatabase.instance;
 
@@ -64,6 +76,11 @@ void main() async {
 
   final weeklyReportUseCase = CheckAndGenerateWeeklyReportUseCase(
     sessionRepository: sessionRepository,
+  );
+
+  final shrinkingReportUseCase = CheckAndGenerateShrinkingReportUseCase(
+    sessionRepository: sessionRepository,
+    getDailyLimitUseCase: getDailyLimitUseCase,
   );
 
   final getWeeklyHabitsReportUseCase = GetWeeklyHabitsReportUseCase(scoringRepository);
@@ -112,6 +129,7 @@ void main() async {
     archiveSessionUseCase: archiveSessionUseCase,
     deleteSessionUseCase: deleteSessionUseCase,
     sessionRepository: sessionRepository,
+    shrinkingReportUseCase: shrinkingReportUseCase,
   ));
 }
 
@@ -126,6 +144,7 @@ class MyApp extends StatelessWidget {
   final ArchiveSessionUseCase archiveSessionUseCase;
   final DeleteSessionUseCase deleteSessionUseCase;
   final SessionRepository sessionRepository;
+  final CheckAndGenerateShrinkingReportUseCase shrinkingReportUseCase;
 
   const MyApp({
     super.key,
@@ -139,6 +158,7 @@ class MyApp extends StatelessWidget {
     required this.archiveSessionUseCase,
     required this.deleteSessionUseCase,
     required this.sessionRepository,
+    required this.shrinkingReportUseCase,
   });
 
   @override
@@ -158,6 +178,7 @@ class MyApp extends StatelessWidget {
         archiveSessionUseCase: archiveSessionUseCase,
         deleteSessionUseCase: deleteSessionUseCase,
         sessionRepository: sessionRepository,
+        shrinkingReportUseCase: shrinkingReportUseCase,
       ),
     );
   }

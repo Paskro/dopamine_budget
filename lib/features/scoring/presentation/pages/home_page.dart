@@ -64,6 +64,9 @@ class HomePage extends StatelessWidget {
                   builder: (_) => ProfileScreen(
                     sessionRepository: sessionRepository,
                     deleteSessionUseCase: deleteSessionUseCase,
+                    activeSession: session,
+                    habitsNotifier: habitsNotifier,
+                    archiveSessionUseCase: archiveSessionUseCase,
                   ),
                 ),
               ),
@@ -75,21 +78,6 @@ class HomePage extends StatelessWidget {
                 session: session,
                 habitsNotifier: habitsNotifier,
                 scoringNotifier: scoringNotifier,
-                onArchive: () async {
-                  await archiveSessionUseCase.execute(session.id);
-                  if (context.mounted) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (ctx) => SessionSummaryScreen(
-                          session: session,
-                          deleteSessionUseCase: deleteSessionUseCase,
-                          onComplete: () =>
-                              Navigator.of(ctx).popUntil((r) => r.isFirst),
-                        ),
-                      ),
-                    );
-                  }
-                },
               ),
             ),
           ],

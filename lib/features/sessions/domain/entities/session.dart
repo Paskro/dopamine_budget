@@ -15,6 +15,7 @@ class Session {
   final DateTime? shrinkingStartedAt;
   final double? decreasePercentage;
   final int? decreaseIntervalDays;
+  final double? shrunkenLimit;
 
   const Session({
     required this.id,
@@ -29,6 +30,7 @@ class Session {
     this.shrinkingStartedAt,
     this.decreasePercentage,
     this.decreaseIntervalDays,
+    this.shrunkenLimit,
   });
 
   Session copyWith({
@@ -44,6 +46,7 @@ class Session {
     DateTime? shrinkingStartedAt,
     double? decreasePercentage,
     int? decreaseIntervalDays,
+    double? shrunkenLimit,
   }) {
     return Session(
       id: id ?? this.id,
@@ -58,6 +61,7 @@ class Session {
       shrinkingStartedAt: shrinkingStartedAt ?? this.shrinkingStartedAt,
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseIntervalDays: decreaseIntervalDays ?? this.decreaseIntervalDays,
+      shrunkenLimit: shrunkenLimit ?? this.shrunkenLimit,
     );
   }
 

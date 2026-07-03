@@ -4,7 +4,6 @@ import 'package:dopamine_budget/features/sessions/domain/repositories/session_re
 
 class GetDailyLimitUseCase {
   static const double minDailyLimit = 0.0;
-
   final SessionRepository _sessionRepository;
 
   GetDailyLimitUseCase(this._sessionRepository);
@@ -13,17 +12,27 @@ class GetDailyLimitUseCase {
     final session = await _sessionRepository.getActiveSession();
     if (session == null || session.phase == 0) return null;
 
-    final baseLimit = session.baseShrinkingLimit ?? session.avgScore;
-    if (baseLimit == null) return null;
+    final period = await _sessionRepository
+        .getActiveShrinkingPeriod(session.id);
 
-    if (session.shrinkingStartedAt == null) return baseLimit;
+    if (period == null) {
+      return session.shrunkenLimit ?? session.avgScore;
+    }
 
-    final daysPassed = TimeProvider.now
-        .difference(session.shrinkingStartedAt!)
-        .inDays;
-    final steps = daysPassed ~/ (session.decreaseIntervalDays ?? 7);
-    final dailyLimit = baseLimit * (1.0 - (steps * (session.decreasePercentage ?? 0.0)));
+    final today = DateTime(
+      TimeProvider.now.year,
+      TimeProvider.now.month,
+      TimeProvider.now.day,
+    );
+    final startDay = DateTime(
+      period.startedAt.year,
+      period.startedAt.month,
+      period.startedAt.day,
+    );
+    final daysPassed = today.difference(startDay).inDays;
+    final steps = daysPassed ~/ period.intervalDays;
+    final result = period.baseLimit * (1.0 - steps * period.decreasePct);
 
-    return max(minDailyLimit, dailyLimit);
+    return max(minDailyLimit, result);
   }
 }

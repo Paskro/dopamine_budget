@@ -86,6 +86,9 @@ class _ControlScreenState extends State<ControlScreen> {
                     builder: (_) => ProfileScreen(
                       sessionRepository: widget.sessionRepository,
                       deleteSessionUseCase: widget.deleteSessionUseCase,
+                      activeSession: widget.session,
+                      habitsNotifier: widget.habitsNotifier,
+                      archiveSessionUseCase: widget.archiveSessionUseCase,
                     ),
                   ),
                 ),
@@ -97,21 +100,6 @@ class _ControlScreenState extends State<ControlScreen> {
                   session: widget.session,
                   habitsNotifier: widget.habitsNotifier,
                   scoringNotifier: widget.scoringNotifier,
-                  onArchive: () async {
-                    await widget.archiveSessionUseCase.execute(widget.session.id);
-                    if (context.mounted) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (ctx) => SessionSummaryScreen(
-                            session: widget.session,
-                            deleteSessionUseCase: widget.deleteSessionUseCase,
-                            onComplete: () =>
-                                Navigator.of(ctx).popUntil((r) => r.isFirst),
-                          ),
-                        ),
-                      );
-                    }
-                  },
                 ),
               ),
             ],

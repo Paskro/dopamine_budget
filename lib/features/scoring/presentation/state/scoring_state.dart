@@ -15,6 +15,7 @@ class ScoringState {
   final bool isShrinkingEnabled;
   final double? decreasePercentage;
   final String? decreaseInterval;
+  final bool isShrinkEditAllowed;
 
   const ScoringState({
     required this.dailyLimit,
@@ -24,6 +25,7 @@ class ScoringState {
     required this.isLoading,
     required this.phase,
     required this.habitClicksToday,
+    required this.isShrinkEditAllowed,
     this.lastUpdateDate,
     this.currentSessionId,
     this.currentSession,
@@ -43,6 +45,7 @@ class ScoringState {
       phase: 'control',
       habitClicksToday: {},
       isShrinkingEnabled: false,
+      isShrinkEditAllowed: false,
     );
   }
 
@@ -61,6 +64,7 @@ class ScoringState {
     bool? isShrinkingEnabled,
     double? decreasePercentage,
     String? decreaseInterval,
+    bool? isShrinkEditAllowed,
   }) {
     return ScoringState(
       dailyLimit: dailyLimit ?? this.dailyLimit,
@@ -77,6 +81,7 @@ class ScoringState {
       isShrinkingEnabled: isShrinkingEnabled ?? this.isShrinkingEnabled,
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseInterval: decreaseInterval ?? this.decreaseInterval,
+      isShrinkEditAllowed: isShrinkEditAllowed ?? this.isShrinkEditAllowed,
     );
   }
 }

@@ -14,6 +14,8 @@ import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habi
 import 'package:dopamine_budget/features/sessions/domain/usecases/archive_session_use_case.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_shrinking_report_usecase.dart';
+import 'package:dopamine_budget/features/sessions/presentation/pages/shrinking_report_page.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -26,6 +28,7 @@ class RootGate extends StatefulWidget {
   final ArchiveSessionUseCase archiveSessionUseCase;
   final DeleteSessionUseCase deleteSessionUseCase;
   final SessionRepository sessionRepository;
+  final CheckAndGenerateShrinkingReportUseCase shrinkingReportUseCase;
 
   const RootGate({
     super.key,
@@ -39,6 +42,7 @@ class RootGate extends StatefulWidget {
     required this.archiveSessionUseCase,
     required this.deleteSessionUseCase,
     required this.sessionRepository,
+    required this.shrinkingReportUseCase,
   });
 
   @override
@@ -47,6 +51,16 @@ class RootGate extends StatefulWidget {
 
 class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
   WeeklyReportData? _pendingWeeklyReport;
+  ShrinkingReportData? _pendingShrinkingReport;
+
+  Future<void> _checkShrinkingReport() async {
+    final session = widget.sessionsNotifier.state.currentSession;
+    if (session == null || session.phase != 1) return;
+    final report = await widget.shrinkingReportUseCase.execute();
+    if (report != null && mounted) {
+      setState(() => _pendingShrinkingReport = report);
+    }
+  }
 
   @override
   void initState() {
@@ -65,7 +79,9 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       widget.controlScreenNotifier.checkForNewDay();
       _checkWeeklyReport();
+      _checkShrinkingReport();
     }
+
   }
 
   Future<void> _checkWeeklyReport() async {
@@ -135,8 +151,19 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
             if (_pendingWeeklyReport == null) {
               WidgetsBinding.instance.addPostFrameCallback((_) => _checkWeeklyReport());
             }
+            if (_pendingShrinkingReport == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) => _checkShrinkingReport());
+            }
 
-            content = _pendingWeeklyReport != null
+            content = _pendingShrinkingReport != null
+                ? ShrinkingReportPage(
+              reportData: _pendingShrinkingReport!,
+              sessionRepository: widget.sessionRepository,
+              onContinue: () {
+                if (mounted) setState(() => _pendingShrinkingReport = null);
+              },
+            )
+                : _pendingWeeklyReport != null
                 ? WeeklyReportPage(
               reportData: _pendingWeeklyReport!,
               onContinue: _markWeeklyReportReviewed,
@@ -171,6 +198,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
                 await widget.scoringNotifier.checkAndResetDayIfNeeded();
                 widget.controlScreenNotifier.checkAndResetDayIfNeeded();
                 await _checkWeeklyReport();
+                await _checkShrinkingReport();
               },
             ),
           ],

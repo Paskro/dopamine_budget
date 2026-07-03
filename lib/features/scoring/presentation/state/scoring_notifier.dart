@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'scoring_state.dart';
-
 import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/scoring/domain/repositories/scoring_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart';
@@ -11,14 +11,13 @@ import 'package:dopamine_budget/features/scoring/domain/usecases/get_current_dop
 import 'package:dopamine_budget/features/scoring/domain/usecases/toggle_shrinking_mode_usecase.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
 
-// lib/features/scoring/presentation/state/scoring_notifier.dart
-
 class ScoringNotifier extends ChangeNotifier {
   final SessionRepository _sessionRepository;
   final ScoringRepository _scoringRepository;
   final VerifyCalibrationExpiryUseCase _verifyCalibrationExpiry;
   final GetCurrentDopamineBalanceUseCase _getDopamineBalance;
   final GetDailyLimitUseCase _getDailyLimitUseCase;
+  final ToggleShrinkingModeUseCase _toggleShrinkingMode;
 
   ScoringState _state = ScoringState.initial();
   ScoringState get state => _state;
@@ -27,11 +26,11 @@ class ScoringNotifier extends ChangeNotifier {
   DateTime? _currentDay;
   int _spentToday = 0;
   bool _isRecomputing = false;
+  int _executionCounter = 0;
+  bool _recomputeQueued = false;
 
   StreamSubscription<Session?>? _sessionSub;
   StreamSubscription<int>? _spentSub;
-
-  final ToggleShrinkingModeUseCase _toggleShrinkingMode;
 
   ScoringNotifier({
     required SessionRepository sessionRepository,
@@ -47,38 +46,24 @@ class ScoringNotifier extends ChangeNotifier {
         _toggleShrinkingMode = toggleShrinkingMode,
         _getDailyLimitUseCase = getDailyLimitUseCase {
     _sessionSub = _sessionRepository.watchActiveSession().listen((session) {
-      debugPrint('[ScoringNotifier] watchActiveSession emit: phase=${session?.phase}');
+      debugPrint('[ScoringNotifier] watchActiveSession: phase=${session?.phase}');
       _session = session;
       _verifyCalibrationAndSync();
     });
   }
-  // ==========================================
-  // БЛОК 1: УПРАВЛЕНИЕ СМЕНОЙ СУТОК (РЕАКТИВНОЕ ПЕРЕПОДКЛЮЧЕНИЕ)
-  // ==========================================
 
-  /// Вызывается из UI перед рендерингом страниц или при нажатии кнопки "+1 День"
+  // БЛОК 1: СМЕНА СУТОК
+
   Future<void> checkAndResetDayIfNeeded() async {
     final now = TimeProvider.now;
     final todayDate = DateTime(now.year, now.month, now.day);
-
     if (_currentDay == null || _currentDay!.isBefore(todayDate)) {
-      debugPrint('[ScoringNotifier] 🚨 Фиксируем смену суток! Переподключаем стримы.');
-
+      debugPrint('[ScoringNotifier] Смена суток');
       final yesterdayDate = _currentDay;
       _currentDay = todayDate;
-
-      if (yesterdayDate != null) {
-        await _closeYesterdayIfNeeded(yesterdayDate);
-      }
-
-      // Сбрасываем локальные счетчики в стейте перед перерасчетом
-      _state = _state.copyWith(
-        pointsSpentToday: 0,
-        habitClicksToday: {},
-        lastUpdateDate: todayDate,
-      );
+      if (yesterdayDate != null) await _closeYesterdayIfNeeded(yesterdayDate);
+      _state = _state.copyWith(pointsSpentToday: 0, habitClicksToday: {}, lastUpdateDate: todayDate);
       notifyListeners();
-
       _verifyCalibrationAndSync();
     } else {
       _recompute();
@@ -86,62 +71,43 @@ class ScoringNotifier extends ChangeNotifier {
   }
 
   Future<void> _closeYesterdayIfNeeded(DateTime yesterday) async {
+    if (_session == null) return;
     try {
-      if (_session == null) return;
-      await _sessionRepository.getOrCreateDayLog(
-        date: yesterday,
-        sessionId: _session!.id,
-      );
-      debugPrint('[ScoringNotifier] ✅ День $yesterday зафиксирован в DaysTable.');
+      await _sessionRepository.getOrCreateDayLog(date: yesterday, sessionId: _session!.id);
     } catch (e) {
-      debugPrint('[ScoringNotifier] ⚠️ Не удалось закрыть день $yesterday: $e');
+      debugPrint('[ScoringNotifier] Не удалось закрыть день $yesterday: $e');
     }
   }
 
   void _verifyCalibrationAndSync() async {
     try {
-      // Выполняем юзкейс проверки завершения калибровки
       await _verifyCalibrationExpiry.execute();
-
-      // Переподписываемся на баланс под новые временные границы
       _subscribeToScore();
     } catch (e) {
-      debugPrint('[ScoringNotifier] Ошибка при проверке калибровки: $e');
+      debugPrint('[ScoringNotifier] Ошибка проверки калибровки: $e');
     }
   }
 
-  // ==========================================
-  // БЛОК 2: STREAM-ПОДПИСКА НА БАЛАНС ДНЯ
-  // ==========================================
+  // БЛОК 2: STREAM-ПОДПИСКА
 
   void _subscribeToScore() {
     _spentSub?.cancel();
-
     final now = TimeProvider.now;
     final today = DateTime(now.year, now.month, now.day);
     _currentDay = today;
-    final endOfDay = today.add(const Duration(days: 1));
-
-    // Точка отсчета баланса берется из сессии (бизнес-правило из Паспорта)
     final start = _session?.balanceStartTime ?? today;
-
-    _spentSub = _sessionRepository.watchScoreForDay(start, endOfDay).listen((spent) {
-      debugPrint('[ScoringNotifier] watchScoreForDay emit: spent=$spent');
+    _spentSub = _sessionRepository
+        .watchScoreForDay(start, today.add(const Duration(days: 1)))
+        .listen((spent) {
       _spentToday = spent;
       _recompute();
     });
   }
 
-  // ==========================================
-  // БЛОК 3: СИНХРОНИЗАЦИЯ И РАСЧЕТ СТЕЙТА (ЗАЩИТА ОТ RACE CONDITIONS)
-  // ==========================================
-
-  int _executionCounter = 0;
-  bool _recomputeQueued = false;
+  // БЛОК 3: РАСЧЁТ СТЕЙТА
 
   Future<void> _recompute() async {
     final currentExecutionId = ++_executionCounter;
-
     if (_isRecomputing) {
       _recomputeQueued = true;
       return;
@@ -161,10 +127,12 @@ class ScoringNotifier extends ChangeNotifier {
       final balance = await _getDopamineBalance.execute();
       final clicksToday = await _scoringRepository.getHabitClicksForDay(TimeProvider.now);
       final currentLimit = await _getDailyLimitUseCase.execute() ?? 0.0;
+      final activePeriod = await _sessionRepository.getActiveShrinkingPeriod(session.id);
+      final isShrinkEditAllowed = activePeriod != null
+          ? await _checkIsFirstDayOfNewPeriod(activePeriod)
+          : false;
 
       if (currentExecutionId != _executionCounter) return;
-
-      final String currentPhase = session.phase == 0 ? 'stats' : 'control';
 
       _state = _state.copyWith(
         dailyLimit: currentLimit,
@@ -172,25 +140,25 @@ class ScoringNotifier extends ChangeNotifier {
         gamificationPoints: 0,
         isOverLimit: balance <= 0 && _spentToday > 0,
         isLoading: false,
-        phase: currentPhase,
+        phase: session.phase == 0 ? 'stats' : 'control',
         habitClicksToday: clicksToday,
         currentSession: session,
         currentSessionId: session.id,
         lastUpdateDate: _currentDay,
-        isShrinkingEnabled: session.shrinkingStartedAt != null,
-        decreasePercentage: session.decreasePercentage != null
-            ? (session.decreasePercentage! * 100).roundToDouble()
+        isShrinkingEnabled: activePeriod != null,
+        isShrinkEditAllowed: isShrinkEditAllowed,
+        decreasePercentage: activePeriod != null
+            ? (activePeriod.decreasePct * 100).roundToDouble()
             : _state.decreasePercentage,
-        decreaseInterval: session.decreaseIntervalDays != null
-            ? (session.decreaseIntervalDays == 7 ? 'week' : 'month')
+        decreaseInterval: activePeriod != null
+            ? (activePeriod.intervalDays == 7 ? 'week' : 'month')
             : _state.decreaseInterval,
       );
 
       notifyListeners();
-      debugPrint('[ScoringNotifier] Стейт успешно пересчитан. Фаза: $currentPhase, Лимит: $currentLimit');
+      debugPrint('[ScoringNotifier] Лимит: $currentLimit, editAllowed: $isShrinkEditAllowed');
     } catch (e, stack) {
-      debugPrint('[ScoringNotifier] Ошибка обновления состояния скоринга: $e');
-      debugPrint('$stack');
+      debugPrint('[ScoringNotifier] Ошибка: $e\n$stack');
     } finally {
       _isRecomputing = false;
       if (_recomputeQueued) {
@@ -199,17 +167,25 @@ class ScoringNotifier extends ChangeNotifier {
       }
     }
   }
-  // ==========================================
-  // БЛОК 4: МУТАЦИИ И ВНЕШНИЙ ИНТЕРФЕЙС
-  // ==========================================
 
-  Future<void> refreshTodayState() async {
-    await _recompute();
+  Future<bool> _checkIsFirstDayOfNewPeriod(ShrinkingPeriod period) async {
+    final today = DateTime(TimeProvider.now.year, TimeProvider.now.month, TimeProvider.now.day);
+    final startDay = DateTime(period.startedAt.year, period.startedAt.month, period.startedAt.day);
+    final daysPassed = today.difference(startDay).inDays;
+    if (daysPassed <= 0 || daysPassed % period.intervalDays != 0) return false;
+    final isReviewed = await _sessionRepository.isShrinkingReportReviewed(
+      period.sessionId,
+      today.subtract(Duration(days: daysPassed % period.intervalDays == 0
+          ? 0
+          : period.intervalDays)),
+    );
+    return !isReviewed;
   }
 
-  Future<void> refreshScore() async {
-    await _recompute();
-  }
+  // БЛОК 4: МУТАЦИИ
+
+  Future<void> refreshTodayState() async => _recompute();
+  Future<void> refreshScore() async => _recompute();
 
   Future<void> spendDopamine(String habitType, int scoreValue) async {
     try {
@@ -218,9 +194,8 @@ class ScoringNotifier extends ChangeNotifier {
         scoreValue: scoreValue,
         timestamp: TimeProvider.now,
       );
-      debugPrint('Действие "$habitType" успешно записано.');
     } catch (e) {
-      debugPrint('Ошибка при вызове saveAction: $e');
+      debugPrint('[ScoringNotifier] spendDopamine error: $e');
     }
   }
 
@@ -229,12 +204,13 @@ class ScoringNotifier extends ChangeNotifier {
     try {
       await _sessionRepository.updateSessionToControl(sessionId: _session!.id);
     } catch (e) {
-      debugPrint('Ошибка при активации быстрого старта: $e');
+      debugPrint('[ScoringNotifier] applyDefaultControlSettings error: $e');
     }
   }
 
   @override
   String get currentSessionId => _state.currentSessionId ?? '';
+
   Future<String?> getMostFrequentHabit(DateTime sessionStartDate) async {
     try {
       return await _sessionRepository.getMostFrequentHabitSince(sessionStartDate);
@@ -243,65 +219,41 @@ class ScoringNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> toggleShrinking(bool isEnabled) async {
-    if (isEnabled && _session != null) {
-      final percentage = _state.decreasePercentage ?? 2.0;
-      final interval = _state.decreaseInterval ?? 'week';
-      await _sessionRepository.updateSession(
-        _session!.copyWith(
-          shrinkingStartedAt: isEnabled ? TimeProvider.now : null,
-          baseShrinkingLimit: _session!.avgScore,
-          decreasePercentage: percentage / 100.0,
-          decreaseIntervalDays: interval == 'week' ? 7 : 30,
-        ),
+  Future<void> toggleShrinking(bool isEnabled, {double? pct, String? interval}) async {
+    if (_session == null) return;
+    try {
+      final decreasePct = pct ?? (_state.decreasePercentage ?? 2.0);
+      final intervalStr = interval ?? (_state.decreaseInterval ?? 'week');
+      await _toggleShrinkingMode.execute(
+        isEnabled: isEnabled,
+        decreasePct: isEnabled ? decreasePct / 100.0 : null,
+        intervalDays: isEnabled ? (intervalStr == 'week' ? 7 : 30) : null,
       );
-    } else if (!isEnabled && _session != null) {
-      await _sessionRepository.updateSession(
-        _session!.copyWith(
-          shrinkingStartedAt: null,
-          baseShrinkingLimit: null,
-          decreasePercentage: null,
-          decreaseIntervalDays: null,
-        ),
-      );
+      await _recompute();
+    } catch (e) {
+      debugPrint('[ScoringNotifier] toggleShrinking error: $e');
     }
-    _state = _state.copyWith(isShrinkingEnabled: isEnabled);
-    notifyListeners();
-    await _recompute();
   }
 
   Future<void> updateDecreaseSettings({
     required double percentage,
     required String interval,
   }) async {
-    _state = _state.copyWith(
-      decreasePercentage: percentage,
-      decreaseInterval: interval,
-    );
+    _state = _state.copyWith(decreasePercentage: percentage, decreaseInterval: interval);
     notifyListeners();
-
-    if (_state.isShrinkingEnabled && _session != null) {
-      await _sessionRepository.updateSession(
-        _session!.copyWith(
-          decreasePercentage: percentage / 100.0,
-          decreaseIntervalDays: interval == 'week' ? 7 : 30,
-        ),
-      );
-    }
   }
 
   Future<List<Map<String, int>>> getHabitScoresPerDay(
       DateTime sessionStartDate, int calibrationDays) async {
     try {
-      // Репозиторий сам принимает дату начала и количество дней калибровки,
-      // и уже возвращает List<Map<String, int>>, который ждет CalibrationResultPage.
-      return await _sessionRepository.getScoresPerHabitPerDay(
-          sessionStartDate, calibrationDays);
+      return await _sessionRepository.getScoresPerHabitPerDay(sessionStartDate, calibrationDays);
     } catch (e) {
-      debugPrint('[ScoringNotifier] Ошибка в getHabitScoresPerDay: $e');
+      debugPrint('[ScoringNotifier] getHabitScoresPerDay error: $e');
       return [];
     }
   }
+
+  @override
   void dispose() {
     _sessionSub?.cancel();
     _spentSub?.cancel();

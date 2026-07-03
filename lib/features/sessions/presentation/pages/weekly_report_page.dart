@@ -25,12 +25,7 @@ class WeeklyReportPage extends StatelessWidget {
     final period =
         '${_fmt(reportData.weekStart)} — ${_fmt(reportData.weekEnd)}';
     final deviation = reportData.deviationPercent;
-    final isWeekly = reportData.session.decreaseIntervalDays == 7;
-    final baseLimit = reportData.session.baseShrinkingLimit ?? reportData.session.avgScore;
-    final dailyLimit = baseLimit?.round() ?? 0;
-    final newLimit = isWeekly && reportData.session.decreasePercentage != null
-        ? (dailyLimit - (dailyLimit * reportData.session.decreasePercentage!)).round()
-        : null;
+
     final weekStartNormalized = DateTime(
       reportData.weekStart.year,
       reportData.weekStart.month,
@@ -54,8 +49,6 @@ class WeeklyReportPage extends StatelessWidget {
               const SizedBox(height: 20),
               _buildDetailButton(context, weekStartNormalized),
               const SizedBox(height: 20),
-              _buildBudgetBlock(isWeekly, dailyLimit, newLimit),
-              const SizedBox(height: 32),
               _buildContinueButton(),
             ],
           ),
@@ -145,103 +138,7 @@ class WeeklyReportPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBudgetBlock(bool isWeekly, int dailyLimit, int? newLimit) {
-    return _SectionCard(
-      label: 'Корректировка бюджета',
-      child: isWeekly
-          ? Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Плановое снижение',
-                  style:
-                  TextStyle(fontSize: 13, color: Colors.white54)),
-              Text(
-                newLimit != null
-                    ? '$dailyLimit pts → $newLimit pts'
-                    : '$dailyLimit pts',
-                style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                        color: Colors.white.withOpacity(0.15)),
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: null,
-                  child: const Text('Изменить шаг',
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.white38)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                        color: Colors.white.withOpacity(0.15)),
-                    padding:
-                    const EdgeInsets.symmetric(vertical: 10),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: null,
-                  child: const Text('Оставить',
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.white38)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Гибкое управление темпом — следующий спринт',
-            style: TextStyle(
-                fontSize: 11,
-                color: Colors.white.withOpacity(0.25)),
-          ),
-        ],
-      )
-          : _buildMonthlyInfo(dailyLimit),
-    );
-  }
 
-  Widget _buildMonthlyInfo(int dailyLimit) {
-    final controlStart = reportData.session.controlStartedAt!;
-    final now = reportData.weekEnd;
-    final daysElapsed = now.difference(controlStart).inDays;
-    final weeksElapsed = (daysElapsed / 7).round();
-    final weeksLeft = (4 - weeksElapsed).clamp(0, 4);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Текущий лимит: $dailyLimit pts',
-          style: const TextStyle(fontSize: 13, color: Colors.white70),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'До следующей корректировки: $weeksLeft нед.',
-          style: const TextStyle(fontSize: 13, color: Colors.white38),
-        ),
-      ],
-    );
-  }
 
   Widget _buildDetailButton(BuildContext context, DateTime weekStart) {
     return OutlinedButton.icon(

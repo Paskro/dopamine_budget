@@ -15,6 +15,7 @@ class SessionsTable extends Table {
   DateTimeColumn get shrinkingStartedAt => dateTime().nullable()();
   RealColumn get decreasePercentage => real().nullable()();
   IntColumn get decreaseIntervalDays => integer().nullable()();
+  RealColumn get shrunkenLimit => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

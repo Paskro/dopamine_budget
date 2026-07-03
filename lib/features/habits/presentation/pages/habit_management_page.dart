@@ -5,11 +5,13 @@ import '../../domain/entities/habit.dart';
 class HabitManagementPage extends StatefulWidget {
   final HabitsNotifier habitsNotifier;
   final String sessionId;
+  final bool readOnly;
 
   const HabitManagementPage({
     Key? key,
     required this.habitsNotifier,
     required this.sessionId,
+    this.readOnly = false,
   }) : super(key: key);
 
   @override
@@ -82,12 +84,16 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    // habits возвращает List<Habit> напрямую
-    final habits = widget.habitsNotifier.habits;
+    final rawHabits = widget.habitsNotifier.habits;
     final isLoading = widget.habitsNotifier.isLoading;
-
-    // Берём выбранные ID прямо из стейта (было: selectedHabits.map(...))
     final selectedIds = widget.habitsNotifier.selectedHabitIds.toSet();
+
+    final habits = [...rawHabits]..sort((a, b) {
+      final aSelected = selectedIds.contains(int.tryParse(a.id) ?? -1);
+      final bSelected = selectedIds.contains(int.tryParse(b.id) ?? -1);
+      if (aSelected != bSelected) return aSelected ? -1 : 1;
+      return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -106,6 +112,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       body: SafeArea(
         child: Column(
           children: [
+            if (!widget.readOnly)
             Padding(
               padding: const EdgeInsets.all(16.0),
               key: const ValueKey('HabitFormKey'),
@@ -172,6 +179,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
               ),
             ),
 
+
             const Divider(height: 1),
 
             Padding(
@@ -215,9 +223,12 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                           );
                                         },
                                 ),
+
                                 title: Text(habit.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Text('Стоимость: ${habit.scoreValue} б.'),
-                                trailing: Row(
+                                trailing: widget.readOnly
+                                    ? null
+                                    : Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
