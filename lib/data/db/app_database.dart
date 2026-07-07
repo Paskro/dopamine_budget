@@ -10,6 +10,7 @@ import 'package:dopamine_budget/features/sessions/data/tables/sessions_table.dar
 import 'package:dopamine_budget/features/sessions/data/tables/days_table.dart';
 import 'package:dopamine_budget/features/sessions/data/tables/shrinking_periods_table.dart';
 import 'package:dopamine_budget/features/sessions/data/tables/shrinking_reports_log_table.dart';
+import 'package:dopamine_budget/features/streak/data/tables/streak_table.dart';
 
 part 'app_database.g.dart';
 
@@ -23,6 +24,7 @@ part 'app_database.g.dart';
   DaysTable,
   ShrinkingPeriodsTable,
   ShrinkingReportsLogTable,
+  StreakTable,
 ])
 class AppDatabase extends _$AppDatabase {
   static final AppDatabase instance = AppDatabase._internal();
@@ -34,7 +36,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration {
@@ -65,6 +67,15 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(shrinkingPeriodsTable);
           await m.createTable(shrinkingReportsLogTable);
           await m.addColumn(sessionsTable, sessionsTable.shrunkenLimit);
+        }
+        if (from < 10) {
+          await m.createTable(streakTable);
+        }
+        if (from < 11) {
+          await m.addColumn(streakTable, streakTable.hadActivityYesterday as GeneratedColumn);
+        }
+        if (from < 12) {
+          await m.addColumn(streakTable, streakTable.previousMultiplier as GeneratedColumn);
         }
       },
     );

@@ -2920,6 +2920,404 @@ class ShrinkingReportsLogTableCompanion
   }
 }
 
+class $StreakTableTable extends StreakTable
+    with TableInfo<$StreakTableTable, StreakTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StreakTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _lastActiveDateMeta = const VerificationMeta(
+    'lastActiveDate',
+  );
+  @override
+  late final GeneratedColumn<String> lastActiveDate = GeneratedColumn<String>(
+    'last_active_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _currentMultiplierMeta = const VerificationMeta(
+    'currentMultiplier',
+  );
+  @override
+  late final GeneratedColumn<double> currentMultiplier =
+      GeneratedColumn<double>(
+        'current_multiplier',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(1.0),
+      );
+  static const VerificationMeta _isViewedMeta = const VerificationMeta(
+    'isViewed',
+  );
+  @override
+  late final GeneratedColumn<bool> isViewed = GeneratedColumn<bool>(
+    'is_viewed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_viewed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _hadActivityYesterdayMeta =
+      const VerificationMeta('hadActivityYesterday');
+  @override
+  late final GeneratedColumn<bool> hadActivityYesterday = GeneratedColumn<bool>(
+    'had_activity_yesterday',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("had_activity_yesterday" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _previousMultiplierMeta =
+      const VerificationMeta('previousMultiplier');
+  @override
+  late final GeneratedColumn<double> previousMultiplier =
+      GeneratedColumn<double>(
+        'previous_multiplier',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(1.0),
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    lastActiveDate,
+    currentMultiplier,
+    isViewed,
+    hadActivityYesterday,
+    previousMultiplier,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'streak_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StreakTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('last_active_date')) {
+      context.handle(
+        _lastActiveDateMeta,
+        lastActiveDate.isAcceptableOrUnknown(
+          data['last_active_date']!,
+          _lastActiveDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastActiveDateMeta);
+    }
+    if (data.containsKey('current_multiplier')) {
+      context.handle(
+        _currentMultiplierMeta,
+        currentMultiplier.isAcceptableOrUnknown(
+          data['current_multiplier']!,
+          _currentMultiplierMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_viewed')) {
+      context.handle(
+        _isViewedMeta,
+        isViewed.isAcceptableOrUnknown(data['is_viewed']!, _isViewedMeta),
+      );
+    }
+    if (data.containsKey('had_activity_yesterday')) {
+      context.handle(
+        _hadActivityYesterdayMeta,
+        hadActivityYesterday.isAcceptableOrUnknown(
+          data['had_activity_yesterday']!,
+          _hadActivityYesterdayMeta,
+        ),
+      );
+    }
+    if (data.containsKey('previous_multiplier')) {
+      context.handle(
+        _previousMultiplierMeta,
+        previousMultiplier.isAcceptableOrUnknown(
+          data['previous_multiplier']!,
+          _previousMultiplierMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {lastActiveDate};
+  @override
+  StreakTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StreakTableData(
+      lastActiveDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_active_date'],
+      )!,
+      currentMultiplier: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}current_multiplier'],
+      )!,
+      isViewed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_viewed'],
+      )!,
+      hadActivityYesterday: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}had_activity_yesterday'],
+      )!,
+      previousMultiplier: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}previous_multiplier'],
+      )!,
+    );
+  }
+
+  @override
+  $StreakTableTable createAlias(String alias) {
+    return $StreakTableTable(attachedDatabase, alias);
+  }
+}
+
+class StreakTableData extends DataClass implements Insertable<StreakTableData> {
+  final String lastActiveDate;
+  final double currentMultiplier;
+  final bool isViewed;
+  final bool hadActivityYesterday;
+  final double previousMultiplier;
+  const StreakTableData({
+    required this.lastActiveDate,
+    required this.currentMultiplier,
+    required this.isViewed,
+    required this.hadActivityYesterday,
+    required this.previousMultiplier,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['last_active_date'] = Variable<String>(lastActiveDate);
+    map['current_multiplier'] = Variable<double>(currentMultiplier);
+    map['is_viewed'] = Variable<bool>(isViewed);
+    map['had_activity_yesterday'] = Variable<bool>(hadActivityYesterday);
+    map['previous_multiplier'] = Variable<double>(previousMultiplier);
+    return map;
+  }
+
+  StreakTableCompanion toCompanion(bool nullToAbsent) {
+    return StreakTableCompanion(
+      lastActiveDate: Value(lastActiveDate),
+      currentMultiplier: Value(currentMultiplier),
+      isViewed: Value(isViewed),
+      hadActivityYesterday: Value(hadActivityYesterday),
+      previousMultiplier: Value(previousMultiplier),
+    );
+  }
+
+  factory StreakTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StreakTableData(
+      lastActiveDate: serializer.fromJson<String>(json['lastActiveDate']),
+      currentMultiplier: serializer.fromJson<double>(json['currentMultiplier']),
+      isViewed: serializer.fromJson<bool>(json['isViewed']),
+      hadActivityYesterday: serializer.fromJson<bool>(
+        json['hadActivityYesterday'],
+      ),
+      previousMultiplier: serializer.fromJson<double>(
+        json['previousMultiplier'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'lastActiveDate': serializer.toJson<String>(lastActiveDate),
+      'currentMultiplier': serializer.toJson<double>(currentMultiplier),
+      'isViewed': serializer.toJson<bool>(isViewed),
+      'hadActivityYesterday': serializer.toJson<bool>(hadActivityYesterday),
+      'previousMultiplier': serializer.toJson<double>(previousMultiplier),
+    };
+  }
+
+  StreakTableData copyWith({
+    String? lastActiveDate,
+    double? currentMultiplier,
+    bool? isViewed,
+    bool? hadActivityYesterday,
+    double? previousMultiplier,
+  }) => StreakTableData(
+    lastActiveDate: lastActiveDate ?? this.lastActiveDate,
+    currentMultiplier: currentMultiplier ?? this.currentMultiplier,
+    isViewed: isViewed ?? this.isViewed,
+    hadActivityYesterday: hadActivityYesterday ?? this.hadActivityYesterday,
+    previousMultiplier: previousMultiplier ?? this.previousMultiplier,
+  );
+  StreakTableData copyWithCompanion(StreakTableCompanion data) {
+    return StreakTableData(
+      lastActiveDate: data.lastActiveDate.present
+          ? data.lastActiveDate.value
+          : this.lastActiveDate,
+      currentMultiplier: data.currentMultiplier.present
+          ? data.currentMultiplier.value
+          : this.currentMultiplier,
+      isViewed: data.isViewed.present ? data.isViewed.value : this.isViewed,
+      hadActivityYesterday: data.hadActivityYesterday.present
+          ? data.hadActivityYesterday.value
+          : this.hadActivityYesterday,
+      previousMultiplier: data.previousMultiplier.present
+          ? data.previousMultiplier.value
+          : this.previousMultiplier,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StreakTableData(')
+          ..write('lastActiveDate: $lastActiveDate, ')
+          ..write('currentMultiplier: $currentMultiplier, ')
+          ..write('isViewed: $isViewed, ')
+          ..write('hadActivityYesterday: $hadActivityYesterday, ')
+          ..write('previousMultiplier: $previousMultiplier')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    lastActiveDate,
+    currentMultiplier,
+    isViewed,
+    hadActivityYesterday,
+    previousMultiplier,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StreakTableData &&
+          other.lastActiveDate == this.lastActiveDate &&
+          other.currentMultiplier == this.currentMultiplier &&
+          other.isViewed == this.isViewed &&
+          other.hadActivityYesterday == this.hadActivityYesterday &&
+          other.previousMultiplier == this.previousMultiplier);
+}
+
+class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
+  final Value<String> lastActiveDate;
+  final Value<double> currentMultiplier;
+  final Value<bool> isViewed;
+  final Value<bool> hadActivityYesterday;
+  final Value<double> previousMultiplier;
+  final Value<int> rowid;
+  const StreakTableCompanion({
+    this.lastActiveDate = const Value.absent(),
+    this.currentMultiplier = const Value.absent(),
+    this.isViewed = const Value.absent(),
+    this.hadActivityYesterday = const Value.absent(),
+    this.previousMultiplier = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StreakTableCompanion.insert({
+    required String lastActiveDate,
+    this.currentMultiplier = const Value.absent(),
+    this.isViewed = const Value.absent(),
+    this.hadActivityYesterday = const Value.absent(),
+    this.previousMultiplier = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : lastActiveDate = Value(lastActiveDate);
+  static Insertable<StreakTableData> custom({
+    Expression<String>? lastActiveDate,
+    Expression<double>? currentMultiplier,
+    Expression<bool>? isViewed,
+    Expression<bool>? hadActivityYesterday,
+    Expression<double>? previousMultiplier,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (lastActiveDate != null) 'last_active_date': lastActiveDate,
+      if (currentMultiplier != null) 'current_multiplier': currentMultiplier,
+      if (isViewed != null) 'is_viewed': isViewed,
+      if (hadActivityYesterday != null)
+        'had_activity_yesterday': hadActivityYesterday,
+      if (previousMultiplier != null) 'previous_multiplier': previousMultiplier,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StreakTableCompanion copyWith({
+    Value<String>? lastActiveDate,
+    Value<double>? currentMultiplier,
+    Value<bool>? isViewed,
+    Value<bool>? hadActivityYesterday,
+    Value<double>? previousMultiplier,
+    Value<int>? rowid,
+  }) {
+    return StreakTableCompanion(
+      lastActiveDate: lastActiveDate ?? this.lastActiveDate,
+      currentMultiplier: currentMultiplier ?? this.currentMultiplier,
+      isViewed: isViewed ?? this.isViewed,
+      hadActivityYesterday: hadActivityYesterday ?? this.hadActivityYesterday,
+      previousMultiplier: previousMultiplier ?? this.previousMultiplier,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (lastActiveDate.present) {
+      map['last_active_date'] = Variable<String>(lastActiveDate.value);
+    }
+    if (currentMultiplier.present) {
+      map['current_multiplier'] = Variable<double>(currentMultiplier.value);
+    }
+    if (isViewed.present) {
+      map['is_viewed'] = Variable<bool>(isViewed.value);
+    }
+    if (hadActivityYesterday.present) {
+      map['had_activity_yesterday'] = Variable<bool>(
+        hadActivityYesterday.value,
+      );
+    }
+    if (previousMultiplier.present) {
+      map['previous_multiplier'] = Variable<double>(previousMultiplier.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StreakTableCompanion(')
+          ..write('lastActiveDate: $lastActiveDate, ')
+          ..write('currentMultiplier: $currentMultiplier, ')
+          ..write('isViewed: $isViewed, ')
+          ..write('hadActivityYesterday: $hadActivityYesterday, ')
+          ..write('previousMultiplier: $previousMultiplier, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2933,6 +3331,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $ShrinkingPeriodsTableTable(this);
   late final $ShrinkingReportsLogTableTable shrinkingReportsLogTable =
       $ShrinkingReportsLogTableTable(this);
+  late final $StreakTableTable streakTable = $StreakTableTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2945,6 +3344,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     daysTable,
     shrinkingPeriodsTable,
     shrinkingReportsLogTable,
+    streakTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -5180,6 +5580,214 @@ typedef $$ShrinkingReportsLogTableTableProcessedTableManager =
       ShrinkingReportsLogTableData,
       PrefetchHooks Function()
     >;
+typedef $$StreakTableTableCreateCompanionBuilder =
+    StreakTableCompanion Function({
+      required String lastActiveDate,
+      Value<double> currentMultiplier,
+      Value<bool> isViewed,
+      Value<bool> hadActivityYesterday,
+      Value<double> previousMultiplier,
+      Value<int> rowid,
+    });
+typedef $$StreakTableTableUpdateCompanionBuilder =
+    StreakTableCompanion Function({
+      Value<String> lastActiveDate,
+      Value<double> currentMultiplier,
+      Value<bool> isViewed,
+      Value<bool> hadActivityYesterday,
+      Value<double> previousMultiplier,
+      Value<int> rowid,
+    });
+
+class $$StreakTableTableFilterComposer
+    extends Composer<_$AppDatabase, $StreakTableTable> {
+  $$StreakTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get lastActiveDate => $composableBuilder(
+    column: $table.lastActiveDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get currentMultiplier => $composableBuilder(
+    column: $table.currentMultiplier,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isViewed => $composableBuilder(
+    column: $table.isViewed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get hadActivityYesterday => $composableBuilder(
+    column: $table.hadActivityYesterday,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get previousMultiplier => $composableBuilder(
+    column: $table.previousMultiplier,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$StreakTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $StreakTableTable> {
+  $$StreakTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get lastActiveDate => $composableBuilder(
+    column: $table.lastActiveDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get currentMultiplier => $composableBuilder(
+    column: $table.currentMultiplier,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isViewed => $composableBuilder(
+    column: $table.isViewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get hadActivityYesterday => $composableBuilder(
+    column: $table.hadActivityYesterday,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get previousMultiplier => $composableBuilder(
+    column: $table.previousMultiplier,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StreakTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StreakTableTable> {
+  $$StreakTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get lastActiveDate => $composableBuilder(
+    column: $table.lastActiveDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get currentMultiplier => $composableBuilder(
+    column: $table.currentMultiplier,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isViewed =>
+      $composableBuilder(column: $table.isViewed, builder: (column) => column);
+
+  GeneratedColumn<bool> get hadActivityYesterday => $composableBuilder(
+    column: $table.hadActivityYesterday,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get previousMultiplier => $composableBuilder(
+    column: $table.previousMultiplier,
+    builder: (column) => column,
+  );
+}
+
+class $$StreakTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StreakTableTable,
+          StreakTableData,
+          $$StreakTableTableFilterComposer,
+          $$StreakTableTableOrderingComposer,
+          $$StreakTableTableAnnotationComposer,
+          $$StreakTableTableCreateCompanionBuilder,
+          $$StreakTableTableUpdateCompanionBuilder,
+          (
+            StreakTableData,
+            BaseReferences<_$AppDatabase, $StreakTableTable, StreakTableData>,
+          ),
+          StreakTableData,
+          PrefetchHooks Function()
+        > {
+  $$StreakTableTableTableManager(_$AppDatabase db, $StreakTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StreakTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StreakTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StreakTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> lastActiveDate = const Value.absent(),
+                Value<double> currentMultiplier = const Value.absent(),
+                Value<bool> isViewed = const Value.absent(),
+                Value<bool> hadActivityYesterday = const Value.absent(),
+                Value<double> previousMultiplier = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StreakTableCompanion(
+                lastActiveDate: lastActiveDate,
+                currentMultiplier: currentMultiplier,
+                isViewed: isViewed,
+                hadActivityYesterday: hadActivityYesterday,
+                previousMultiplier: previousMultiplier,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String lastActiveDate,
+                Value<double> currentMultiplier = const Value.absent(),
+                Value<bool> isViewed = const Value.absent(),
+                Value<bool> hadActivityYesterday = const Value.absent(),
+                Value<double> previousMultiplier = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StreakTableCompanion.insert(
+                lastActiveDate: lastActiveDate,
+                currentMultiplier: currentMultiplier,
+                isViewed: isViewed,
+                hadActivityYesterday: hadActivityYesterday,
+                previousMultiplier: previousMultiplier,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$StreakTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StreakTableTable,
+      StreakTableData,
+      $$StreakTableTableFilterComposer,
+      $$StreakTableTableOrderingComposer,
+      $$StreakTableTableAnnotationComposer,
+      $$StreakTableTableCreateCompanionBuilder,
+      $$StreakTableTableUpdateCompanionBuilder,
+      (
+        StreakTableData,
+        BaseReferences<_$AppDatabase, $StreakTableTable, StreakTableData>,
+      ),
+      StreakTableData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5201,4 +5809,6 @@ class $AppDatabaseManager {
         _db,
         _db.shrinkingReportsLogTable,
       );
+  $$StreakTableTableTableManager get streakTable =>
+      $$StreakTableTableTableManager(_db, _db.streakTable);
 }

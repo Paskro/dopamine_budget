@@ -16,6 +16,8 @@ import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_shrinking_report_usecase.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/shrinking_report_page.dart';
+import 'package:dopamine_budget/features/streak/presentation/state/streak_notifier.dart';
+import 'package:dopamine_budget/features/streak/presentation/widgets/streak_popup.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -29,6 +31,7 @@ class RootGate extends StatefulWidget {
   final DeleteSessionUseCase deleteSessionUseCase;
   final SessionRepository sessionRepository;
   final CheckAndGenerateShrinkingReportUseCase shrinkingReportUseCase;
+  final StreakNotifier streakNotifier;
 
   const RootGate({
     super.key,
@@ -43,6 +46,7 @@ class RootGate extends StatefulWidget {
     required this.deleteSessionUseCase,
     required this.sessionRepository,
     required this.shrinkingReportUseCase,
+    required this.streakNotifier,
   });
 
   @override
@@ -179,10 +183,12 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
         return Stack(
           children: [
             content,
+            StreakPopup(notifier: widget.streakNotifier),
             DeveloperOverlay(
               onTimeShifted: () async {
                 await widget.scoringNotifier.checkAndResetDayIfNeeded();
                 widget.controlScreenNotifier.checkAndResetDayIfNeeded();
+                await widget.streakNotifier.init();  // добавить
                 await _checkWeeklyReport();
                 await _checkShrinkingReport();
               },

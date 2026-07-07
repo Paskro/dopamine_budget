@@ -37,6 +37,8 @@ class DeveloperOverlay extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade700,
                         foregroundColor: Colors.white,
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       onPressed: () {
                         TimeProvider.addDuration(const Duration(days: 1));
@@ -49,6 +51,8 @@ class DeveloperOverlay extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.amber.shade400,
                         foregroundColor: Colors.white,
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       onPressed: () {
                         TimeProvider.addDuration(const Duration(hours: 4));
@@ -59,6 +63,8 @@ class DeveloperOverlay extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade300,
                         foregroundColor: Colors.black54,
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       ),
                       onPressed: () {
                         TimeProvider.reset();

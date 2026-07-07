@@ -31,7 +31,10 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_shrinking_report_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_with_habits_usecase.dart';
-
+import 'package:dopamine_budget/features/streak/data/repositories/streak_repository_impl.dart';
+import 'package:dopamine_budget/features/streak/domain/usecases/sync_streak_usecase.dart';
+import 'package:dopamine_budget/features/streak/presentation/state/streak_notifier.dart';
+import 'package:dopamine_budget/core/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +48,14 @@ void main() async {
   await NotificationPermissionHelper.requestExactAlarmPermission();
 
   final database = AppDatabase.instance;
+
+  final streakRepository = StreakRepositoryImpl(database);
+  final syncStreakUseCase = SyncStreakUseCase(streakRepository);
+  final streakNotifier = StreakNotifier(
+    syncStreakUseCase: syncStreakUseCase,
+    repository: streakRepository,
+  );
+  await streakNotifier.init();
 
 
 
@@ -134,6 +145,7 @@ void main() async {
     deleteSessionUseCase: deleteSessionUseCase,
     sessionRepository: sessionRepository,
     shrinkingReportUseCase: shrinkingReportUseCase,
+    streakNotifier: streakNotifier,
   ));
 }
 
@@ -149,6 +161,7 @@ class MyApp extends StatelessWidget {
   final DeleteSessionUseCase deleteSessionUseCase;
   final SessionRepository sessionRepository;
   final CheckAndGenerateShrinkingReportUseCase shrinkingReportUseCase;
+  final StreakNotifier streakNotifier;
 
   const MyApp({
     super.key,
@@ -163,13 +176,14 @@ class MyApp extends StatelessWidget {
     required this.deleteSessionUseCase,
     required this.sessionRepository,
     required this.shrinkingReportUseCase,
+    required this.streakNotifier,
   });
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Dopamine Budget',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
       home: RootGate(
         database: database,
@@ -183,6 +197,7 @@ class MyApp extends StatelessWidget {
         deleteSessionUseCase: deleteSessionUseCase,
         sessionRepository: sessionRepository,
         shrinkingReportUseCase: shrinkingReportUseCase,
+        streakNotifier: streakNotifier,
       ),
     );
   }

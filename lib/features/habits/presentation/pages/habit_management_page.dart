@@ -108,10 +108,11 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       return a.title.toLowerCase().compareTo(b.title.toLowerCase());
     });
 
-    return Column(
-        children: [
-          if (!widget.readOnly)
-            Padding(
+    return CustomScrollView(
+      slivers: [
+        if (!widget.readOnly)
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.all(16.0),
               key: const ValueKey('HabitFormKey'),
               child: Form(
@@ -138,9 +139,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                             isDense: true,
                           ),
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Введите название';
-                            }
+                            if (value == null || value.trim().isEmpty) return 'Введите название';
                             return null;
                           },
                         ),
@@ -172,27 +171,34 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                 ),
               ),
             ),
-          const Divider(height: 1),
-          Padding(
+          ),
+        SliverToBoxAdapter(
+          child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               'Выберите привычки для текущей сессии:',
+              textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500),
             ),
           ),
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : habits.isEmpty
-                ? const Center(
+        ),
+        if (isLoading)
+          const SliverFillRemaining(
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (habits.isEmpty)
+          const SliverFillRemaining(
+            child: Center(
               child: Text(
                 'Справочник привычек пуст.\nСоздайте первую привычку выше.',
                 textAlign: TextAlign.center,
               ),
-            )
-                : ListView.builder(
-              itemCount: habits.length,
-              itemBuilder: (context, index) {
+            ),
+          )
+        else
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+                  (context, index) {
                 final habit = habits[index];
                 final habitIdInt = int.tryParse(habit.id) ?? -1;
                 final isSelected = selectedIds.contains(habitIdInt);
@@ -202,9 +208,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   child: ListTile(
                     leading: Checkbox(
                       value: isSelected,
-                      onChanged: isLoading
-                          ? null
-                          : (bool? checked) {
+                      onChanged: isLoading ? null : (bool? checked) {
                         if (isLocalMode) {
                           final updated = Set<int>.from(widget.localSelectedIds!);
                           updated.contains(habitIdInt)
@@ -243,10 +247,11 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   ),
                 );
               },
+              childCount: habits.length,
             ),
           ),
-        ],
-      );
+      ],
+    );
   }
 
   @override
