@@ -30,6 +30,8 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_shrinking_report_usecase.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_with_habits_usecase.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +56,7 @@ void main() async {
   // Use Cases — сессии
   final initializeSessionUseCase = InitializeSessionUseCase(database);
   final startControlSessionUseCase = StartControlSessionUseCase(database);
+  final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database);
   final getSessionsByDayUseCase = GetSessionsByDayUseCase(sessionRepository);
 
   final archiveSessionUseCase = ArchiveSessionUseCase(sessionRepository);
@@ -93,6 +96,7 @@ void main() async {
     sessionRepository: sessionRepository,
     initializeSessionUseCase: initializeSessionUseCase,
     startControlSessionUseCase: startControlSessionUseCase,
+    startControlSessionWithHabitsUseCase: startControlSessionWithHabitsUseCase,
   );
 
   // HabitsNotifier теперь сам подписывается на sessionId через стрим сессии

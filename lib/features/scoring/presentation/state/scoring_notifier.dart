@@ -246,7 +246,22 @@ class ScoringNotifier extends ChangeNotifier {
   Future<List<Map<String, int>>> getHabitScoresPerDay(
       DateTime sessionStartDate, int calibrationDays) async {
     try {
-      return await _sessionRepository.getScoresPerHabitPerDay(sessionStartDate, calibrationDays);
+      final session = _session;
+      if (session == null) return [];
+      final uniqueDays = await _scoringRepository.getUniqueRecordedDays(
+        sessionId: session.id,
+      );
+      final daysToShow = uniqueDays
+          .where((d) => d.isBefore(DateTime(
+          TimeProvider.now.year,
+          TimeProvider.now.month,
+          TimeProvider.now.day)))
+          .take(calibrationDays)
+          .toList();
+      return Future.wait(
+        daysToShow.map((day) => _sessionRepository.getScoresPerHabitPerDay(day, 1)
+            .then((list) => list.isNotEmpty ? list.first : <String, int>{})),
+      );
     } catch (e) {
       debugPrint('[ScoringNotifier] getHabitScoresPerDay error: $e');
       return [];

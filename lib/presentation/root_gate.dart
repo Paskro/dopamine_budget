@@ -118,29 +118,15 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
           content = SessionOnboardingScreen(
             sessionRepository: widget.sessionRepository,
             deleteSessionUseCase: widget.deleteSessionUseCase,
+            habitsNotifier: widget.habitsNotifier,
             onStartCalibration: (days) {
               widget.sessionsNotifier.restartCalibration(durationDays: days);
             },
-            onStartControl: ({
-              required limit,
-              required shouldDecrease,
-              percentage,
-              interval,
-              bool enableShrinking = false,
-            }) async {
-              try {
-                await widget.sessionsNotifier.startManualControl(
-                  limit: limit,
-                  shouldDecrease: shouldDecrease,
-                  decreasePercentage: percentage,
-                  decreaseInterval: interval,
-                );
-                if (enableShrinking) {
-                  await widget.scoringNotifier.toggleShrinking(true);
-                }
-              } catch (e) {
-                debugPrint('[RootGate] onStartControl failed: $e');
-              }
+            onStartControlWithHabits: ({required limit, required habitIds}) async { // ДОБАВЛЕНО, заменяет onStartControl
+              await widget.sessionsNotifier.startManualControlWithHabits(
+                limit: limit,
+                habitIds: habitIds,
+              );
             },
           );
         } else {

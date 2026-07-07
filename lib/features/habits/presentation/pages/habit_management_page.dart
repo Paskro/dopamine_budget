@@ -6,12 +6,18 @@ class HabitManagementPage extends StatefulWidget {
   final HabitsNotifier habitsNotifier;
   final String sessionId;
   final bool readOnly;
+  final Set<int>? localSelectedIds;
+  final ValueChanged<Set<int>>? onLocalSelectionChanged;
+  final bool embedded;
 
   const HabitManagementPage({
     Key? key,
     required this.habitsNotifier,
     required this.sessionId,
     this.readOnly = false,
+    this.embedded = false,
+    this.localSelectedIds,
+    this.onLocalSelectionChanged,
   }) : super(key: key);
 
   @override
@@ -75,18 +81,25 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       );
       widget.habitsNotifier.updateHabit(updatedHabit);
     } else {
-      widget.habitsNotifier.addHabit(title, _scoreValue);
+      widget.habitsNotifier.addHabit(
+        title,
+        _scoreValue,
+        localSelectedIds: widget.localSelectedIds,
+        onLocalSelectionChanged: widget.onLocalSelectionChanged,
+      );
     }
 
     _resetForm();
     FocusScope.of(context).unfocus();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildBody() {
     final rawHabits = widget.habitsNotifier.habits;
     final isLoading = widget.habitsNotifier.isLoading;
-    final selectedIds = widget.habitsNotifier.selectedHabitIds.toSet();
+    final isLocalMode = widget.localSelectedIds != null;
+    final selectedIds = isLocalMode
+        ? widget.localSelectedIds!
+        : widget.habitsNotifier.selectedHabitIds.toSet();
 
     final habits = [...rawHabits]..sort((a, b) {
       final aSelected = selectedIds.contains(int.tryParse(a.id) ?? -1);
@@ -95,24 +108,9 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       return a.title.toLowerCase().compareTo(b.title.toLowerCase());
     });
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Управление привычками'),
-        centerTitle: true,
-        actions: _editingHabit != null
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.cancel),
-                  onPressed: _resetForm,
-                  tooltip: 'Отменить редактирование',
-                )
-              ]
-            : null,
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            if (!widget.readOnly)
+    return Column(
+        children: [
+          if (!widget.readOnly)
             Padding(
               padding: const EdgeInsets.all(16.0),
               key: const ValueKey('HabitFormKey'),
@@ -157,11 +155,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                                 max: 10,
                                 divisions: 9,
                                 label: _scoreValue.toString(),
-                                onChanged: (val) {
-                                  setState(() {
-                                    _scoreValue = val.toInt();
-                                  });
-                                },
+                                onChanged: (val) => setState(() => _scoreValue = val.toInt()),
                               ),
                             ),
                           ],
@@ -178,81 +172,101 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                 ),
               ),
             ),
-
-
-            const Divider(height: 1),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              'Выберите привычки для текущей сессии:',
+              style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : habits.isEmpty
+                ? const Center(
               child: Text(
-                'Выберите привычки для текущей сессии:',
-                style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500),
+                'Справочник привычек пуст.\nСоздайте первую привычку выше.',
+                textAlign: TextAlign.center,
               ),
-            ),
+            )
+                : ListView.builder(
+              itemCount: habits.length,
+              itemBuilder: (context, index) {
+                final habit = habits[index];
+                final habitIdInt = int.tryParse(habit.id) ?? -1;
+                final isSelected = selectedIds.contains(habitIdInt);
 
-            Expanded(
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : habits.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Справочник привычек пуст.\nСоздайте первую привычку выше.',
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: habits.length,
-                          itemBuilder: (context, index) {
-                            final habit = habits[index];
-                            // selectedIds содержит int, habit.id — String; парсим для сравнения
-                            final habitIdInt = int.tryParse(habit.id) ?? -1;
-                            final isSelected = selectedIds.contains(habitIdInt);
-
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              child: ListTile(
-                                leading: Checkbox(
-                                  value: isSelected,
-                                  onChanged: isLoading
-                                      ? null
-                                      : (bool? checked) {
-                                          // убрали лишний параметр isSelected — его нет в методе
-                                          widget.habitsNotifier.toggleHabitSelection(
-                                            widget.sessionId,
-                                            int.parse(habit.id), // <- ИСПРАВЛЕНО: приведение String к int для Drift
-                                          );
-                                        },
-                                ),
-
-                                title: Text(habit.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text('Стоимость: ${habit.scoreValue} б.'),
-                                trailing: widget.readOnly
-                                    ? null
-                                    : Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Colors.blue),
-                                      onPressed: isLoading ? null : () => _startEditing(habit),
-                                      constraints: const BoxConstraints(),
-                                      padding: const EdgeInsets.all(8),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      onPressed: isLoading ? null : () => _showDeleteConfirmation(habit),
-                                      constraints: const BoxConstraints(),
-                                      padding: const EdgeInsets.all(8),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: ListTile(
+                    leading: Checkbox(
+                      value: isSelected,
+                      onChanged: isLoading
+                          ? null
+                          : (bool? checked) {
+                        if (isLocalMode) {
+                          final updated = Set<int>.from(widget.localSelectedIds!);
+                          updated.contains(habitIdInt)
+                              ? updated.remove(habitIdInt)
+                              : updated.add(habitIdInt);
+                          widget.onLocalSelectionChanged!(updated);
+                        } else {
+                          widget.habitsNotifier.toggleHabitSelection(
+                            widget.sessionId,
+                            int.parse(habit.id),
+                          );
+                        }
+                      },
+                    ),
+                    title: Text(habit.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('Стоимость: ${habit.scoreValue} б.'),
+                    trailing: widget.readOnly
+                        ? null
+                        : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: isLoading ? null : () => _startEditing(habit),
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: isLoading ? null : () => _showDeleteConfirmation(habit),
+                          constraints: const BoxConstraints(),
+                          padding: const EdgeInsets.all(8),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.embedded) return _buildBody();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Управление привычками'),
+        centerTitle: true,
+        actions: _editingHabit != null
+            ? [
+          IconButton(
+            icon: const Icon(Icons.cancel),
+            onPressed: _resetForm,
+            tooltip: 'Отменить редактирование',
+          )
+        ]
+            : null,
       ),
+      body: _buildBody(),
     );
   }
 

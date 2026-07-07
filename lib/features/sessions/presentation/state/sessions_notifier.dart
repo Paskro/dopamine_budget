@@ -4,6 +4,7 @@ import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/initialize_session_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_usecase.dart';
+import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_with_habits_usecase.dart';
 
 // lib/features/sessions/presentation/state/sessions_notifier.dart
 
@@ -26,6 +27,7 @@ class SessionsNotifier extends ChangeNotifier {
   final SessionRepository _sessionRepository;
   final InitializeSessionUseCase initializeSessionUseCase;
   final StartControlSessionUseCase startControlSessionUseCase;
+  final StartControlSessionWithHabitsUseCase startControlSessionWithHabitsUseCase;
 
   SessionsState _state = const SessionsState(isLoading: true);
   SessionsState get state => _state;
@@ -36,6 +38,7 @@ class SessionsNotifier extends ChangeNotifier {
     required SessionRepository sessionRepository,
     required this.initializeSessionUseCase,
     required this.startControlSessionUseCase,
+    required this.startControlSessionWithHabitsUseCase,
   }) : _sessionRepository = sessionRepository {
     _sub = _sessionRepository.watchActiveSession().listen((session) {
       _state = SessionsState(currentSession: session, isLoading: false);
@@ -74,6 +77,16 @@ class SessionsNotifier extends ChangeNotifier {
       decreaseInterval: decreaseInterval,
     );
     // Аналогично — стрим подхватит новую сессию сам.
+  }
+
+  Future<void> startManualControlWithHabits({
+    required double limit,
+    required Set<int> habitIds,
+  }) async {
+    await startControlSessionWithHabitsUseCase.execute(
+      manualLimit: limit,
+      habitIds: habitIds,
+    );
   }
 
   Future<void> updateSession(Session session) async {

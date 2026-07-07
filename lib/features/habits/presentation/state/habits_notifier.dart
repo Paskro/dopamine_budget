@@ -93,7 +93,7 @@ class HabitsNotifier extends ChangeNotifier {
     // _selectedHabitIds обновится сам через watchSelectedHabitIds.
   }
 
-  Future<void> addHabit(String title, int scoreValue) async {
+  Future<void> addHabit(String title, int scoreValue, {Set<int>? localSelectedIds, void Function(Set<int>)? onLocalSelectionChanged}) async {
     final newHabit = Habit(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title,
@@ -101,11 +101,14 @@ class HabitsNotifier extends ChangeNotifier {
     );
     final savedId = await _habitRepository.addHabitAndGetId(newHabit);
 
-    // Автоматически привязываем к текущей сессии — по умолчанию отмечена
-    if (_currentSessionId != null && savedId != null) {
-      await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
+    if (savedId != null) {
+      if (onLocalSelectionChanged != null && localSelectedIds != null) {
+        // Локальный режим визарда — авто-добавляем в локальный Set
+        onLocalSelectionChanged({...localSelectedIds, savedId});
+      } else if (_currentSessionId != null) {
+        await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
+      }
     }
-    // _habits и _selectedHabitIds обновятся сами через стримы.
   }
 
   Future<void> updateHabit(Habit habit) async {
