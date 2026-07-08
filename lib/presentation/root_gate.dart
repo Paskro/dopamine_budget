@@ -7,7 +7,7 @@ import 'package:dopamine_budget/features/scoring/presentation/state/scoring_noti
 import 'package:dopamine_budget/features/scoring/presentation/pages/home_page.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/control_screen.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
-import 'package:dopamine_budget/core/debug/developer_overlay.dart';
+//import 'package:dopamine_budget/core/debug/developer_overlay.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/weekly_report_page.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habits_report_usecase.dart';
@@ -184,15 +184,6 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
           children: [
             content,
             StreakPopup(notifier: widget.streakNotifier),
-            DeveloperOverlay(
-              onTimeShifted: () async {
-                await widget.scoringNotifier.checkAndResetDayIfNeeded();
-                widget.controlScreenNotifier.checkAndResetDayIfNeeded();
-                await widget.streakNotifier.init();  // добавить
-                await _checkWeeklyReport();
-                await _checkShrinkingReport();
-              },
-            ),
           ],
         );
       },

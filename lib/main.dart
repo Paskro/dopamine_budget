@@ -39,7 +39,7 @@ import 'package:dopamine_budget/core/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru', null);
-  await TimeProvider.restore();
+  //await TimeProvider.restore();
   tz_data.initializeTimeZones();
   final tzName = await FlutterTimezone.getLocalTimezone();
   tz.setLocalLocation(tz.getLocation(tzName));
