@@ -27,8 +27,7 @@ class SessionOnboardingScreen extends StatefulWidget {
   });
 
   @override
-  State<SessionOnboardingScreen> createState() =>
-      _SessionOnboardingScreenState();
+  State<SessionOnboardingScreen> createState() => _SessionOnboardingScreenState();
 }
 
 class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
@@ -114,27 +113,10 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
   PreferredSizeWidget? _buildAppBar() {
     switch (_step) {
       case _OnboardingStep.intro:
-        return AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.person_outline),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfileScreen(
-                    sessionRepository: widget.sessionRepository,
-                    deleteSessionUseCase: widget.deleteSessionUseCase,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
+        return null;
       case _OnboardingStep.habitsSelection:
         return AppBar(
-          title: const Text('Сначала выберем привычки для контроля'),
+          title: const Text('Выберем привычки для контроля'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => setState(() => _step = _OnboardingStep.intro),
@@ -187,7 +169,9 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _isStarting ? null : () async {
+                      onPressed: _isStarting
+                          ? null
+                          : () async {
                         final limit = double.tryParse(_limitController.text) ?? 100.0;
                         setState(() => _isStarting = true);
                         try {
@@ -200,7 +184,11 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
                         }
                       },
                       child: _isStarting
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                           : const Text('Начать'),
                     ),
                   ),
@@ -215,48 +203,74 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
   Widget _buildBody() {
     switch (_step) {
       case _OnboardingStep.intro:
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.psychology, size: 80, color: Colors.blue),
-                const SizedBox(height: 24),
-                const Text(
-                  'Добро пожаловать в\nDopamine Budget',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Выберите стратегию работы со своими триггерами и привычками:',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                const SizedBox(height: 48),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.blue.shade50,
-                    foregroundColor: Colors.blue.shade900,
+        return Container(
+          color: const Color(0xFF1A2421),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 28.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Spacer(flex: 2),
+                  const _HeroVessel(),
+                  const SizedBox(height: 40),
+                  const Text(
+                    'Твой дофаминовый\nбюджет',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF2EFEA),
+                      height: 1.25,
+                      letterSpacing: -0.3,
+                    ),
                   ),
-                  icon: const Icon(Icons.bar_chart),
-                  label: const Text('Запустить калибровку (Рекомендуется)', style: TextStyle(fontSize: 15)),
-                  onPressed: _showCalibrationDialog,
-                ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                  icon: const Icon(Icons.tune),
-                  label: const Text('Я сам установлю лимит (Контроль)', style: TextStyle(fontSize: 15)),
-                  onPressed: () => setState(() {
-                    _wizardSelectedHabitIds = {};
-                    _step = _OnboardingStep.habitsSelection;
-                  }),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Выбери, как начать работу\nсо своими привычками и триггерами.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFFA8B5AF),
+                      height: 1.55,
+                    ),
+                  ),
+                  const Spacer(flex: 2),
+                  _OnboardingOptionCard(
+                    isPrimary: true,
+                    icon: Icons.bar_chart_rounded,
+                    title: 'Начать калибровку',
+                    description: 'Собираем статистику 7 дней — точный лимит',
+                    onTap: _showCalibrationDialog,
+                  ),
+                  const SizedBox(height: 12),
+                  _OnboardingOptionCard(
+                    isPrimary: false,
+                    icon: Icons.tune_rounded,
+                    title: 'Установить лимит вручную',
+                    description: 'Сразу перейти к контролю со своим значением',
+                    onTap: () => setState(() {
+                      _wizardSelectedHabitIds = {};
+                      _step = _OnboardingStep.habitsSelection;
+                    }),
+                  ),
+                  const Spacer(flex: 1),
+                  const Text(
+                    'Этот выбор можно изменить позже в профиле',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 12,
+                      color: Color(0xFF6E7A75),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         );
@@ -266,7 +280,8 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
           sessionId: '',
           embedded: true,
           localSelectedIds: _wizardSelectedHabitIds,
-          onLocalSelectionChanged: (ids) => setState(() => _wizardSelectedHabitIds = ids),
+          onLocalSelectionChanged: (ids) =>
+              setState(() => _wizardSelectedHabitIds = ids),
         );
       case _OnboardingStep.limitInput:
         return Padding(
@@ -299,6 +314,168 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
     return Scaffold(
       appBar: _buildAppBar(),
       body: _buildBody(),
+    );
+  }
+}
+
+// --- Вспомогательные виджеты (вне класса) ---
+
+class _HeroVessel extends StatelessWidget {
+  const _HeroVessel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        color: const Color(0xFF24342F),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: CustomPaint(painter: _VesselPainter()),
+    );
+  }
+}
+
+class _VesselPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    const accent = Color(0xFF8EB897);
+
+    final strokePaint = Paint()
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path1 = Path()
+      ..moveTo(cx - 14, cy + 14)
+      ..quadraticBezierTo(cx - 18, cy - 2, cx - 14, cy - 14)
+      ..quadraticBezierTo(cx, cy - 20, cx + 14, cy - 14)
+      ..quadraticBezierTo(cx + 18, cy - 2, cx + 14, cy + 14);
+    canvas.drawPath(path1, strokePaint..color = accent.withOpacity(0.3));
+
+    final path2 = Path()
+      ..moveTo(cx - 10, cy + 14)
+      ..quadraticBezierTo(cx - 13, cy, cx - 10, cy - 10)
+      ..quadraticBezierTo(cx, cy - 15, cx + 10, cy - 10)
+      ..quadraticBezierTo(cx + 13, cy, cx + 10, cy + 14);
+    canvas.drawPath(path2, strokePaint..color = accent.withOpacity(0.6));
+
+    final liquidPath = Path()
+      ..moveTo(cx - 14, cy + 8)
+      ..quadraticBezierTo(cx, cy + 4, cx + 14, cy + 8)
+      ..lineTo(cx + 14, cy + 14)
+      ..lineTo(cx - 14, cy + 14)
+      ..close();
+    canvas.drawPath(
+      liquidPath,
+      Paint()..color = accent.withOpacity(0.15)..style = PaintingStyle.fill,
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(cx - 14, cy + 14, 28, 5),
+        const Radius.circular(2),
+      ),
+      Paint()..color = accent.withOpacity(0.2),
+    );
+
+    canvas.drawLine(
+      Offset(cx, cy - 26),
+      Offset(cx, cy - 21),
+      Paint()
+        ..color = accent.withOpacity(0.5)
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _OnboardingOptionCard extends StatelessWidget {
+  final bool isPrimary;
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  const _OnboardingOptionCard({
+    required this.isPrimary,
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isPrimary ? const Color(0xFF8EB897) : const Color(0xFF24342F);
+    final titleColor = isPrimary ? const Color(0xFF1A2421) : const Color(0xFFF2EFEA);
+    final descColor = isPrimary
+        ? const Color(0xFF1A2421).withOpacity(0.6)
+        : const Color(0xFFA8B5AF);
+    final iconBg = isPrimary
+        ? const Color(0xFF1A2421).withOpacity(0.12)
+        : Colors.white.withOpacity(0.04);
+    final iconColor = isPrimary ? const Color(0xFF1A2421) : const Color(0xFF8EB897);
+    final borderColor =
+    isPrimary ? Colors.transparent : Colors.white.withOpacity(0.05);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+              child: Icon(icon, color: iconColor, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: titleColor,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 13,
+                      color: descColor,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, color: descColor, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }
