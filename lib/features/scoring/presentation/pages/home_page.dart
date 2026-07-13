@@ -72,7 +72,7 @@ class HomePage extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.settings_outlined),
+              icon: const Icon(Icons.add),
               onPressed: () => SessionSettingsSheet.show(
                 context: context,
                 session: session,

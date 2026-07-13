@@ -1,7 +1,7 @@
 name: dopamine_budget
 flutter_launcher_icons:
-  android: "launcher_icon"
-  ios: true
+  android: true
+  ios: false
   image_path: "assets/images/app_icon.png"
   remove_alpha_ios: true
 description: "A new Flutter project."
@@ -55,7 +55,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.3
   drift_dev: any
   build_runner: any
 
