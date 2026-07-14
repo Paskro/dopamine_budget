@@ -9,6 +9,9 @@ import 'package:dopamine_budget/features/habits/presentation/state/habits_notifi
 import 'package:dopamine_budget/features/habits/presentation/pages/habit_management_page.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/session_summary_screen.dart';
 import 'past_sessions_screen.dart';
+import 'package:dopamine_budget/core/prefs/haptic_prefs.dart';
+import 'package:dopamine_budget/core/utils/haptic_service.dart';
+import 'package:flutter/services.dart';
 
 class ProfileScreen extends StatelessWidget {
   final SessionRepository sessionRepository;
@@ -47,6 +50,14 @@ class ProfileScreen extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          _HapticToggleTile(),
+          ElevatedButton(
+            onPressed: () async {
+              final bool result = await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate', 'HapticFeedbackType.vibrate');
+              debugPrint('Haptic result: $result');
+            },
+            child: const Text('TEST VIBRO'),
           ),
           if (hasActiveSession) ...[
             ListTile(
@@ -105,3 +116,34 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+class _HapticToggleTile extends StatefulWidget {
+  @override
+  State<_HapticToggleTile> createState() => _HapticToggleTileState();
+}
+
+class _HapticToggleTileState extends State<_HapticToggleTile> {
+  bool _enabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    HapticPrefs.isEnabled().then((v) {
+      if (mounted) setState(() => _enabled = v);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      secondary: const Icon(Icons.vibration),
+      title: const Text('Виброотклик'),
+      value: _enabled,
+      onChanged: (v) {
+        setState(() => _enabled = v);
+        HapticPrefs.setEnabled(v);
+        HapticService.updateEnabled(v);
+      },
+    );
+  }
+}
+

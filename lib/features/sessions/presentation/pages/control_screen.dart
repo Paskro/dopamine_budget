@@ -12,6 +12,7 @@ import 'package:dopamine_budget/features/sessions/presentation/pages/profile_scr
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/sessions/presentation/widgets/session_settings_sheet.dart';
 import 'package:dopamine_budget/features/scoring/presentation/state/scoring_notifier.dart';
+import 'package:dopamine_budget/core/utils/haptic_service.dart';
 
 // lib/features/sessions/presentation/pages/control_screen.dart
 
@@ -214,7 +215,7 @@ class _GoodBoyBanner extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          HapticFeedback.lightImpact();
+          HapticService.light();
           onTap();
         },
         child: Padding(
@@ -358,11 +359,12 @@ class ControlHabitButton extends StatefulWidget {
 class _ControlHabitButtonState extends State<ControlHabitButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  double _lastProgress = 0;
 
   Duration get _holdDuration {
-    if (widget.points <= 3) return const Duration(milliseconds: 600);
-    if (widget.points <= 7) return const Duration(milliseconds: 1300);
-    return const Duration(milliseconds: 2200);
+    if (widget.points <= 3) return const Duration(milliseconds: 400);
+    if (widget.points <= 7) return const Duration(milliseconds: 800);
+    return const Duration(milliseconds: 1200);
   }
 
   @override
@@ -372,6 +374,17 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
       ..addStatusListener((status) {
         if (status == AnimationStatus.completed) _onSuccess();
       });
+  }
+
+  void _onProgressChanged() {
+    final current = _controller.value;
+    if (current > _lastProgress) {
+      final step = (current * 10).floor();
+      if (step % 2 == 0) {
+        HapticService.impact(widget.points);
+      }
+    }
+    _lastProgress = current;
   }
 
   @override
@@ -387,11 +400,7 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
   }
 
   void _onSuccess() {
-    widget.points <= 3
-        ? HapticFeedback.lightImpact()
-        : widget.points <= 7
-        ? HapticFeedback.mediumImpact()
-        : HapticFeedback.vibrate();
+    HapticService.impact(widget.points);
     _controller.reset();
     widget.onTriggered();
   }
@@ -516,12 +525,12 @@ class _BrokenHoldButtonState extends State<_BrokenHoldButton>
 
     final step = (_controller.value * 12).floor();
     if (step % 2 == 0 && intensity > 0.3) {
-      HapticFeedback.selectionClick();
+      HapticService.selection();
     }
   }
 
   void _onConfirmed() {
-    HapticFeedback.heavyImpact();
+    HapticService.heavy();
     _controller.reset();
     widget.onConfirmed();
   }

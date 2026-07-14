@@ -35,6 +35,7 @@ import 'package:dopamine_budget/features/streak/data/repositories/streak_reposit
 import 'package:dopamine_budget/features/streak/domain/usecases/sync_streak_usecase.dart';
 import 'package:dopamine_budget/features/streak/presentation/state/streak_notifier.dart';
 import 'package:dopamine_budget/core/theme/app_theme.dart';
+import 'package:dopamine_budget/core/utils/haptic_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,6 +47,7 @@ void main() async {
   await NotificationScheduler.init();
   await NotificationPermissionHelper.requestPermission();
   await NotificationPermissionHelper.requestExactAlarmPermission();
+  await HapticService.init();
 
   final database = AppDatabase.instance;
 
