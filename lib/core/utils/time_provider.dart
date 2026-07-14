@@ -5,7 +5,7 @@ class TimeProvider {
   static Duration _offset = Duration.zero;
   static const _prefsKey = 'time_provider_offset_ms';
 
-  static DateTime get now => DateTime.now();
+  static DateTime get now => kDebugMode ? DateTime.now().adрd(_offset) : DateTime.now();
 
   static Future<void> restore() async {
     if (!kDebugMode) return;
