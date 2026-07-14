@@ -13,6 +13,7 @@ import 'package:dopamine_budget/features/sessions/domain/repositories/session_re
 import 'package:dopamine_budget/features/sessions/presentation/pages/session_summary_screen.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/profile_screen.dart';
 import 'package:dopamine_budget/features/sessions/presentation/widgets/session_settings_sheet.dart';
+import 'package:dopamine_budget/core/utils/haptic_service.dart';
 
 class HomePage extends StatelessWidget {
   final ScoringNotifier scoringNotifier;
@@ -198,20 +199,33 @@ class DopamineHoldButton extends StatefulWidget {
 class _DopamineHoldButtonState extends State<DopamineHoldButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
+  double _lastProgress = 0;
 
   Duration get _holdDuration {
-    if (widget.points <= 3) return const Duration(milliseconds: 600);
-    if (widget.points <= 7) return const Duration(milliseconds: 1300);
-    return const Duration(milliseconds: 2200);
+    if (widget.points <= 3) return const Duration(milliseconds: 400);
+    if (widget.points <= 7) return const Duration(milliseconds: 800);
+    return const Duration(milliseconds: 1200);
   }
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(vsync: this, duration: _holdDuration);
+    _animationController.addListener(_onProgressChanged);
     _animationController.addStatusListener((status) {
       if (status == AnimationStatus.completed) _triggerSuccess();
     });
+  }
+
+  void _onProgressChanged() {
+    final current = _animationController.value;
+    if (current > _lastProgress) {
+      final step = (current * 10).floor();
+      if (step % 2 == 0) {
+        HapticService.impact(widget.points);
+      }
+    }
+    _lastProgress = current;
   }
 
   @override
@@ -235,13 +249,7 @@ class _DopamineHoldButtonState extends State<DopamineHoldButton>
   }
 
   void _executeDifferentiatedHaptic() {
-    if (widget.points <= 3) {
-      HapticFeedback.lightImpact();
-    } else if (widget.points <= 7) {
-      HapticFeedback.mediumImpact();
-    } else {
-      HapticFeedback.vibrate();
-    }
+    HapticService.impact(widget.points);
   }
 
   void _onTapDown(TapDownDetails details) {

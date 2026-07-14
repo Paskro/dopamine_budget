@@ -31,16 +31,38 @@ class StreakPopup extends StatelessWidget {
   }
 }
 
-class _StreakPopupDialog extends StatelessWidget {
+class _StreakPopupDialog extends StatefulWidget {
   final StreakState state;
   final VoidCallback onDismiss;
 
   const _StreakPopupDialog({required this.state, required this.onDismiss});
 
   @override
-  Widget build(BuildContext context) {
-    final displayCase = state.displayCase;
-    final pct = ((state.record!.currentMultiplier - 1.0) * 100).round();
+  State<_StreakPopupDialog> createState() => _StreakPopupDialogState();
+}
+
+class _StreakPopupDialogState extends State<_StreakPopupDialog>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _glowAnim;
+  late String _title;
+  late String _body;
+  late String _button;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+
+    _glowAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    final displayCase = widget.state.displayCase;
+    final pct = ((widget.state.record!.currentMultiplier - 1.0) * 100).round();
     final idx = Random().nextInt(3);
 
     const titles = {
@@ -64,47 +86,66 @@ class _StreakPopupDialog extends StatelessWidget {
       StreakDisplayCase.neutral: 'Начинаю заново',
     };
 
-    final title = titles[displayCase]![idx];
-    final body = bodies[displayCase]![idx];
-    final button = buttons[displayCase]!;
+    _title = titles[displayCase]![idx];
+    _body = bodies[displayCase]![idx];
+    _button = buttons[displayCase]!;
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const goldLight = Color(0xFFFFD700);
+    const goldDark = Color(0xFFB8860B);
 
     return Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
-              width: 1.5,
+      backgroundColor: Colors.transparent,
+      child: AnimatedBuilder(
+        animation: _glowAnim,
+        builder: (context, child) {
+          final glow = _glowAnim.value;
+          return Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Color.lerp(goldDark, goldLight, glow)!,
+                width: 1.5 + glow * 0.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: goldLight.withOpacity(0.25 + glow * 0.35),
+                  blurRadius: 16 + glow * 24,
+                  spreadRadius: 2 + glow * 6,
+                ),
+                BoxShadow(
+                  color: goldDark.withOpacity(0.15 + glow * 0.15),
+                  blurRadius: 40 + glow * 20,
+                  spreadRadius: 4 + glow * 4,
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.35),
-                blurRadius: 24,
-                spreadRadius: 4,
-              ),
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                blurRadius: 48,
-                spreadRadius: 8,
-              ),
+            child: child,
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_title, style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              Text(_body, textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              ElevatedButton(onPressed: widget.onDismiss, child: Text(_button)),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            Text(body, textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            ElevatedButton(onPressed: onDismiss, child: Text(button)),
-          ],
         ),
       ),
-     ),
     );
   }
 }
