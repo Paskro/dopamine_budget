@@ -95,10 +95,21 @@ class ScoringNotifier extends ChangeNotifier {
     final now = TimeProvider.now;
     final today = DateTime(now.year, now.month, now.day);
     _currentDay = today;
-    final start = _session?.balanceStartTime ?? today;
+    final start = _session?.controlStartedAt != null
+        ? (_session!.controlStartedAt!.isAfter(today) ? today : _session!.controlStartedAt!)
+        : today;
     _spentSub = _sessionRepository
         .watchScoreForDay(start, today.add(const Duration(days: 1)))
         .listen((spent) {
+      final actualToday = DateTime(
+        TimeProvider.now.year,
+        TimeProvider.now.month,
+        TimeProvider.now.day,
+      );
+      if (_currentDay != null && _currentDay!.isBefore(actualToday)) {
+        _subscribeToScore();
+        return;
+      }
       _spentToday = spent;
       _recompute();
     });

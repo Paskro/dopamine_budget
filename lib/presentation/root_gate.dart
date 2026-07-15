@@ -81,11 +81,11 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      widget.scoringNotifier.checkAndResetDayIfNeeded();
       widget.controlScreenNotifier.checkForNewDay();
       _checkWeeklyReport();
       _checkShrinkingReport();
     }
-
   }
 
   Future<void> _checkWeeklyReport() async {

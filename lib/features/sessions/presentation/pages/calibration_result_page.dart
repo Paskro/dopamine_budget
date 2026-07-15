@@ -17,14 +17,14 @@ class CalibrationResultPage extends StatelessWidget {
     final String displayAvg = (session.avgScore ?? 0.0).round().toString();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Тема приложения (Dark)
+      backgroundColor: const Color(0xFF121212),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
+        child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 24),
 
               // 🎉 Заголовок и иконка успеха
               const Icon(Icons.emoji_events_rounded, size: 80, color: Colors.amber),
@@ -41,7 +41,7 @@ class CalibrationResultPage extends StatelessWidget {
                 style: TextStyle(fontSize: 15, color: Colors.grey),
               ),
 
-              const Spacer(),
+            const SizedBox(height: 24),
 
               // 🏆 БЛОК АНАЛИТИКИ: Самая частая привычка
               FutureBuilder<String?>(
@@ -99,7 +99,7 @@ class CalibrationResultPage extends StatelessWidget {
                 },
               ),
 
-              const Spacer(),
+            const SizedBox(height: 24),
 
               // 💡 Информационный блок с результатами
               Container(
@@ -130,7 +130,7 @@ class CalibrationResultPage extends StatelessWidget {
                 ),
               ),
 
-              const Spacer(flex: 2),
+            const SizedBox(height: 32),
 
               // 🚀 Акцентная кнопка "Быстрый старт"
               ElevatedButton(
