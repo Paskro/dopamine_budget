@@ -40,7 +40,7 @@ import 'package:dopamine_budget/core/utils/haptic_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru', null);
-  await TimeProvider.restore();
+  await TimeProvider.restore(); //ЗАКОММЕНТИТЬ В РЕЛИЗЕ
   tz_data.initializeTimeZones();
   final tzName = await FlutterTimezone.getLocalTimezone();
   tz.setLocalLocation(tz.getLocation(tzName));
@@ -88,6 +88,7 @@ void main() async {
   final getDopamineBalanceUseCase = GetCurrentDopamineBalanceUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
+    getDailyLimitUseCase: getDailyLimitUseCase,
   );
 
   final weeklyReportUseCase = CheckAndGenerateWeeklyReportUseCase(

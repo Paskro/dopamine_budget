@@ -16,7 +16,7 @@ class GetDailyLimitUseCase {
         .getActiveShrinkingPeriod(session.id);
 
     if (period == null) {
-      return session.shrunkenLimit ?? session.avgScore;
+      return (session.shrunkenLimit ?? session.avgScore)?.roundToDouble();
     }
 
     final today = DateTime(
@@ -33,6 +33,6 @@ class GetDailyLimitUseCase {
     final steps = daysPassed ~/ period.intervalDays;
     final result = period.baseLimit * (1.0 - steps * period.decreasePct);
 
-    return max(minDailyLimit, result);
+    return max(minDailyLimit, result).roundToDouble();
   }
 }
