@@ -70,6 +70,9 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.streakNotifier.init();
+    });
   }
 
   @override

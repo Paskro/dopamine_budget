@@ -57,9 +57,6 @@ void main() async {
     syncStreakUseCase: syncStreakUseCase,
     repository: streakRepository,
   );
-  await streakNotifier.init();
-
-
 
   // Репозитории
   final sessionRepository = SessionRepositoryImpl(database);
