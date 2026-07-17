@@ -601,6 +601,27 @@ class SessionRepositoryImpl implements SessionRepository {
   // PRIVATE HELPERS
   // =========================================================================
 
+  @override
+  Future<int> getCompletedCalibrationDaysCount(String sessionId) async {
+    final today = DateTime(
+      TimeProvider.now.year,
+      TimeProvider.now.month,
+      TimeProvider.now.day,
+    );
+
+    final rows = await (_db.select(_db.habitLogsTable)
+      ..where((t) =>
+      t.sessionId.equals(sessionId) &
+      t.timestamp.isSmallerThanValue(today)))
+        .get();
+
+    final uniqueDates = rows
+        .map((r) => DayLogMapper.dateToString(r.timestamp))
+        .toSet();
+
+    return uniqueDates.length;
+  }
+
   Session _sessionFromRow(SessionsTableData row) {
     return Session(
       id: row.id,
