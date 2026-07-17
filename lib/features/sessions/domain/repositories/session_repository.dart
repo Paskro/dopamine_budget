@@ -82,4 +82,6 @@ abstract class SessionRepository {
     Value<DateTime?> shrinkingStartedAt = const Value.absent(),
   });
   Future<void> markWeeklyReportAsReviewed(DateTime date);
+  Future<int> getCompletedCalibrationDaysCount(String sessionId);
+
 }
