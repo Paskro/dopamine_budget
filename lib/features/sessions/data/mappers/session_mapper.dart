@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:dopamine_budget/features/sessions/data/tables/sessions_table.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 

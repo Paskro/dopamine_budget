@@ -18,7 +18,6 @@ import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usec
 import 'package:dopamine_budget/features/habits/data/repositories/habit_repository_impl.dart';
 import 'package:dopamine_budget/features/habits/presentation/state/habits_notifier.dart';
 import 'package:dopamine_budget/presentation/root_gate.dart';
-import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/archive_session_use_case.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
@@ -70,8 +69,6 @@ void main() async {
   final initializeSessionUseCase = InitializeSessionUseCase(database);
   final startControlSessionUseCase = StartControlSessionUseCase(database);
   final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database);
-  final getSessionsByDayUseCase = GetSessionsByDayUseCase(sessionRepository);
-
   final archiveSessionUseCase = ArchiveSessionUseCase(sessionRepository);
   final deleteSessionUseCase = DeleteSessionUseCase(sessionRepository);
 
@@ -80,14 +77,14 @@ void main() async {
     sessionRepository: sessionRepository,
     getDailyLimitUseCase: getDailyLimitUseCase,
   );
-  final calculateScoreUseCase = CalculateScoreUseCase(scoringRepository, getDailyLimitUseCase);
-  final verifyCalibrationExpiryUseCase = VerifyCalibrationExpiryUseCase(
+    final verifyCalibrationExpiryUseCase = VerifyCalibrationExpiryUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
   );
   final getDopamineBalanceUseCase = GetCurrentDopamineBalanceUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
+    getDailyLimitUseCase: getDailyLimitUseCase,
   );
 
   final weeklyReportUseCase = CheckAndGenerateWeeklyReportUseCase(
