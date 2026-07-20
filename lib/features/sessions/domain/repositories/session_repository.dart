@@ -3,6 +3,7 @@ import '../entities/day_log.dart';
 import '../entities/shrinking_period.dart';
 import '../entities/day_stats.dart';
 import 'package:drift/drift.dart';
+import '../entities/habit_click_log.dart';
 
 abstract class SessionRepository {
   // === SESSIONS (legacy Future API) ===
@@ -82,4 +83,6 @@ abstract class SessionRepository {
     Value<DateTime?> shrinkingStartedAt = const Value.absent(),
   });
   Future<void> markWeeklyReportAsReviewed(DateTime date);
+  Future<int> getCompletedCalibrationDaysCount(String sessionId);
+  Stream<List<HabitClickLog>> watchHabitLogsForDay(DateTime date);
 }
