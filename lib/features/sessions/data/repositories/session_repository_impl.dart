@@ -8,6 +8,7 @@ import 'package:dopamine_budget/features/sessions/data/mappers/day_log_mapper.da
 import 'package:dopamine_budget/features/sessions/data/mappers/shrinking_period_mapper.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/day_stats.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/habit_click_log.dart';
 
 
 class SessionRepositoryImpl implements SessionRepository {
@@ -638,5 +639,28 @@ class SessionRepositoryImpl implements SessionRepository {
       decreaseIntervalDays: row.decreaseIntervalDays,
       shrunkenLimit: row.shrunkenLimit,
     );
+  }
+
+  @override
+  Stream<List<HabitClickLog>> watchHabitLogsForDay(DateTime date) {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
+
+    final query = _db.select(_db.habitLogsTable).join([
+      innerJoin(_db.habitsTable, _db.habitsTable.id.equalsExp(_db.habitLogsTable.habitId)),
+    ])
+      ..where(_db.habitLogsTable.timestamp.isBetweenValues(start, end))
+      ..orderBy([OrderingTerm.desc(_db.habitLogsTable.timestamp)]);
+
+    return query.watch().map((rows) => rows.map((row) {
+      final log = row.readTable(_db.habitLogsTable);
+      final habit = row.readTable(_db.habitsTable);
+      return HabitClickLog(
+        habitId: log.habitId.toString(),
+        habitTitle: habit.title,
+        scoreCost: habit.scoreValue,
+        timestamp: log.timestamp,
+      );
+    }).toList());
   }
 }

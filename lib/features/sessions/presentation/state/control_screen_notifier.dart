@@ -7,6 +7,7 @@ import 'package:dopamine_budget/features/sessions/domain/repositories/session_re
 import 'package:dopamine_budget/features/habits/domain/repositories/habit_repository.dart';
 import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
+import 'package:dopamine_budget/features/sessions/domain/entities/habit_click_log.dart';
 
 enum ControlScreenStatus { active, brokenLocked }
 
@@ -17,6 +18,7 @@ class ControlScreenState {
   final List<Habit> habits;
   final List<int> selectedIds;
   final bool isLoading;
+  final List<HabitClickLog> todayLogs;
 
   /// 'regular' | 'ideal' | 'almost_ideal' | 'broken'
   final String dayStatus;
@@ -34,6 +36,7 @@ class ControlScreenState {
     required this.isLoading,
     required this.dayStatus,
     required this.hasHabitClickToday,
+    required this.todayLogs,
   });
 
   factory ControlScreenState.initial() => const ControlScreenState(
@@ -45,6 +48,7 @@ class ControlScreenState {
     isLoading: true,
     dayStatus: 'regular',
     hasHabitClickToday: false,
+    todayLogs: [],
   );
 
   ControlScreenState copyWith({
@@ -56,6 +60,7 @@ class ControlScreenState {
     bool? isLoading,
     String? dayStatus,
     bool? hasHabitClickToday,
+    List<HabitClickLog>? todayLogs,
   }) {
     return ControlScreenState(
       status: status ?? this.status,
@@ -66,6 +71,7 @@ class ControlScreenState {
       isLoading: isLoading ?? this.isLoading,
       dayStatus: dayStatus ?? this.dayStatus,
       hasHabitClickToday: hasHabitClickToday ?? this.hasHabitClickToday,
+      todayLogs: todayLogs ?? this.todayLogs,
     );
   }
 
@@ -103,12 +109,14 @@ class ControlScreenNotifier extends ChangeNotifier {
   List<Habit> _habits = [];
   List<int> _selectedIds = [];
   int _spentToday = 0;
+  List<HabitClickLog> _todayLogs = [];
 
   StreamSubscription<Session?>? _sessionSub;
   StreamSubscription<DayLog?>? _dayLogSub;
   StreamSubscription<List<Habit>>? _habitsSub;
   StreamSubscription<List<int>>? _selectedIdsSub;
   StreamSubscription<int>? _spentSub;
+  StreamSubscription<List<HabitClickLog>>? _logsSub;
 
   String? _currentSessionId;
   DateTime? _currentDay;
@@ -159,11 +167,16 @@ class ControlScreenNotifier extends ChangeNotifier {
     _currentDay = today;
 
     _dayLogSub?.cancel();
+    _logsSub?.cancel();
     _spentSub?.cancel();
 
     _dayLogSub = _sessionRepository.watchDayLog(today).listen((dayLog) {
-      debugPrint('[ControlScreen] watchDayLog emit: date=$today, dayStatus=${dayLog?.dayStatus}, dayLog=$dayLog');
       _dayLog = dayLog;
+      _recompute();
+    });
+
+    _logsSub = _sessionRepository.watchHabitLogsForDay(today).listen((logs) {
+      _todayLogs = logs;
       _recompute();
     });
 
@@ -239,6 +252,7 @@ class ControlScreenNotifier extends ChangeNotifier {
         isLoading: false,
         dayStatus: dayStatus,
         hasHabitClickToday: _spentToday > 0,
+        todayLogs: _todayLogs,
       );
       notifyListeners();
     } finally {
@@ -259,6 +273,7 @@ class ControlScreenNotifier extends ChangeNotifier {
     _spentSub?.cancel();
     _errorEventsController.close();
     super.dispose();
+    _logsSub?.cancel();
   }
 
   Future<void> confirmBreak() async {
