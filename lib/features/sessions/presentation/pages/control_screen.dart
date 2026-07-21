@@ -679,7 +679,16 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
 
   void _onProgressTick() {
     widget.holdProgress?.value = (progress: _ctrl.value, cost: widget.points);
+    // Вибрация каждые 20% прогресса
+    final step = (_ctrl.value * 20).floor();
+    if (step != _lastStep) {
+      _lastStep = step;
+      HapticService.impact(widget.points);
+    }
+    if (_ctrl.status == AnimationStatus.reverse) return;
   }
+
+  int _lastStep = -1;
 
   @override
   void didUpdateWidget(covariant ControlHabitButton old) {
@@ -696,6 +705,7 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
 
   void _onSuccess() {
     HapticService.impact(widget.points);
+    _lastStep = -1;
     widget.holdProgress?.value = (progress: 0.0, cost: 0);
     _ctrl.reset();
     widget.onTriggered();
@@ -707,12 +717,14 @@ class _ControlHabitButtonState extends State<ControlHabitButton>
       onTapDown: (_) => _ctrl.forward(),
       onTapUp: (_) {
         if (_ctrl.status != AnimationStatus.completed) {
+          _lastStep = -1;
           widget.holdProgress?.value = (progress: 0.0, cost: 0);
           _ctrl.reverse();
         }
       },
       onTapCancel: () {
         if (_ctrl.status != AnimationStatus.completed) {
+          _lastStep = -1;
           widget.holdProgress?.value = (progress: 0.0, cost: 0);
           _ctrl.reverse();
         }
@@ -829,11 +841,38 @@ class _BottomRoundButtonState extends State<_BottomRoundButton>
     _ctrl = AnimationController(vsync: this, duration: _holdDuration)
       ..addStatusListener((s) {
         if (s == AnimationStatus.completed) _onConfirmed();
-      });
+      })
+      ..addListener(_onProgressTick);
   }
+
+  void _onProgressTick() {
+    final p = _ctrl.value;
+    if (p <= 0) { _lastStep = -1; return; }
+
+    // Не вибрировать при реверсе
+    if (_ctrl.status == AnimationStatus.reverse) return;
+
+    double intensity;
+    if (p <= 0.15) {
+      intensity = 0.20 + (p / 0.15) * 0.60;
+    } else if (p <= 0.85) {
+      final t = (p - 0.15) / 0.70;
+      intensity = 0.80 * (1 - t * t);
+    } else {
+      intensity = 0.06;
+    }
+    final step = (p * 12).floor();
+    if (step != _lastStep) {
+      _lastStep = step;
+      if (intensity > 0.3) HapticService.selection();
+    }
+  }
+
+  int _lastStep = -1;
 
   @override
   void dispose() {
+    _ctrl.removeListener(_onProgressTick);
     _ctrl.dispose();
     super.dispose();
   }
