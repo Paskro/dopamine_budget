@@ -1,6 +1,8 @@
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 class ShrinkingPeriodMapper {
   static ShrinkingPeriod fromDb(ShrinkingPeriodsTableData row) {
@@ -17,12 +19,14 @@ class ShrinkingPeriodMapper {
 
   static ShrinkingPeriodsTableCompanion toCompanion(ShrinkingPeriod p) {
     return ShrinkingPeriodsTableCompanion.insert(
+      id: p.id ?? const Uuid().v4(),
       sessionId: p.sessionId,
       startedAt: _fmt(p.startedAt),
       endedAt: Value(p.endedAt != null ? _fmt(p.endedAt!) : null),
       baseLimit: p.baseLimit,
       decreasePct: p.decreasePct,
       intervalDays: p.intervalDays,
+      updatedAt: TimeProvider.now.toIso8601String(),
     );
   }
 

@@ -129,7 +129,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
             onStartCalibration: (days) {
               widget.sessionsNotifier.restartCalibration(durationDays: days);
             },
-            onStartControlWithHabits: ({required limit, required habitIds}) async { // ДОБАВЛЕНО, заменяет onStartControl
+            onStartControlWithHabits: ({required limit, required habitIds}) async {
               await widget.sessionsNotifier.startManualControlWithHabits(
                 limit: limit,
                 habitIds: habitIds,

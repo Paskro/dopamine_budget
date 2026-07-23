@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class HabitWeeklySlice {
-  final int habitId;
+  final String habitId;
   final String habitName;
   final Color color;
   final int totalPts;

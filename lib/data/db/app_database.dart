@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 import 'package:dopamine_budget/features/habits/data/tables/habits_table.dart';
 import 'package:dopamine_budget/features/actions/data/tables/habit_logs_table.dart';
@@ -36,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration {
@@ -77,18 +78,37 @@ class AppDatabase extends _$AppDatabase {
         if (from < 12) {
           await m.addColumn(streakTable, streakTable.previousMultiplier as GeneratedColumn);
         }
+        if (from < 13) {
+          // UUID-миграция: пересоздаём все таблицы с int PK
+          // Данные НЕ мигрируем — сброс (devmode, prod-данных ещё нет)
+          await m.drop(habitLogsTable);
+          await m.drop(sessionHabitsTable);
+          await m.drop(habitsTable);
+          await m.drop(daysTable);
+          await m.drop(shrinkingPeriodsTable);
+          await m.drop(shrinkingReportsLogTable);
+          // sessions и streak не пересоздаём — только addColumn
+          await m.createTable(habitsTable);
+          await m.createTable(sessionHabitsTable);
+          await m.createTable(habitLogsTable);
+          await m.createTable(daysTable);
+          await m.createTable(shrinkingPeriodsTable);
+          await m.createTable(shrinkingReportsLogTable);
+          await m.addColumn(sessionsTable, sessionsTable.updatedAt);
+          await m.addColumn(sessionsTable, sessionsTable.isDeleted);
+        }
       },
     );
   }
 
-  Future<List<int>> getSelectedHabitIdsForSession(String sessionId) async {
+  Future<List<String>> getSelectedHabitIdsForSession(String sessionId) async {
     final query = select(sessionHabitsTable)
       ..where((t) => t.sessionId.equals(sessionId));
     final rows = await query.get();
     return rows.map((row) => row.habitId).toList();
   }
 
-  Future<void> toggleHabitSelection(String sessionId, int habitId) async {
+  Future<void> toggleHabitSelection(String sessionId, String habitId) async {
     final query = select(sessionHabitsTable)
       ..where((t) => t.sessionId.equals(sessionId) & t.habitId.equals(habitId));
     final existing = await query.getSingleOrNull();
@@ -98,17 +118,23 @@ class AppDatabase extends _$AppDatabase {
     } else {
       await into(sessionHabitsTable).insert(
         SessionHabitsTableCompanion.insert(
+          id: const Uuid().v4(),
           sessionId: sessionId,
           habitId: habitId,
+          updatedAt: DateTime.now().toIso8601String(),
         ),
       );
     }
   }
 
-  Future<void> deleteHabit(int habitId) async {
+  Future<void> archiveHabit(String habitId) async {
+    await (update(habitsTable)..where((t) => t.id.equals(habitId))).write(
+      HabitsTableCompanion(
+        isArchived: const Value(true),
+        updatedAt: Value(DateTime.now().toIso8601String()),
+      ),
+    );
     await (delete(sessionHabitsTable)..where((t) => t.habitId.equals(habitId))).go();
-    await (delete(habitLogsTable)..where((t) => t.habitId.equals(habitId))).go();
-    await (delete(habitsTable)..where((t) => t.id.equals(habitId))).go();
   }
 
   // ===========================================================================
@@ -136,15 +162,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Stream<List<HabitsTableData>> watchHabits() {
-    return select(habitsTable).watch();
+    return (select(habitsTable)..where((t) => t.isArchived.equals(false))).watch();
   }
 
-  Stream<List<int>> watchSelectedHabitIds(String sessionId) {
+  Stream<List<String>> watchSelectedHabitIds(String sessionId) {
     final query = select(sessionHabitsTable)
       ..where((t) => t.sessionId.equals(sessionId));
     return query.watch().map(
           (rows) => rows.map((row) => row.habitId).toList(),
-        );
+    );
   }
 
   /// Наблюдает за записью дня по дате.

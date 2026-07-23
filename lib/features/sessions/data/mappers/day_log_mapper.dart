@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/day_log.dart';
+import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 // lib/features/sessions/data/mappers/day_log_mapper.dart
 // intl убран — используем встроенный String.padLeft для форматирования даты
@@ -23,12 +25,14 @@ class DayLogMapper {
   /// Domain entity → Companion для INSERT
   static DaysTableCompanion toInsertCompanion(DayLog dayLog) {
     return DaysTableCompanion.insert(
+      id: const Uuid().v4(),
       date: dateToString(dayLog.date),
       sessionId: dayLog.sessionId,
       isBrokenClicked: Value(dayLog.isBrokenClicked),
       isGoodBoyClicked: Value(dayLog.isGoodBoyClicked),
       dayStatus: Value(dayLog.dayStatus),
       isWeeklyReportReviewed: Value(dayLog.isWeeklyReportReviewed),
+      updatedAt: TimeProvider.now.toIso8601String(),
     );
   }
 
@@ -42,6 +46,7 @@ class DayLogMapper {
       isGoodBoyClicked: Value(dayLog.isGoodBoyClicked),
       dayStatus: Value(dayLog.dayStatus),
       isWeeklyReportReviewed: Value(dayLog.isWeeklyReportReviewed),
+      updatedAt: Value(TimeProvider.now.toIso8601String()),
     );
   }
 

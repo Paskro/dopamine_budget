@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 class AddActionUseCase {
   final AppDatabase _db;
+  final _uuid = const Uuid();
 
   AddActionUseCase(this._db);
 
@@ -14,12 +16,14 @@ class AddActionUseCase {
       throw StateError('Нет активной сессии для записи действия');
     }
 
-    final companion = HabitLogsTableCompanion(
-      habitId: Value(int.parse(habit.id)), // ASSUMPTION: habit.id — int. ПРОВЕРИТЬ habit.dart перед запуском
-      sessionId: Value(sessionId),
-      timestamp: Value(TimeProvider.now),
+    await _db.into(_db.habitLogsTable).insert(
+      HabitLogsTableCompanion(
+        id: Value(_uuid.v4()),
+        habitId: Value(habit.id),
+        sessionId: Value(sessionId),
+        timestamp: Value(TimeProvider.now),
+        updatedAt: Value(TimeProvider.now.toIso8601String()),
+      ),
     );
-
-    await _db.into(_db.habitLogsTable).insert(companion);
   }
 }

@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:flutter/foundation.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class InitializeSessionUseCase {
   final AppDatabase _db;
@@ -43,14 +45,8 @@ class InitializeSessionUseCase {
           }
         }
 
-        final now = DateTime.now();
-        final year = now.year;
-        final month = now.month.toString().padLeft(2, '0');
-        final day = now.day.toString().padLeft(2, '0');
-        final hour = now.hour.toString().padLeft(2, '0');
-        final minute = now.minute.toString().padLeft(2, '0');
-
-        final newId = 'S_$year$month$day\_$hour$minute';
+        final newId = const Uuid().v4();
+        final now = TimeProvider.now;
 
         final companion = SessionsTableCompanion(
           id: Value(newId),

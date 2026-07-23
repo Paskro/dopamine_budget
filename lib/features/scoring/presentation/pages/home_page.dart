@@ -175,12 +175,9 @@ class _CalibrationHomeBodyState extends State<_CalibrationHomeBody>
             builder: (context, _) {
               final state = widget.scoringNotifier.state;
               final session = state.currentSession ?? widget.session;
-              final activeHabits =
-              widget.habitsNotifier.habits.where((h) {
-                final id = int.tryParse(h.id);
-                return id != null &&
-                    widget.habitsNotifier.selectedHabitIds.contains(id);
-              }).toList();
+              final activeHabits = widget.habitsNotifier.habits
+                  .where((h) => widget.habitsNotifier.selectedHabitIds.contains(h.id))
+                  .toList();
 
               return Column(
                 children: [

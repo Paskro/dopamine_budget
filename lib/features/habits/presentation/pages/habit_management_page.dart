@@ -6,8 +6,8 @@ class HabitManagementPage extends StatefulWidget {
   final HabitsNotifier habitsNotifier;
   final String sessionId;
   final bool readOnly;
-  final Set<int>? localSelectedIds;
-  final ValueChanged<Set<int>>? onLocalSelectionChanged;
+  final Set<String>? localSelectedIds;
+  final ValueChanged<Set<String>>? onLocalSelectionChanged;
   final bool embedded;
 
   const HabitManagementPage({
@@ -102,8 +102,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
         : widget.habitsNotifier.selectedHabitIds.toSet();
 
     final habits = [...rawHabits]..sort((a, b) {
-      final aSelected = selectedIds.contains(int.tryParse(a.id) ?? -1);
-      final bSelected = selectedIds.contains(int.tryParse(b.id) ?? -1);
+      final aSelected = selectedIds.contains(a.id);
+      final bSelected = selectedIds.contains(b.id);
       if (aSelected != bSelected) return aSelected ? -1 : 1;
       return a.title.toLowerCase().compareTo(b.title.toLowerCase());
     });
@@ -201,7 +201,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                   (context, index) {
                 final habit = habits[index];
                 final habitIdInt = int.tryParse(habit.id) ?? -1;
-                final isSelected = selectedIds.contains(habitIdInt);
+                final isSelected = selectedIds.contains(habit.id);
 
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -210,15 +210,15 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                       value: isSelected,
                       onChanged: isLoading ? null : (bool? checked) {
                         if (isLocalMode) {
-                          final updated = Set<int>.from(widget.localSelectedIds!);
-                          updated.contains(habitIdInt)
-                              ? updated.remove(habitIdInt)
-                              : updated.add(habitIdInt);
+                          final updated = Set<String>.from(widget.localSelectedIds!);
+                          updated.contains(habit.id)
+                              ? updated.remove(habit.id)
+                              : updated.add(habit.id);
                           widget.onLocalSelectionChanged!(updated);
                         } else {
                           widget.habitsNotifier.toggleHabitSelection(
                             widget.sessionId,
-                            int.parse(habit.id),
+                            habit.id,
                           );
                         }
                       },
@@ -279,10 +279,10 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Удалить привычку?'),
+        title: const Text('Архивировать привычку?'),
         content: Text(
-          'Вы действительно хотите удалить "${habit.title}" из глобального справочника?\nОна также исчезнет из текущей сессии.',
-        ), // было: habit.name
+          '"${habit.title}" будет скрыта из справочника.\nИстория кликов сохранится.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -290,14 +290,11 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
           ),
           TextButton(
             onPressed: () {
-              final habitId = int.tryParse(habit.id) ?? 0;
-              if (habitId != 0) {
-                widget.habitsNotifier.deleteHabit(habitId, sessionId: widget.sessionId);
-              }
+              widget.habitsNotifier.archiveHabit(habit.id);
               if (_editingHabit?.id == habit.id) _resetForm();
               Navigator.pop(ctx);
             },
-            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+            child: const Text('Архивировать', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

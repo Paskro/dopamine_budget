@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 @immutable
 class DayLog {
-  final int id;
+  final String id;
   final DateTime date;     // DateTime внутри домена — маппер отсекает время
   final String sessionId;
 
@@ -30,7 +30,7 @@ class DayLog {
   bool get isBroken => dayStatus == 'broken';
 
   DayLog copyWith({
-    int? id,
+    String? id,
     DateTime? date,
     String? sessionId,
     bool? isBrokenClicked,

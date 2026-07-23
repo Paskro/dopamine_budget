@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import '../../domain/repositories/scoring_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
+import 'package:uuid/uuid.dart';
 
 class ScoringRepositoryImpl implements ScoringRepository {
   final AppDatabase _db;
@@ -20,9 +21,11 @@ class ScoringRepositoryImpl implements ScoringRepository {
     }
     await _db.into(_db.habitLogsTable).insert(
       HabitLogsTableCompanion.insert(
-        habitId: int.parse(habitType),
+        id: const Uuid().v4(),
+        habitId: habitType, // уже String
         sessionId: sessionId,
         timestamp: timestamp,
+        updatedAt: DateTime.now().toIso8601String(),
       ),
     );
   }
@@ -123,11 +126,10 @@ class ScoringRepositoryImpl implements ScoringRepository {
   }
 
   @override
-  Future<List<({int habitId, String habitName, int totalPts})>> getWeeklyHabitTotals({
+  Future<List<({String habitId, String habitName, int totalPts})>> getWeeklyHabitTotals({
     required DateTime weekStart,
   }) async {
     final weekEnd = weekStart.add(const Duration(days: 7));
-
     final scoreExp = _db.habitsTable.scoreValue;
     final nameExp = _db.habitsTable.title;
     final idExp = _db.habitsTable.id;

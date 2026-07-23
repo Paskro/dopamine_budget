@@ -9,7 +9,8 @@ import 'package:dopamine_budget/features/sessions/data/mappers/shrinking_period_
 import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/day_stats.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/habit_click_log.dart';
-
+import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 class SessionRepositoryImpl implements SessionRepository {
   final AppDatabase _db;
@@ -212,9 +213,11 @@ class SessionRepositoryImpl implements SessionRepository {
     }
     await _db.into(_db.habitLogsTable).insert(
       HabitLogsTableCompanion.insert(
-        habitId: int.parse(habitId),
+        id: const Uuid().v4(),
+        habitId: habitId, // уже String
         sessionId: sessionId,
         timestamp: createdAt,
+        updatedAt: TimeProvider.now.toIso8601String(),
       ),
     );
   }
@@ -317,14 +320,17 @@ class SessionRepositoryImpl implements SessionRepository {
 
     if (existing != null) return DayLogMapper.fromDb(existing);
 
+    final newId = const Uuid().v4();
     final companion = DaysTableCompanion.insert(
+      id: newId,
       date: dateStr,
       sessionId: sessionId,
+      updatedAt: TimeProvider.now.toIso8601String(),
     );
-    final id = await _db.into(_db.daysTable).insert(companion);
+    await _db.into(_db.daysTable).insert(companion);
 
     return DayLog(
-      id: id,
+      id: newId,
       date: DateTime.parse(dateStr),
       sessionId: sessionId,
       isBrokenClicked: false,
@@ -398,9 +404,11 @@ class SessionRepositoryImpl implements SessionRepository {
 
       await _db.into(_db.habitLogsTable).insert(
         HabitLogsTableCompanion.insert(
-          habitId: int.parse(habitId),
+          id: const Uuid().v4(),
+          habitId: habitId, // уже String
           sessionId: session.id,
           timestamp: timestamp,
+          updatedAt: TimeProvider.now.toIso8601String(),
         ),
       );
 
@@ -415,8 +423,10 @@ class SessionRepositoryImpl implements SessionRepository {
       if (dayRow == null) {
         await _db.into(_db.daysTable).insert(
           DaysTableCompanion.insert(
+            id: const Uuid().v4(),
             date: dateStr,
             sessionId: session.id,
+            updatedAt: TimeProvider.now.toIso8601String(),
           ),
         );
       }
@@ -498,7 +508,7 @@ class SessionRepositoryImpl implements SessionRepository {
 
   @override
   Future<void> closeShrinkingPeriod({
-    required int periodId,
+    required String periodId, // было int
     required String endedAt,
     required double shrunkenLimit,
   }) async {
@@ -541,9 +551,11 @@ class SessionRepositoryImpl implements SessionRepository {
     } else {
       await _db.into(_db.shrinkingReportsLogTable).insert(
         ShrinkingReportsLogTableCompanion.insert(
+          id: const Uuid().v4(),
           sessionId: sessionId,
           periodWeekStart: dateStr,
           isReviewed: const Value(true),
+          updatedAt: TimeProvider.now.toIso8601String(),
         ),
       );
     }
@@ -656,7 +668,7 @@ class SessionRepositoryImpl implements SessionRepository {
       final log = row.readTable(_db.habitLogsTable);
       final habit = row.readTable(_db.habitsTable);
       return HabitClickLog(
-        habitId: log.habitId.toString(),
+        habitId: log.habitId,
         habitTitle: habit.title,
         scoreCost: habit.scoreValue,
         timestamp: log.timestamp,

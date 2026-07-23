@@ -27,15 +27,15 @@ class HabitsNotifier extends ChangeNotifier {
   List<Habit> _habits = [];
   List<Habit> get habits => _habits;
 
-  List<int> _selectedHabitIds = [];
-  List<int> get selectedHabitIds => _selectedHabitIds;
+  List<String> _selectedHabitIds = [];
+  List<String> get selectedHabitIds => _selectedHabitIds;
 
   String? _currentSessionId;
   String? get currentSessionId => _currentSessionId;
 
   StreamSubscription<List<Habit>>? _habitsSub;
   StreamSubscription? _sessionSub;
-  StreamSubscription<List<int>>? _selectedIdsSub;
+  StreamSubscription<List<String>>? _selectedIdsSub;
 
   HabitsNotifier({
     required HabitRepository habitRepository,
@@ -88,22 +88,21 @@ class HabitsNotifier extends ChangeNotifier {
     // sessionId уже отслеживается через watchActiveSession() в конструкторе
   }
 
-  Future<void> toggleHabitSelection(String sessionId, int habitId) async {
+  Future<void> toggleHabitSelection(String sessionId, String habitId) async {
     await _habitRepository.toggleHabitSelection(sessionId, habitId);
-    // _selectedHabitIds обновится сам через watchSelectedHabitIds.
   }
 
-  Future<void> addHabit(String title, int scoreValue, {Set<int>? localSelectedIds, void Function(Set<int>)? onLocalSelectionChanged}) async {
-    final newHabit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      scoreValue: scoreValue,
-    );
+  Future<void> addHabit(
+      String title,
+      int scoreValue, {
+        Set<String>? localSelectedIds,
+        void Function(Set<String>)? onLocalSelectionChanged,
+      }) async {
+    final newHabit = Habit(id: '', title: title, scoreValue: scoreValue);
     final savedId = await _habitRepository.addHabitAndGetId(newHabit);
 
     if (savedId != null) {
       if (onLocalSelectionChanged != null && localSelectedIds != null) {
-        // Локальный режим визарда — авто-добавляем в локальный Set
         onLocalSelectionChanged({...localSelectedIds, savedId});
       } else if (_currentSessionId != null) {
         await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
@@ -115,10 +114,8 @@ class HabitsNotifier extends ChangeNotifier {
     await _habitRepository.updateHabit(habit);
   }
 
-  Future<void> deleteHabit(int habitId, {String? sessionId}) async {
-    await _habitRepository.deleteHabit(habitId);
-    // _habits и _selectedHabitIds обновятся сами через стримы
-    // (DELETE из SessionHabitsTable триггерит watchSelectedHabitIds).
+  Future<void> archiveHabit(String habitId) async {
+    await _habitRepository.archiveHabit(habitId);
   }
 
   Future<void> hitHabit(Habit habit, {dynamic scoringNotifier}) async {

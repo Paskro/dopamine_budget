@@ -17,6 +17,8 @@ class SessionsTable extends Table {
   IntColumn get decreaseIntervalDays => integer().nullable()();
   RealColumn get shrunkenLimit => real().nullable()();
 
+  TextColumn get updatedAt => text().withDefault(const Constant(''))();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   @override
   Set<Column> get primaryKey => {id};
 }

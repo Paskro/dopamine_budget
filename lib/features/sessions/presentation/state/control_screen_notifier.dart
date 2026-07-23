@@ -16,7 +16,7 @@ class ControlScreenState {
   final int balance;
   final int dailyLimit;
   final List<Habit> habits;
-  final List<int> selectedIds;
+  final List<String> selectedIds;
   final bool isLoading;
   final List<HabitClickLog> todayLogs;
 
@@ -56,7 +56,7 @@ class ControlScreenState {
     int? balance,
     int? dailyLimit,
     List<Habit>? habits,
-    List<int>? selectedIds,
+    List<String>? selectedIds,
     bool? isLoading,
     String? dayStatus,
     bool? hasHabitClickToday,
@@ -76,7 +76,7 @@ class ControlScreenState {
   }
 
   List<Habit> get sessionHabits => habits
-      .where((h) => selectedIds.contains(int.tryParse(h.id)))
+      .where((h) => selectedIds.contains(h.id))
       .toList();
 
   /// Кнопка «Я сегодня молодец» показывается, если:
@@ -107,14 +107,14 @@ class ControlScreenNotifier extends ChangeNotifier {
   Session? _session;
   DayLog? _dayLog;
   List<Habit> _habits = [];
-  List<int> _selectedIds = [];
+  List<String> _selectedIds = [];
   int _spentToday = 0;
   List<HabitClickLog> _todayLogs = [];
 
   StreamSubscription<Session?>? _sessionSub;
   StreamSubscription<DayLog?>? _dayLogSub;
   StreamSubscription<List<Habit>>? _habitsSub;
-  StreamSubscription<List<int>>? _selectedIdsSub;
+  StreamSubscription<List<String>>? _selectedIdsSub;
   StreamSubscription<int>? _spentSub;
   StreamSubscription<List<HabitClickLog>>? _logsSub;
 
