@@ -473,11 +473,29 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<void> markWeeklyReportAsReviewed(DateTime date) async {
     final dateStr = DayLogMapper.dateToString(date);
-    await (_db.update(_db.daysTable)
+
+    // Гарантируем существование строки перед UPDATE
+    final existing = await (_db.select(_db.daysTable)
       ..where((t) => t.date.equals(dateStr)))
-        .write(const DaysTableCompanion(
-      isWeeklyReportReviewed: Value(true),
-    ));
+        .getSingleOrNull();
+
+    if (existing == null) {
+      final session = await getActiveSession();
+      if (session == null) return;
+      await _db.into(_db.daysTable).insert(
+        DaysTableCompanion.insert(
+          date: dateStr,
+          sessionId: session.id,
+          isWeeklyReportReviewed: const Value(true),
+        ),
+      );
+    } else {
+      await (_db.update(_db.daysTable)
+        ..where((t) => t.date.equals(dateStr)))
+          .write(const DaysTableCompanion(
+        isWeeklyReportReviewed: Value(true),
+      ));
+    }
   }
 
   @override
