@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
@@ -313,16 +313,12 @@ class SessionRepositoryImpl implements SessionRepository {
     required String sessionId,
   }) async {
     final dateStr = DayLogMapper.dateToString(date);
-
     final existing = await (_db.select(_db.daysTable)
       ..where((t) => t.date.equals(dateStr)))
         .getSingleOrNull();
-
     if (existing != null) return DayLogMapper.fromDb(existing);
 
-    final newId = const Uuid().v4();
     final companion = DaysTableCompanion.insert(
-      id: newId,
       date: dateStr,
       sessionId: sessionId,
       updatedAt: TimeProvider.now.toIso8601String(),
@@ -330,7 +326,6 @@ class SessionRepositoryImpl implements SessionRepository {
     await _db.into(_db.daysTable).insert(companion);
 
     return DayLog(
-      id: newId,
       date: DateTime.parse(dateStr),
       sessionId: sessionId,
       isBrokenClicked: false,
@@ -423,7 +418,6 @@ class SessionRepositoryImpl implements SessionRepository {
       if (dayRow == null) {
         await _db.into(_db.daysTable).insert(
           DaysTableCompanion.insert(
-            id: const Uuid().v4(),
             date: dateStr,
             sessionId: session.id,
             updatedAt: TimeProvider.now.toIso8601String(),

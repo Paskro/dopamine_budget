@@ -19,6 +19,7 @@ class SessionsTable extends Table {
 
   TextColumn get updatedAt => text().withDefault(const Constant(''))();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  TextColumn get userId => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }

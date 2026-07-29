@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/streak/domain/entities/streak_record.dart';
 import 'package:dopamine_budget/features/streak/domain/repositories/i_streak_repository.dart';

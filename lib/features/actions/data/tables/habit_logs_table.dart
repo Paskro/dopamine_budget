@@ -8,6 +8,7 @@ class HabitLogsTable extends Table {
   TextColumn get sessionId => text().references(SessionsTable, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get timestamp => dateTime()();
   TextColumn get updatedAt => text()();
+  TextColumn get userId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

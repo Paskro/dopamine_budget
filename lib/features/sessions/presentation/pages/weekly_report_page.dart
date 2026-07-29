@@ -7,18 +7,26 @@ import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habi
 import 'package:dopamine_budget/features/scoring/presentation/pages/weekly_detail_bottom_sheet.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_weekly_habits_report_usecase.dart';
 import 'package:dopamine_budget/features/scoring/presentation/pages/weekly_detail_bottom_sheet.dart';
+import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 
 class WeeklyReportPage extends StatelessWidget {
   final WeeklyReportData reportData;
   final VoidCallback onContinue;
   final GetWeeklyHabitsReportUseCase getWeeklyHabitsReportUseCase;
+  final SessionRepository sessionRepository;
 
   const WeeklyReportPage({
     Key? key,
     required this.reportData,
     required this.onContinue,
     required this.getWeeklyHabitsReportUseCase,
+    required this.sessionRepository,
   }) : super(key: key);
+
+  Future<void> _onContinueTap() async {
+    await sessionRepository.markWeeklyReportAsReviewed(reportData.weekEnd);
+    onContinue();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +180,7 @@ class WeeklyReportPage extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
       ),
-      onPressed: onContinue,
+      onPressed: _onContinueTap,
       child: const Text(
         'Продолжить контроль',
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

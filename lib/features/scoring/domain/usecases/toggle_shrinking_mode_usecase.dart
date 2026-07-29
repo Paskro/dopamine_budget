@@ -1,4 +1,4 @@
-import 'package:dopamine_budget/core/utils/time_provider.dart';
+﻿import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';

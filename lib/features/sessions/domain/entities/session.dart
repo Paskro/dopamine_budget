@@ -1,4 +1,4 @@
-import 'package:dopamine_budget/core/utils/time_provider.dart';
+﻿import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 class Session {
   final String id;

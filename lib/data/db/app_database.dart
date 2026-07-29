@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration {
@@ -96,6 +96,20 @@ class AppDatabase extends _$AppDatabase {
           await m.createTable(shrinkingReportsLogTable);
           await m.addColumn(sessionsTable, sessionsTable.updatedAt);
           await m.addColumn(sessionsTable, sessionsTable.isDeleted);
+        }
+        if (from < 14) {
+          await m.drop(streakTable);
+          await m.createTable(streakTable);
+        }
+        if (from < 15) {
+          await m.drop(daysTable);
+          await m.createTable(daysTable);
+          await m.addColumn(habitsTable, habitsTable.userId);
+          await m.addColumn(sessionHabitsTable, sessionHabitsTable.userId);
+          await m.addColumn(habitLogsTable, habitLogsTable.userId);
+          await m.addColumn(sessionsTable, sessionsTable.userId);
+          await m.addColumn(shrinkingPeriodsTable, shrinkingPeriodsTable.userId);
+          await m.addColumn(shrinkingReportsLogTable, shrinkingReportsLogTable.userId);
         }
       },
     );

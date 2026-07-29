@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/data/repositories/session_repository_impl.dart';
@@ -36,6 +36,18 @@ import 'package:dopamine_budget/features/streak/domain/usecases/sync_streak_usec
 import 'package:dopamine_budget/features/streak/presentation/state/streak_notifier.dart';
 import 'package:dopamine_budget/core/theme/app_theme.dart';
 import 'package:dopamine_budget/core/utils/haptic_service.dart';
+import 'package:dopamine_budget/core/crypto/data/repositories/crypto_repository_impl.dart';
+import 'package:dopamine_budget/core/crypto/data/services/crypto_session_service_impl.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dopamine_budget/core/crypto/presentation/state/pin_notifier.dart';
+import 'package:dopamine_budget/presentation/app_gate.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dopamine_budget/features/auth/presentation/pages/deep_link_handler.dart';
+import 'package:dopamine_budget/features/auth/auth_module.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
+import 'package:dopamine_budget/core/sync/active_session_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,8 +60,40 @@ void main() async {
   await NotificationPermissionHelper.requestPermission();
   await NotificationPermissionHelper.requestExactAlarmPermission();
   await HapticService.init();
+  await Supabase.initialize(
+    url: const String.fromEnvironment('SUPABASE_URL'),
+    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+  );
+  await DeepLinkHandler.init();
+
+  final secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   final database = AppDatabase.instance;
+  final supabase = Supabase.instance.client;
+  final syncService = SyncService(supabase, database);
+  const _keyDeviceId = 'device_id';
+  String? storedDeviceId = await secureStorage.read(key: _keyDeviceId);
+  if (storedDeviceId == null) {
+    storedDeviceId = const Uuid().v4();
+    await secureStorage.write(key: _keyDeviceId, value: storedDeviceId);
+  }
+  final deviceId = storedDeviceId;
+  final activeSessionService = ActiveSessionService(supabase, deviceId: deviceId);
+
+  final authModule = AuthModule.create(
+    secureStorage,
+    onPullAll: syncService.pullAll,
+  );
+
+
+  final cryptoSessionService = CryptoSessionServiceImpl();
+  final cryptoRepository = CryptoRepositoryImpl(secureStorage);
+  final pinNotifier = PinNotifier(
+    cryptoRepository: cryptoRepository,
+    cryptoSessionService: cryptoSessionService,
+  );
 
   final streakRepository = StreakRepositoryImpl(database);
   final syncStreakUseCase = SyncStreakUseCase(streakRepository);
@@ -134,7 +178,9 @@ void main() async {
   );
 
   runApp(MyApp(
-    database: database,
+        database: database,
+    pinNotifier: pinNotifier,
+    cryptoRepository: cryptoRepository,
     sessionsNotifier: sessionsNotifier,
     habitsNotifier: habitsNotifier,
     scoringNotifier: scoringNotifier,
@@ -146,6 +192,7 @@ void main() async {
     sessionRepository: sessionRepository,
     shrinkingReportUseCase: shrinkingReportUseCase,
     streakNotifier: streakNotifier,
+    authModule: authModule,
   ));
 }
 
@@ -162,6 +209,9 @@ class MyApp extends StatelessWidget {
   final SessionRepository sessionRepository;
   final CheckAndGenerateShrinkingReportUseCase shrinkingReportUseCase;
   final StreakNotifier streakNotifier;
+  final PinNotifier pinNotifier;
+  final CryptoRepository cryptoRepository;
+  final AuthModule authModule;
 
   const MyApp({
     super.key,
@@ -177,6 +227,9 @@ class MyApp extends StatelessWidget {
     required this.sessionRepository,
     required this.shrinkingReportUseCase,
     required this.streakNotifier,
+    required this.pinNotifier,
+    required this.cryptoRepository,
+    required this.authModule
   });
 
   @override
@@ -185,7 +238,12 @@ class MyApp extends StatelessWidget {
       title: 'Dopamine Budget',
       theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
-      home: RootGate(
+        home: AppGate(
+          pinNotifier: pinNotifier,
+          cryptoRepository: cryptoRepository,
+          authModule: authModule,
+          activeSessionService: activeSessionService,
+          child: RootGate(
         database: database,
         sessionsNotifier: sessionsNotifier,
         habitsNotifier: habitsNotifier,
@@ -199,6 +257,7 @@ class MyApp extends StatelessWidget {
         shrinkingReportUseCase: shrinkingReportUseCase,
         streakNotifier: streakNotifier,
       ),
+     ),
     );
   }
 }

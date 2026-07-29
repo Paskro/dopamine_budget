@@ -6,6 +6,7 @@ class HabitsTable extends Table {
   IntColumn get scoreValue => integer()();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   TextColumn get updatedAt => text()();
+  TextColumn get userId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -16,6 +17,7 @@ class SessionHabitsTable extends Table {
   TextColumn get sessionId => text()();
   TextColumn get habitId => text()();
   TextColumn get updatedAt => text()();
+  TextColumn get userId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

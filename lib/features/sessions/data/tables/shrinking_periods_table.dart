@@ -9,6 +9,7 @@ class ShrinkingPeriodsTable extends Table {
   RealColumn get decreasePct => real()();
   IntColumn get intervalDays => integer()();
   TextColumn get updatedAt => text()();
+  TextColumn get userId => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

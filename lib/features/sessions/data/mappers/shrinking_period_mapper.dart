@@ -1,4 +1,4 @@
-import 'package:dopamine_budget/data/db/app_database.dart';
+﻿import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';

@@ -1,9 +1,9 @@
+// ЗАМЕНИТЬ весь файл:
 import 'package:flutter/foundation.dart';
 
 @immutable
 class DayLog {
-  final String id;
-  final DateTime date;     // DateTime внутри домена — маппер отсекает время
+  final DateTime date;
   final String sessionId;
 
   @Deprecated(
@@ -13,11 +13,10 @@ class DayLog {
   final bool isBrokenClicked;
 
   final bool isGoodBoyClicked;
-  final String dayStatus;  // 'regular' | 'ideal' | 'almost_ideal' | 'broken' (терминальный)
+  final String dayStatus;
   final bool isWeeklyReportReviewed;
 
   const DayLog({
-    required this.id,
     required this.date,
     required this.sessionId,
     required this.isBrokenClicked,
@@ -26,11 +25,9 @@ class DayLog {
     required this.isWeeklyReportReviewed,
   });
 
-  /// Единственный корректный способ проверки срыва дня.
   bool get isBroken => dayStatus == 'broken';
 
   DayLog copyWith({
-    String? id,
     DateTime? date,
     String? sessionId,
     bool? isBrokenClicked,
@@ -39,7 +36,6 @@ class DayLog {
     bool? isWeeklyReportReviewed,
   }) {
     return DayLog(
-      id: id ?? this.id,
       date: date ?? this.date,
       sessionId: sessionId ?? this.sessionId,
       isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,

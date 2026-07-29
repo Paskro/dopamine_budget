@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'scoring_state.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';

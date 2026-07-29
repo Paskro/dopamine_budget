@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/streak/domain/entities/streak_record.dart';
@@ -12,7 +12,7 @@ class StreakRepositoryImpl implements IStreakRepository {
 
   @override
   Future<StreakRecord?> getStreak() async {
-    final rows = await _db.select(_db.streakTable).get();
+    final rows = await (_db.select(_db.streakTable)..limit(1)).get();
     if (rows.isEmpty) return null;
     return StreakMapper.fromDb(rows.first);
   }
@@ -61,7 +61,8 @@ class StreakRepositoryImpl implements IStreakRepository {
       }
 
       await (_db.update(_db.streakTable)
-        ..where((t) => t.lastActiveDate.equals(current.lastActiveDate)))
+        ..where((t) =>
+        t.lastActiveDate.equals(current.lastActiveDate)))
           .write(StreakTableCompanion(
         lastActiveDate: Value(yesterdayStr),
         currentMultiplier: Value(multiplier),
@@ -74,10 +75,11 @@ class StreakRepositoryImpl implements IStreakRepository {
 
   @override
   Future<void> markViewed() async {
-    final rows = await _db.select(_db.streakTable).get();
+    final rows = await (_db.select(_db.streakTable)..limit(1)).get();
     if (rows.isEmpty) return;
     await (_db.update(_db.streakTable)
-      ..where((t) => t.lastActiveDate.equals(rows.first.lastActiveDate)))
+      ..where((t) =>
+      t.lastActiveDate.equals(rows.first.lastActiveDate)))
         .write(const StreakTableCompanion(isViewed: Value(true)));
   }
 
