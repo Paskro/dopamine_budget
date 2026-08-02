@@ -4,6 +4,7 @@ import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/features/habits/domain/repositories/habit_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 // lib/features/habits/presentation/state/habits_notifier.dart
 
@@ -20,6 +21,7 @@ class HabitsNotifier extends ChangeNotifier {
   final HabitRepository _habitRepository;
   final SessionRepository _sessionRepository;
   final AddActionUseCase _addActionUseCase;
+  final SyncService? _sync;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -41,9 +43,11 @@ class HabitsNotifier extends ChangeNotifier {
     required HabitRepository habitRepository,
     required SessionRepository sessionRepository,
     required AddActionUseCase addActionUseCase,
+    SyncService? sync,
   })  : _habitRepository = habitRepository,
         _sessionRepository = sessionRepository,
-        _addActionUseCase = addActionUseCase {
+        _addActionUseCase = addActionUseCase,
+        _sync = sync {
     _habitsSub = _habitRepository.watchHabits().listen((habits) {
       _habits = habits;
       _isLoading = false;
@@ -107,15 +111,20 @@ class HabitsNotifier extends ChangeNotifier {
       } else if (_currentSessionId != null) {
         await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
       }
+      _sync?.pushHabits().catchError((_) {});
+      _sync?.pushSessionHabits().catchError((_) {});
     }
   }
 
   Future<void> updateHabit(Habit habit) async {
     await _habitRepository.updateHabit(habit);
+    _sync?.pushHabits().catchError((_) {});
   }
+
 
   Future<void> archiveHabit(String habitId) async {
     await _habitRepository.archiveHabit(habitId);
+    _sync?.pushHabits().catchError((_) {});
   }
 
   Future<void> hitHabit(Habit habit, {dynamic scoringNotifier}) async {

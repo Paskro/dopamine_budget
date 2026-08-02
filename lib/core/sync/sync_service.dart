@@ -127,6 +127,24 @@ class SyncService {
     await _client.from('shrinking_reports_log').upsert(payload);
   }
 
+  Future<void> pushStreak() async {
+    final rows = await _db.select(_db.streakTable).get();
+    final payload = rows.map((r) => {
+      'id': r.id,
+      'user_id': _uid,
+      'last_active_date': r.lastActiveDate,
+      'current_multiplier': r.currentMultiplier,
+      'previous_multiplier': r.previousMultiplier,
+      'is_viewed': r.isViewed,
+      'had_activity_yesterday': r.hadActivityYesterday,
+      'updated_at': r.updatedAt.isEmpty
+          ? DateTime.now().toIso8601String()
+          : r.updatedAt,
+    }).toList();
+    if (payload.isEmpty) return;
+    await _client.from('streak').upsert(payload);
+  }
+
   // ─── PULL ─────────────────────────────────────────────────────────────────
 
   Future<void> pullAll() async {

@@ -48,6 +48,7 @@ import 'package:dopamine_budget/core/sync/sync_service.dart';
 import 'package:dopamine_budget/core/sync/active_session_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
+import 'package:dopamine_budget/core/sync/active_session_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,8 +62,8 @@ void main() async {
   await NotificationPermissionHelper.requestExactAlarmPermission();
   await HapticService.init();
   await Supabase.initialize(
-    url: const String.fromEnvironment('SUPABASE_URL'),
-    anonKey: const String.fromEnvironment('SUPABASE_ANON_KEY'),
+    url: 'https://iumeyfwzbgaxkfqsevzd.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1bWV5Znd6YmdheGtmcXNldnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNDk5NDcsImV4cCI6MjEwMDcyNTk0N30.0eLBu35tCAr13rZLNnv4ACMMWLIh4tD6lxm0cDsLSfA',
   );
   await DeepLinkHandler.init();
 
@@ -95,7 +96,7 @@ void main() async {
     cryptoSessionService: cryptoSessionService,
   );
 
-  final streakRepository = StreakRepositoryImpl(database);
+  final streakRepository = StreakRepositoryImpl(database, sync: syncService);
   final syncStreakUseCase = SyncStreakUseCase(streakRepository);
   final streakNotifier = StreakNotifier(
     syncStreakUseCase: syncStreakUseCase,
@@ -103,13 +104,16 @@ void main() async {
   );
 
   // Репозитории
-  final sessionRepository = SessionRepositoryImpl(database);
+  final sessionRepository = SessionRepositoryImpl(database, sync: syncService);
   final habitRepository = HabitRepositoryImpl(database);
   final scoringRepository = ScoringRepositoryImpl(database);
 
   // Use Cases — сессии
   final initializeSessionUseCase = InitializeSessionUseCase(database);
-  final startControlSessionUseCase = StartControlSessionUseCase(database);
+  final startControlSessionUseCase = StartControlSessionUseCase(
+    database,
+    sync: syncService,
+  );
   final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database);
   final getSessionsByDayUseCase = GetSessionsByDayUseCase(sessionRepository);
 
@@ -144,7 +148,7 @@ void main() async {
   final getWeeklyHabitsReportUseCase = GetWeeklyHabitsReportUseCase(scoringRepository);
 
   // Use Cases — привычки
-  final addActionUseCase = AddActionUseCase(database);
+  final addActionUseCase = AddActionUseCase(database, sync: syncService);
 
   // Notifiers
   final sessionsNotifier = SessionsNotifier(
@@ -159,6 +163,7 @@ void main() async {
     habitRepository: habitRepository,
     sessionRepository: sessionRepository,
     addActionUseCase: addActionUseCase,
+    sync: syncService,
   );
 
   final scoringNotifier = ScoringNotifier(
@@ -193,6 +198,7 @@ void main() async {
     shrinkingReportUseCase: shrinkingReportUseCase,
     streakNotifier: streakNotifier,
     authModule: authModule,
+    activeSessionService: activeSessionService,
   ));
 }
 
@@ -212,6 +218,7 @@ class MyApp extends StatelessWidget {
   final PinNotifier pinNotifier;
   final CryptoRepository cryptoRepository;
   final AuthModule authModule;
+  final ActiveSessionService activeSessionService;
 
   const MyApp({
     super.key,
@@ -229,7 +236,8 @@ class MyApp extends StatelessWidget {
     required this.streakNotifier,
     required this.pinNotifier,
     required this.cryptoRepository,
-    required this.authModule
+    required this.authModule,
+    required this.activeSessionService
   });
 
   @override

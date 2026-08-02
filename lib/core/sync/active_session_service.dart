@@ -21,17 +21,24 @@ class ActiveSessionService {
   }
 
   void startListening(BuildContext context) {
-    _sub = _client
-        .from('active_sessions')
-        .stream(primaryKey: ['user_id'])
-        .eq('user_id', _uid)
-        .listen((rows) async {
-      if (rows.isEmpty) return;
-      final remoteDeviceId = rows.first['device_id'] as String?;
-      if (remoteDeviceId != null && remoteDeviceId != deviceId) {
-        if (context.mounted) _showDisplacedDialog(context);
-      }
-    });
+    try {
+      _sub = _client
+          .from('active_sessions')
+          .stream(primaryKey: ['user_id'])
+          .eq('user_id', _uid)
+          .listen(
+            (rows) async {
+          if (rows.isEmpty) return;
+          final remoteDeviceId = rows.first['device_id'] as String?;
+          if (remoteDeviceId != null && remoteDeviceId != deviceId) {
+            if (context.mounted) _showDisplacedDialog(context);
+          }
+        },
+        onError: (e) => debugPrint('ActiveSession stream error: $e'),
+      );
+    } catch (e) {
+      debugPrint('ActiveSession startListening error: $e');
+    }
   }
 
   void _showDisplacedDialog(BuildContext context) {

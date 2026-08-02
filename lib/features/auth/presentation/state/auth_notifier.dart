@@ -43,6 +43,7 @@ final class AuthNotifier extends ChangeNotifier {
   }
 
   Future<void> _onAuthStateChanged(AuthUser? user) async {
+    debugPrint('AUTH STATE CHANGED: ${user?.userId}');
     if (user == null) {
       await _storage.delete(key: _keyUserId);
       await SyncPrefs.setSyncEnabled(false);
@@ -53,13 +54,17 @@ final class AuthNotifier extends ChangeNotifier {
     await _storage.write(key: _keyUserId, value: user.userId);
     await SyncPrefs.setSyncEnabled(true);
 
+    debugPrint('SYNCING MASTER KEY...');
     final hasKey = await _syncMasterKey.execute(user.userId);
+    debugPrint('HAS KEY: $hasKey');
 
     if (hasKey) {
       try {
+        debugPrint('PULLING ALL...');
         await onPullAll?.call();
-      } catch (_) {
-        // pull не блокирует авторизацию
+        debugPrint('PULL DONE');
+      } catch (e) {
+        debugPrint('PULL ERROR: $e');
       }
     }
 
@@ -67,6 +72,7 @@ final class AuthNotifier extends ChangeNotifier {
       status: hasKey ? AuthStatus.existingUser : AuthStatus.newUser,
       user: user,
     ));
+    debugPrint('AUTH EMITTED: ${hasKey ? AuthStatus.existingUser : AuthStatus.newUser}');
   }
 
   Future<void> sendMagicLink(String email) async {
@@ -75,6 +81,7 @@ final class AuthNotifier extends ChangeNotifier {
       await _sendMagicLink.execute(email);
       _emit(_state.copyWith(status: AuthStatus.awaitingMagicLink));
     } catch (e) {
+      debugPrint('MAGIC LINK ERROR: $e'); // добавить
       _emit(_state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: 'Не удалось отправить письмо. Проверьте email.',

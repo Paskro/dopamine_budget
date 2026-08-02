@@ -18,7 +18,7 @@ final class CryptoRepositoryImpl implements CryptoRepository {
   static const _keyEncryptedMaster = 'db_enc_master';
   static const _keyMasterNonce = 'db_master_nonce';
   static const _keySalt = 'db_pbkdf2_salt';
-  static const _keyMasterRaw = 'master_key_raw';
+
 
 
   static const _pbkdf2Iterations = 100000;
@@ -42,18 +42,6 @@ final class CryptoRepositoryImpl implements CryptoRepository {
     );
   }
 
-  Future<void> saveMasterKeyRaw(Uint8List keyBytes) async {
-    await _storage.write(
-      key: _keyMasterRaw,
-      value: base64Encode(keyBytes),
-    );
-  }
-
-  Future<MasterKey?> loadMasterKeyRaw() async {
-    final value = await _storage.read(key: _keyMasterRaw);
-    if (value == null) return null;
-    return MasterKey(base64Decode(value));
-  }
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
@@ -162,16 +150,18 @@ final class CryptoRepositoryImpl implements CryptoRepository {
     );
     return utf8.decode(clearBytes);
   }
-
   @override
   Future<void> saveMasterKeyRaw(Uint8List keyBytes) async {
-    await _storage.write(key: _keyMasterRaw, value: base64Encode(keyBytes));
+    await _storage.write(
+      key: _keyMasterRaw,
+      value: base64Encode(keyBytes),
+    );
   }
-
   @override
   Future<MasterKey?> loadMasterKeyRaw() async {
     final value = await _storage.read(key: _keyMasterRaw);
     if (value == null) return null;
     return MasterKey(base64Decode(value));
   }
+
 }

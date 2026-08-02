@@ -11,11 +11,13 @@ import 'package:dopamine_budget/features/sessions/domain/entities/day_stats.dart
 import 'package:dopamine_budget/features/sessions/domain/entities/habit_click_log.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class SessionRepositoryImpl implements SessionRepository {
   final AppDatabase _db;
+  final SyncService? _sync;
+  SessionRepositoryImpl(this._db, {SyncService? sync}) : _sync = sync;
 
-  SessionRepositoryImpl(this._db);
 
   // === 1. РЕАЛИЗАЦИЯ МЕТОДОВ ДЛЯ ИНТЕРФЕЙСА ===
 
@@ -344,6 +346,7 @@ class SessionRepositoryImpl implements SessionRepository {
       isBrokenClicked: Value(true), // deprecated alias, синхронизирован для совместимости
       dayStatus: Value('broken'),
     ));
+    _sync?.pushDays().catchError((_) {});
   }
 
   @override
@@ -367,6 +370,7 @@ class SessionRepositoryImpl implements SessionRepository {
         "markDayAsGoodBoy отклонён: день $dateStr уже зафиксирован как 'broken'.",
       );
     }
+    _sync?.pushDays().catchError((_) {});
   }
 
   @override
@@ -386,6 +390,9 @@ class SessionRepositoryImpl implements SessionRepository {
       if (session == null) {
         throw StateError('Нет активной сессии для записи действия');
       }
+
+      _sync?.pushHabitLogs().catchError((_) {});
+      _sync?.pushDays().catchError((_) {});
 
       final dayRow = await (_db.select(_db.daysTable)
         ..where((t) => t.date.equals(dateStr)))
@@ -477,11 +484,30 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<void> markWeeklyReportAsReviewed(DateTime date) async {
     final dateStr = DayLogMapper.dateToString(date);
-    await (_db.update(_db.daysTable)
+
+    // Гарантируем существование строки перед UPDATE
+    final existing = await (_db.select(_db.daysTable)
       ..where((t) => t.date.equals(dateStr)))
-        .write(const DaysTableCompanion(
-      isWeeklyReportReviewed: Value(true),
-    ));
+        .getSingleOrNull();
+
+    if (existing == null) {
+      final session = await getActiveSession();
+      if (session == null) return;
+      await _db.into(_db.daysTable).insert(
+        DaysTableCompanion.insert(
+          date: dateStr,
+          sessionId: session.id,
+          isWeeklyReportReviewed: const Value(true),
+          updatedAt: TimeProvider.now.toIso8601String(),
+        ),
+      );
+    } else {
+      await (_db.update(_db.daysTable)
+        ..where((t) => t.date.equals(dateStr)))
+          .write(const DaysTableCompanion(
+        isWeeklyReportReviewed: Value(true),
+      ));
+    }
   }
 
   @override

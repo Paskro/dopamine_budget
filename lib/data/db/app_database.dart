@@ -79,23 +79,29 @@ class AppDatabase extends _$AppDatabase {
           await m.addColumn(streakTable, streakTable.previousMultiplier as GeneratedColumn);
         }
         if (from < 13) {
-          // UUID-миграция: пересоздаём все таблицы с int PK
-          // Данные НЕ мигрируем — сброс (devmode, prod-данных ещё нет)
           await m.drop(habitLogsTable);
           await m.drop(sessionHabitsTable);
           await m.drop(habitsTable);
           await m.drop(daysTable);
           await m.drop(shrinkingPeriodsTable);
           await m.drop(shrinkingReportsLogTable);
-          // sessions и streak не пересоздаём — только addColumn
           await m.createTable(habitsTable);
           await m.createTable(sessionHabitsTable);
           await m.createTable(habitLogsTable);
           await m.createTable(daysTable);
           await m.createTable(shrinkingPeriodsTable);
           await m.createTable(shrinkingReportsLogTable);
-          await m.addColumn(sessionsTable, sessionsTable.updatedAt);
-          await m.addColumn(sessionsTable, sessionsTable.isDeleted);
+          // Добавляем только если не существует
+          try {
+            await customStatement(
+              "ALTER TABLE sessions_table ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''",
+            );
+          } catch (_) {}
+          try {
+            await customStatement(
+              "ALTER TABLE sessions_table ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0",
+            );
+          } catch (_) {}
         }
         if (from < 14) {
           await m.drop(streakTable);
@@ -104,12 +110,20 @@ class AppDatabase extends _$AppDatabase {
         if (from < 15) {
           await m.drop(daysTable);
           await m.createTable(daysTable);
-          await m.addColumn(habitsTable, habitsTable.userId);
-          await m.addColumn(sessionHabitsTable, sessionHabitsTable.userId);
-          await m.addColumn(habitLogsTable, habitLogsTable.userId);
-          await m.addColumn(sessionsTable, sessionsTable.userId);
-          await m.addColumn(shrinkingPeriodsTable, shrinkingPeriodsTable.userId);
-          await m.addColumn(shrinkingReportsLogTable, shrinkingReportsLogTable.userId);
+          for (final sql in [
+            'ALTER TABLE "habits_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "session_habits_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "habit_logs_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "sessions_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "shrinking_periods_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "shrinking_reports_log_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "streak_table" ADD COLUMN "user_id" TEXT NULL',
+            "ALTER TABLE \"streak_table\" ADD COLUMN \"updated_at\" TEXT NOT NULL DEFAULT ''",
+          ]) {
+            try {
+              await customStatement(sql);
+            } catch (_) {}
+          }
         }
       },
     );

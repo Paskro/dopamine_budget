@@ -30,6 +30,7 @@ class _AuthFlowCoordinatorState extends State<AuthFlowCoordinator> {
   bool _isUploading = false;
 
   void _onSetPin(String pin) {
+    debugPrint('SET PIN CALLED: $pin');
     setState(() {
       _firstPin = pin;
       _pinError = null;
@@ -45,12 +46,15 @@ class _AuthFlowCoordinatorState extends State<AuthFlowCoordinator> {
     setState(() => _isUploading = true);
     try {
       final userId = widget.authNotifier.state.user!.userId;
-      // Генерируем и сохраняем MasterKey локально
-      await widget.pinNotifier.submitSetPin(pin);
-      // Пушим в Supabase
+      // Сначала генерируем и сохраняем ключ локально
+      widget.pinNotifier.submitFirstPin(pin);
+      await widget.pinNotifier.submitConfirmPin(pin);
+      // Только после этого пушим в Supabase
       await widget.uploadMasterKey.execute(userId);
       widget.authNotifier.markAuthenticated();
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('CONFIRM ERROR: $e');
+      debugPrint('STACK: $stack');
       setState(() {
         _pinError = 'Ошибка сохранения. Попробуйте ещё раз.';
         _firstPin = null;

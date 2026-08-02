@@ -62,6 +62,7 @@ class _AppGateState extends State<AppGate> {
           case AuthStatus.unauthenticated:
           case AuthStatus.awaitingMagicLink:
           case AuthStatus.authError:
+            _sessionActivated = false;
             return MagicLinkEmailScreen(authNotifier: widget.authModule.authNotifier);
 
           case AuthStatus.newUser:

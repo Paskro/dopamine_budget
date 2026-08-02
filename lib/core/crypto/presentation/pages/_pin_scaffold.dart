@@ -37,6 +37,9 @@ class _PinScaffoldState extends State<PinScaffold> {
   }
 
   Future<void> _onChanged(String value) async {
+    debugPrint('PIN INPUT: ${value.length}');
+    await HapticFeedback.vibrate(); // добавить хаптик
+    setState(() {}); // добавить — перерисовать точки
     if (value.length < 4 || _isLoading) return;
     setState(() => _isLoading = true);
     await widget.onComplete(value);

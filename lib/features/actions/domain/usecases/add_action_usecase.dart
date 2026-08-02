@@ -1,14 +1,17 @@
-﻿import 'package:drift/drift.dart';
+﻿// ЗАМЕНИТЬ весь файл:
+import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class AddActionUseCase {
   final AppDatabase _db;
+  final SyncService? _sync;
   final _uuid = const Uuid();
 
-  AddActionUseCase(this._db);
+  AddActionUseCase(this._db, {SyncService? sync}) : _sync = sync;
 
   Future<void> execute(Habit habit) async {
     final sessionId = await _db.getActiveSessionId();
@@ -25,5 +28,8 @@ class AddActionUseCase {
         updatedAt: Value(TimeProvider.now.toIso8601String()),
       ),
     );
+
+    _sync?.pushHabitLogs().catchError((_) {});
+    _sync?.pushDays().catchError((_) {});
   }
 }

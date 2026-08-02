@@ -3803,6 +3803,27 @@ class $StreakTableTable extends StreakTable
         requiredDuringInsert: false,
         defaultValue: const Constant(1.0),
       );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3811,6 +3832,8 @@ class $StreakTableTable extends StreakTable
     isViewed,
     hadActivityYesterday,
     previousMultiplier,
+    userId,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3871,6 +3894,18 @@ class $StreakTableTable extends StreakTable
         ),
       );
     }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
@@ -3904,6 +3939,14 @@ class $StreakTableTable extends StreakTable
         DriftSqlType.double,
         data['${effectivePrefix}previous_multiplier'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -3920,6 +3963,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
   final bool isViewed;
   final bool hadActivityYesterday;
   final double previousMultiplier;
+  final String? userId;
+  final String updatedAt;
   const StreakTableData({
     required this.id,
     required this.lastActiveDate,
@@ -3927,6 +3972,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
     required this.isViewed,
     required this.hadActivityYesterday,
     required this.previousMultiplier,
+    this.userId,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3937,6 +3984,10 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
     map['is_viewed'] = Variable<bool>(isViewed);
     map['had_activity_yesterday'] = Variable<bool>(hadActivityYesterday);
     map['previous_multiplier'] = Variable<double>(previousMultiplier);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
@@ -3948,6 +3999,10 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
       isViewed: Value(isViewed),
       hadActivityYesterday: Value(hadActivityYesterday),
       previousMultiplier: Value(previousMultiplier),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -3967,6 +4022,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
       previousMultiplier: serializer.fromJson<double>(
         json['previousMultiplier'],
       ),
+      userId: serializer.fromJson<String?>(json['userId']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
@@ -3979,6 +4036,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
       'isViewed': serializer.toJson<bool>(isViewed),
       'hadActivityYesterday': serializer.toJson<bool>(hadActivityYesterday),
       'previousMultiplier': serializer.toJson<double>(previousMultiplier),
+      'userId': serializer.toJson<String?>(userId),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
@@ -3989,6 +4048,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
     bool? isViewed,
     bool? hadActivityYesterday,
     double? previousMultiplier,
+    Value<String?> userId = const Value.absent(),
+    String? updatedAt,
   }) => StreakTableData(
     id: id ?? this.id,
     lastActiveDate: lastActiveDate ?? this.lastActiveDate,
@@ -3996,6 +4057,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
     isViewed: isViewed ?? this.isViewed,
     hadActivityYesterday: hadActivityYesterday ?? this.hadActivityYesterday,
     previousMultiplier: previousMultiplier ?? this.previousMultiplier,
+    userId: userId.present ? userId.value : this.userId,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   StreakTableData copyWithCompanion(StreakTableCompanion data) {
     return StreakTableData(
@@ -4013,6 +4076,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
       previousMultiplier: data.previousMultiplier.present
           ? data.previousMultiplier.value
           : this.previousMultiplier,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
@@ -4024,7 +4089,9 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
           ..write('currentMultiplier: $currentMultiplier, ')
           ..write('isViewed: $isViewed, ')
           ..write('hadActivityYesterday: $hadActivityYesterday, ')
-          ..write('previousMultiplier: $previousMultiplier')
+          ..write('previousMultiplier: $previousMultiplier, ')
+          ..write('userId: $userId, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -4037,6 +4104,8 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
     isViewed,
     hadActivityYesterday,
     previousMultiplier,
+    userId,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -4047,7 +4116,9 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
           other.currentMultiplier == this.currentMultiplier &&
           other.isViewed == this.isViewed &&
           other.hadActivityYesterday == this.hadActivityYesterday &&
-          other.previousMultiplier == this.previousMultiplier);
+          other.previousMultiplier == this.previousMultiplier &&
+          other.userId == this.userId &&
+          other.updatedAt == this.updatedAt);
 }
 
 class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
@@ -4057,6 +4128,8 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
   final Value<bool> isViewed;
   final Value<bool> hadActivityYesterday;
   final Value<double> previousMultiplier;
+  final Value<String?> userId;
+  final Value<String> updatedAt;
   const StreakTableCompanion({
     this.id = const Value.absent(),
     this.lastActiveDate = const Value.absent(),
@@ -4064,6 +4137,8 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
     this.isViewed = const Value.absent(),
     this.hadActivityYesterday = const Value.absent(),
     this.previousMultiplier = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   StreakTableCompanion.insert({
     this.id = const Value.absent(),
@@ -4072,6 +4147,8 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
     this.isViewed = const Value.absent(),
     this.hadActivityYesterday = const Value.absent(),
     this.previousMultiplier = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : lastActiveDate = Value(lastActiveDate);
   static Insertable<StreakTableData> custom({
     Expression<int>? id,
@@ -4080,6 +4157,8 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
     Expression<bool>? isViewed,
     Expression<bool>? hadActivityYesterday,
     Expression<double>? previousMultiplier,
+    Expression<String>? userId,
+    Expression<String>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -4089,6 +4168,8 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
       if (hadActivityYesterday != null)
         'had_activity_yesterday': hadActivityYesterday,
       if (previousMultiplier != null) 'previous_multiplier': previousMultiplier,
+      if (userId != null) 'user_id': userId,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -4099,6 +4180,8 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
     Value<bool>? isViewed,
     Value<bool>? hadActivityYesterday,
     Value<double>? previousMultiplier,
+    Value<String?>? userId,
+    Value<String>? updatedAt,
   }) {
     return StreakTableCompanion(
       id: id ?? this.id,
@@ -4107,6 +4190,8 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
       isViewed: isViewed ?? this.isViewed,
       hadActivityYesterday: hadActivityYesterday ?? this.hadActivityYesterday,
       previousMultiplier: previousMultiplier ?? this.previousMultiplier,
+      userId: userId ?? this.userId,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -4133,6 +4218,12 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
     if (previousMultiplier.present) {
       map['previous_multiplier'] = Variable<double>(previousMultiplier.value);
     }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
     return map;
   }
 
@@ -4144,7 +4235,9 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
           ..write('currentMultiplier: $currentMultiplier, ')
           ..write('isViewed: $isViewed, ')
           ..write('hadActivityYesterday: $hadActivityYesterday, ')
-          ..write('previousMultiplier: $previousMultiplier')
+          ..write('previousMultiplier: $previousMultiplier, ')
+          ..write('userId: $userId, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -6743,6 +6836,8 @@ typedef $$StreakTableTableCreateCompanionBuilder =
       Value<bool> isViewed,
       Value<bool> hadActivityYesterday,
       Value<double> previousMultiplier,
+      Value<String?> userId,
+      Value<String> updatedAt,
     });
 typedef $$StreakTableTableUpdateCompanionBuilder =
     StreakTableCompanion Function({
@@ -6752,6 +6847,8 @@ typedef $$StreakTableTableUpdateCompanionBuilder =
       Value<bool> isViewed,
       Value<bool> hadActivityYesterday,
       Value<double> previousMultiplier,
+      Value<String?> userId,
+      Value<String> updatedAt,
     });
 
 class $$StreakTableTableFilterComposer
@@ -6790,6 +6887,16 @@ class $$StreakTableTableFilterComposer
 
   ColumnFilters<double> get previousMultiplier => $composableBuilder(
     column: $table.previousMultiplier,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -6832,6 +6939,16 @@ class $$StreakTableTableOrderingComposer
     column: $table.previousMultiplier,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$StreakTableTableAnnotationComposer
@@ -6868,6 +6985,12 @@ class $$StreakTableTableAnnotationComposer
     column: $table.previousMultiplier,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$StreakTableTableTableManager
@@ -6907,6 +7030,8 @@ class $$StreakTableTableTableManager
                 Value<bool> isViewed = const Value.absent(),
                 Value<bool> hadActivityYesterday = const Value.absent(),
                 Value<double> previousMultiplier = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => StreakTableCompanion(
                 id: id,
                 lastActiveDate: lastActiveDate,
@@ -6914,6 +7039,8 @@ class $$StreakTableTableTableManager
                 isViewed: isViewed,
                 hadActivityYesterday: hadActivityYesterday,
                 previousMultiplier: previousMultiplier,
+                userId: userId,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -6923,6 +7050,8 @@ class $$StreakTableTableTableManager
                 Value<bool> isViewed = const Value.absent(),
                 Value<bool> hadActivityYesterday = const Value.absent(),
                 Value<double> previousMultiplier = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => StreakTableCompanion.insert(
                 id: id,
                 lastActiveDate: lastActiveDate,
@@ -6930,6 +7059,8 @@ class $$StreakTableTableTableManager
                 isViewed: isViewed,
                 hadActivityYesterday: hadActivityYesterday,
                 previousMultiplier: previousMultiplier,
+                userId: userId,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
