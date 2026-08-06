@@ -391,8 +391,7 @@ class SessionRepositoryImpl implements SessionRepository {
         throw StateError('Нет активной сессии для записи действия');
       }
 
-      _sync?.pushHabitLogs().catchError((_) {});
-      _sync?.pushDays().catchError((_) {});
+
 
       final dayRow = await (_db.select(_db.daysTable)
         ..where((t) => t.date.equals(dateStr)))
@@ -432,6 +431,10 @@ class SessionRepositoryImpl implements SessionRepository {
         );
       }
     });
+
+    _sync?.pushHabitLogs().catchError((_) {});
+    _sync?.pushDays().catchError((_) {});
+
   }
 
   // =========================================================================

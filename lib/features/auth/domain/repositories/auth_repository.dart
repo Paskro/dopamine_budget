@@ -5,4 +5,5 @@ abstract interface class AuthRepository {
   Future<AuthUser?> getCurrentUser();
   Future<void> signOut();
   Stream<AuthUser?> get authStateChanges;
+  Future<void> signInWithGoogle();
 }

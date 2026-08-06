@@ -16,6 +16,7 @@ final class AuthModule {
   static AuthModule create(
       FlutterSecureStorage storage, {
         Future<void> Function()? onPullAll,
+        Future<void> Function()? onAfterPull,
       }) {
     final client = Supabase.instance.client;
     final authRepo = AuthRepositoryImpl(client);
@@ -30,6 +31,7 @@ final class AuthModule {
       syncMasterKey: syncMasterKey,
       storage: storage,
       onPullAll: onPullAll,
+      onAfterPull: onAfterPull,
     );
 
     return AuthModule._(

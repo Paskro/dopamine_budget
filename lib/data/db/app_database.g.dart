@@ -73,6 +73,18 @@ class $HabitsTableTable extends HabitsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _titleNonceMeta = const VerificationMeta(
+    'titleNonce',
+  );
+  @override
+  late final GeneratedColumn<String> titleNonce = GeneratedColumn<String>(
+    'title_nonce',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -81,6 +93,7 @@ class $HabitsTableTable extends HabitsTable
     isArchived,
     updatedAt,
     userId,
+    titleNonce,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -135,6 +148,12 @@ class $HabitsTableTable extends HabitsTable
         userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
       );
     }
+    if (data.containsKey('title_nonce')) {
+      context.handle(
+        _titleNonceMeta,
+        titleNonce.isAcceptableOrUnknown(data['title_nonce']!, _titleNonceMeta),
+      );
+    }
     return context;
   }
 
@@ -168,6 +187,10 @@ class $HabitsTableTable extends HabitsTable
         DriftSqlType.string,
         data['${effectivePrefix}user_id'],
       ),
+      titleNonce: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title_nonce'],
+      )!,
     );
   }
 
@@ -184,6 +207,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
   final bool isArchived;
   final String updatedAt;
   final String? userId;
+  final String titleNonce;
   const HabitsTableData({
     required this.id,
     required this.title,
@@ -191,6 +215,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     required this.isArchived,
     required this.updatedAt,
     this.userId,
+    required this.titleNonce,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -203,6 +228,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     if (!nullToAbsent || userId != null) {
       map['user_id'] = Variable<String>(userId);
     }
+    map['title_nonce'] = Variable<String>(titleNonce);
     return map;
   }
 
@@ -216,6 +242,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       userId: userId == null && nullToAbsent
           ? const Value.absent()
           : Value(userId),
+      titleNonce: Value(titleNonce),
     );
   }
 
@@ -231,6 +258,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       isArchived: serializer.fromJson<bool>(json['isArchived']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
       userId: serializer.fromJson<String?>(json['userId']),
+      titleNonce: serializer.fromJson<String>(json['titleNonce']),
     );
   }
   @override
@@ -243,6 +271,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       'isArchived': serializer.toJson<bool>(isArchived),
       'updatedAt': serializer.toJson<String>(updatedAt),
       'userId': serializer.toJson<String?>(userId),
+      'titleNonce': serializer.toJson<String>(titleNonce),
     };
   }
 
@@ -253,6 +282,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     bool? isArchived,
     String? updatedAt,
     Value<String?> userId = const Value.absent(),
+    String? titleNonce,
   }) => HabitsTableData(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -260,6 +290,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     isArchived: isArchived ?? this.isArchived,
     updatedAt: updatedAt ?? this.updatedAt,
     userId: userId.present ? userId.value : this.userId,
+    titleNonce: titleNonce ?? this.titleNonce,
   );
   HabitsTableData copyWithCompanion(HabitsTableCompanion data) {
     return HabitsTableData(
@@ -273,6 +304,9 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
           : this.isArchived,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       userId: data.userId.present ? data.userId.value : this.userId,
+      titleNonce: data.titleNonce.present
+          ? data.titleNonce.value
+          : this.titleNonce,
     );
   }
 
@@ -284,14 +318,22 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
           ..write('scoreValue: $scoreValue, ')
           ..write('isArchived: $isArchived, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('userId: $userId')
+          ..write('userId: $userId, ')
+          ..write('titleNonce: $titleNonce')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, scoreValue, isArchived, updatedAt, userId);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    scoreValue,
+    isArchived,
+    updatedAt,
+    userId,
+    titleNonce,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -301,7 +343,8 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
           other.scoreValue == this.scoreValue &&
           other.isArchived == this.isArchived &&
           other.updatedAt == this.updatedAt &&
-          other.userId == this.userId);
+          other.userId == this.userId &&
+          other.titleNonce == this.titleNonce);
 }
 
 class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
@@ -311,6 +354,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
   final Value<bool> isArchived;
   final Value<String> updatedAt;
   final Value<String?> userId;
+  final Value<String> titleNonce;
   final Value<int> rowid;
   const HabitsTableCompanion({
     this.id = const Value.absent(),
@@ -319,6 +363,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     this.isArchived = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.userId = const Value.absent(),
+    this.titleNonce = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HabitsTableCompanion.insert({
@@ -328,6 +373,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     this.isArchived = const Value.absent(),
     required String updatedAt,
     this.userId = const Value.absent(),
+    this.titleNonce = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title),
@@ -340,6 +386,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     Expression<bool>? isArchived,
     Expression<String>? updatedAt,
     Expression<String>? userId,
+    Expression<String>? titleNonce,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -349,6 +396,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
       if (isArchived != null) 'is_archived': isArchived,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (userId != null) 'user_id': userId,
+      if (titleNonce != null) 'title_nonce': titleNonce,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -360,6 +408,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     Value<bool>? isArchived,
     Value<String>? updatedAt,
     Value<String?>? userId,
+    Value<String>? titleNonce,
     Value<int>? rowid,
   }) {
     return HabitsTableCompanion(
@@ -369,6 +418,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
       isArchived: isArchived ?? this.isArchived,
       updatedAt: updatedAt ?? this.updatedAt,
       userId: userId ?? this.userId,
+      titleNonce: titleNonce ?? this.titleNonce,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -394,6 +444,9 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     if (userId.present) {
       map['user_id'] = Variable<String>(userId.value);
     }
+    if (titleNonce.present) {
+      map['title_nonce'] = Variable<String>(titleNonce.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -409,6 +462,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
           ..write('isArchived: $isArchived, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('userId: $userId, ')
+          ..write('titleNonce: $titleNonce, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4298,6 +4352,7 @@ typedef $$HabitsTableTableCreateCompanionBuilder =
       Value<bool> isArchived,
       required String updatedAt,
       Value<String?> userId,
+      Value<String> titleNonce,
       Value<int> rowid,
     });
 typedef $$HabitsTableTableUpdateCompanionBuilder =
@@ -4308,6 +4363,7 @@ typedef $$HabitsTableTableUpdateCompanionBuilder =
       Value<bool> isArchived,
       Value<String> updatedAt,
       Value<String?> userId,
+      Value<String> titleNonce,
       Value<int> rowid,
     });
 
@@ -4376,6 +4432,11 @@ class $$HabitsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get titleNonce => $composableBuilder(
+    column: $table.titleNonce,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> habitLogsTableRefs(
     Expression<bool> Function($$HabitLogsTableTableFilterComposer f) f,
   ) {
@@ -4440,6 +4501,11 @@ class $$HabitsTableTableOrderingComposer
     column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get titleNonce => $composableBuilder(
+    column: $table.titleNonce,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HabitsTableTableAnnotationComposer
@@ -4472,6 +4538,11 @@ class $$HabitsTableTableAnnotationComposer
 
   GeneratedColumn<String> get userId =>
       $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get titleNonce => $composableBuilder(
+    column: $table.titleNonce,
+    builder: (column) => column,
+  );
 
   Expression<T> habitLogsTableRefs<T extends Object>(
     Expression<T> Function($$HabitLogsTableTableAnnotationComposer a) f,
@@ -4533,6 +4604,7 @@ class $$HabitsTableTableTableManager
                 Value<bool> isArchived = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
                 Value<String?> userId = const Value.absent(),
+                Value<String> titleNonce = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HabitsTableCompanion(
                 id: id,
@@ -4541,6 +4613,7 @@ class $$HabitsTableTableTableManager
                 isArchived: isArchived,
                 updatedAt: updatedAt,
                 userId: userId,
+                titleNonce: titleNonce,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4551,6 +4624,7 @@ class $$HabitsTableTableTableManager
                 Value<bool> isArchived = const Value.absent(),
                 required String updatedAt,
                 Value<String?> userId = const Value.absent(),
+                Value<String> titleNonce = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HabitsTableCompanion.insert(
                 id: id,
@@ -4559,6 +4633,7 @@ class $$HabitsTableTableTableManager
                 isArchived: isArchived,
                 updatedAt: updatedAt,
                 userId: userId,
+                titleNonce: titleNonce,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

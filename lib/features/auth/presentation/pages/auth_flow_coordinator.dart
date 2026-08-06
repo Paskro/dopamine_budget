@@ -12,18 +12,19 @@ class AuthFlowCoordinator extends StatefulWidget {
   final AuthNotifier authNotifier;
   final PinNotifier pinNotifier;
   final UploadMasterKeyUseCase uploadMasterKey;
+  final VoidCallback? onComplete; // ← добавить
 
   const AuthFlowCoordinator({
     super.key,
     required this.authNotifier,
     required this.pinNotifier,
     required this.uploadMasterKey,
+    this.onComplete, // ← добавить
   });
 
   @override
   State<AuthFlowCoordinator> createState() => _AuthFlowCoordinatorState();
 }
-
 class _AuthFlowCoordinatorState extends State<AuthFlowCoordinator> {
   String? _firstPin;
   String? _pinError;
@@ -46,20 +47,22 @@ class _AuthFlowCoordinatorState extends State<AuthFlowCoordinator> {
     setState(() => _isUploading = true);
     try {
       final userId = widget.authNotifier.state.user!.userId;
-      // Сначала генерируем и сохраняем ключ локально
       widget.pinNotifier.submitFirstPin(pin);
       await widget.pinNotifier.submitConfirmPin(pin);
-      // Только после этого пушим в Supabase
       await widget.uploadMasterKey.execute(userId);
       widget.authNotifier.markAuthenticated();
+      widget.onComplete?.call();
+      // _isUploading не сбрасываем — виджет уйдёт со стека через authState
     } catch (e, stack) {
       debugPrint('CONFIRM ERROR: $e');
       debugPrint('STACK: $stack');
-      setState(() {
-        _pinError = 'Ошибка сохранения. Попробуйте ещё раз.';
-        _firstPin = null;
-        _isUploading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _pinError = 'Ошибка сохранения. Попробуйте ещё раз.';
+          _firstPin = null;
+          _isUploading = false;
+        });
+      }
     }
   }
 

@@ -4,9 +4,12 @@ import '../../domain/repositories/crypto_repository.dart';
 import '../../domain/repositories/crypto_session_service.dart';
 
 class PinNotifier extends ChangeNotifier {
+  final Future<void> Function()? onUnlocked;
+
   PinNotifier({
     required CryptoRepository cryptoRepository,
     required CryptoSessionService cryptoSessionService,
+    this.onUnlocked,
   })  : _cryptoRepository = cryptoRepository,
         _cryptoSessionService = cryptoSessionService {
     _init();
@@ -26,6 +29,7 @@ class PinNotifier extends ChangeNotifier {
       _cryptoSessionService.setKey(rawKey);
       _state = const PinState(status: PinFlowStatus.unlocked);
       notifyListeners();
+      onUnlocked?.call().catchError((_) {});
       return;
     }
 
@@ -97,6 +101,7 @@ class PinNotifier extends ChangeNotifier {
     _cryptoSessionService.setKey(key);
     _state = const PinState(status: PinFlowStatus.unlocked);
     notifyListeners();
+    onUnlocked?.call().catchError((_) {});
   }
 
   // ── Lock ───────────────────────────────────────────────────────────────────
@@ -105,5 +110,11 @@ class PinNotifier extends ChangeNotifier {
     _cryptoSessionService.clear();
     _state = const PinState(status: PinFlowStatus.needsUnlock);
     notifyListeners();
+  }
+
+  Future<void> reset() async {
+    _state = const PinState(status: PinFlowStatus.loading);
+    notifyListeners();
+    await _init();
   }
 }

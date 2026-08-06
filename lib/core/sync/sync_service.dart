@@ -2,12 +2,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/data/mappers/day_log_mapper.dart';
 import 'package:drift/drift.dart';
+import 'package:dopamine_budget/core/crypto/data/sync_prefs.dart';
+import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
+import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_session_service.dart';
+import 'package:dopamine_budget/core/crypto/domain/entities/encrypted_data_dto.dart';
 
 class SyncService {
   final SupabaseClient _client;
   final AppDatabase _db;
+  final CryptoRepository _crypto;
+  final CryptoSessionService _session;
 
-  SyncService(this._client, this._db);
+  SyncService(this._client, this._db, this._crypto, this._session);
 
   String get _uid => _client.auth.currentUser!.id;
 
@@ -41,14 +47,18 @@ class SyncService {
 
   Future<void> pushHabits() async {
     final rows = await (_db.select(_db.habitsTable)).get();
-    final payload = rows.map((r) => {
-      'id': r.id,
-      'user_id': _uid,
-      'title': r.title,
-      'score_value': r.scoreValue,
-      'is_archived': r.isArchived,
-      'updated_at': r.updatedAt,
-    }).toList();
+    final payload = <Map<String, dynamic>>[];
+    for (final r in rows) {
+      payload.add({
+        'id': r.id,
+        'user_id': _uid,
+        'title': r.title,         // уже зашифрован в Drift
+        'title_nonce': r.titleNonce, // уже есть в Drift
+        'score_value': r.scoreValue,
+        'is_archived': r.isArchived,
+        'updated_at': r.updatedAt,
+      });
+    }
     if (payload.isEmpty) return;
     await _client.from('habits').upsert(payload);
   }
@@ -156,6 +166,7 @@ class SyncService {
       _pullDays(),
       _pullShrinkingPeriods(),
       _pullShrinkingReportsLog(),
+      pullUserProfile(),
     ]);
   }
 
@@ -208,11 +219,10 @@ class SyncService {
     }
   }
 
+
   Future<void> _pullHabits() async {
-    final remote = await _client
-        .from('habits')
-        .select()
-        .eq('user_id', _uid);
+    final key = _session.currentKey;
+    final remote = await _client.from('habits').select().eq('user_id', _uid);
 
     for (final r in remote) {
       final localRow = await (_db.select(_db.habitsTable)
@@ -229,10 +239,13 @@ class SyncService {
           localUpdatedAt != null &&
           !remoteUpdatedAt.isAfter(localUpdatedAt)) continue;
 
+      final nonce = r['title_nonce'] as String? ?? '';
+
       await _db.into(_db.habitsTable).insertOnConflictUpdate(
         HabitsTableCompanion(
           id: Value(r['id'] as String),
-          title: Value(r['title'] as String),
+          title: Value(r['title'] as String),   // шифртекст как есть
+          titleNonce: Value(nonce),              // сохраняем nonce
           scoreValue: Value(r['score_value'] as int),
           isArchived: Value(r['is_archived'] as bool? ?? false),
           updatedAt: Value(r['updated_at'] as String? ?? ''),
@@ -414,6 +427,28 @@ class SyncService {
           userId: Value(r['user_id'] as String?),
         ),
       );
+    }
+  }
+  Future<void> pushUserProfile() async {
+    final name = await SyncPrefs.getDisplayName();
+    if (name == null) return;
+    await _client.from('user_profiles').upsert({
+      'user_id': _uid,
+      'display_name': name,
+      'updated_at': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> pullUserProfile() async {
+    final remote = await _client
+        .from('user_profiles')
+        .select()
+        .eq('user_id', _uid)
+        .maybeSingle();
+    if (remote == null) return;
+    final name = remote['display_name'] as String?;
+    if (name != null && name.isNotEmpty) {
+      await SyncPrefs.setDisplayName(name);
     }
   }
 }

@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -124,6 +124,13 @@ class AppDatabase extends _$AppDatabase {
               await customStatement(sql);
             } catch (_) {}
           }
+        }
+        if (from < 16) {
+          try {
+            await customStatement(
+              "ALTER TABLE \"habits_table\" ADD COLUMN \"title_nonce\" TEXT NOT NULL DEFAULT ''",
+            );
+          } catch (_) {}
         }
       },
     );

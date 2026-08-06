@@ -127,6 +127,14 @@ class HabitsNotifier extends ChangeNotifier {
     _sync?.pushHabits().catchError((_) {});
   }
 
+  Future<void> reloadHabits() async {
+    debugPrint('[reloadHabits] called, habits count before: ${_habits.length}');
+    final habits = await _habitRepository.getHabits();
+    debugPrint('[reloadHabits] loaded: ${habits.map((h) => h.title).toList()}');
+    _habits = habits;
+    notifyListeners();
+  }
+
   Future<void> hitHabit(Habit habit, {dynamic scoringNotifier}) async {
     _isLoading = true;
     notifyListeners();

@@ -187,15 +187,15 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
           children: [
             content,
             StreakPopup(notifier: widget.streakNotifier),
-            DeveloperOverlay(
-              onTimeShifted: () async {
-                await widget.scoringNotifier.checkAndResetDayIfNeeded();
-                widget.controlScreenNotifier.checkAndResetDayIfNeeded();
-                await widget.streakNotifier.init();  // добавить
-                await _checkWeeklyReport();
-                await _checkShrinkingReport();
-              },
-            ),
+            //DeveloperOverlay(
+            //  onTimeShifted: () async {
+            //    await widget.scoringNotifier.checkAndResetDayIfNeeded();
+            //    widget.controlScreenNotifier.checkAndResetDayIfNeeded();
+            //    await widget.streakNotifier.init();  // добавить
+            //    await _checkWeeklyReport();
+            //    await _checkShrinkingReport();
+            //  },
+            //),
           ],
         );
       },

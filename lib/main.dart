@@ -49,6 +49,8 @@ import 'package:dopamine_budget/core/sync/active_session_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
 import 'package:dopamine_budget/core/sync/active_session_service.dart';
+import 'package:dopamine_budget/presentation/onboarding_gate.dart';
+import 'package:dopamine_budget/features/auth/presentation/pages/auth_flow_coordinator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,7 +75,9 @@ void main() async {
 
   final database = AppDatabase.instance;
   final supabase = Supabase.instance.client;
-  final syncService = SyncService(supabase, database);
+  final cryptoSessionService = CryptoSessionServiceImpl();
+  final cryptoRepository = CryptoRepositoryImpl(secureStorage);
+  final syncService = SyncService(supabase, database, cryptoRepository, cryptoSessionService);
   const _keyDeviceId = 'device_id';
   String? storedDeviceId = await secureStorage.read(key: _keyDeviceId);
   if (storedDeviceId == null) {
@@ -83,29 +87,23 @@ void main() async {
   final deviceId = storedDeviceId;
   final activeSessionService = ActiveSessionService(supabase, deviceId: deviceId);
 
+  HabitsNotifier? habitsNotifierRef;
+
   final authModule = AuthModule.create(
     secureStorage,
     onPullAll: syncService.pullAll,
+    onAfterPull: () => habitsNotifierRef?.reloadHabits() ?? Future.value(),
   );
 
-
-  final cryptoSessionService = CryptoSessionServiceImpl();
-  final cryptoRepository = CryptoRepositoryImpl(secureStorage);
   final pinNotifier = PinNotifier(
     cryptoRepository: cryptoRepository,
     cryptoSessionService: cryptoSessionService,
-  );
-
-  final streakRepository = StreakRepositoryImpl(database, sync: syncService);
-  final syncStreakUseCase = SyncStreakUseCase(streakRepository);
-  final streakNotifier = StreakNotifier(
-    syncStreakUseCase: syncStreakUseCase,
-    repository: streakRepository,
+    onUnlocked: () async => habitsNotifierRef?.reloadHabits().catchError((_) {}),
   );
 
   // Репозитории
   final sessionRepository = SessionRepositoryImpl(database, sync: syncService);
-  final habitRepository = HabitRepositoryImpl(database);
+  final habitRepository = HabitRepositoryImpl(database, cryptoRepository, cryptoSessionService);
   final scoringRepository = ScoringRepositoryImpl(database);
 
   // Use Cases — сессии
@@ -150,13 +148,15 @@ void main() async {
   // Use Cases — привычки
   final addActionUseCase = AddActionUseCase(database, sync: syncService);
 
-  // Notifiers
-  final sessionsNotifier = SessionsNotifier(
-    sessionRepository: sessionRepository,
-    initializeSessionUseCase: initializeSessionUseCase,
-    startControlSessionUseCase: startControlSessionUseCase,
-    startControlSessionWithHabitsUseCase: startControlSessionWithHabitsUseCase,
+  // Streak
+  final streakRepository = StreakRepositoryImpl(database, sync: syncService);
+  final syncStreakUseCase = SyncStreakUseCase(streakRepository);
+  final streakNotifier = StreakNotifier(
+    syncStreakUseCase: syncStreakUseCase,
+    repository: streakRepository,
   );
+
+  // Notifiers
 
   // HabitsNotifier теперь сам подписывается на sessionId через стрим сессии
   final habitsNotifier = HabitsNotifier(
@@ -164,6 +164,15 @@ void main() async {
     sessionRepository: sessionRepository,
     addActionUseCase: addActionUseCase,
     sync: syncService,
+  );
+
+  habitsNotifierRef = habitsNotifier;
+
+  final sessionsNotifier = SessionsNotifier(
+    sessionRepository: sessionRepository,
+    initializeSessionUseCase: initializeSessionUseCase,
+    startControlSessionUseCase: startControlSessionUseCase,
+    startControlSessionWithHabitsUseCase: startControlSessionWithHabitsUseCase,
   );
 
   final scoringNotifier = ScoringNotifier(
@@ -246,12 +255,20 @@ class MyApp extends StatelessWidget {
       title: 'Dopamine Budget',
       theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
-        home: AppGate(
+      home: OnboardingGate(
+        authModule: authModule,
+        onNewUser: (onDone) => AuthFlowCoordinator(
+          authNotifier: authModule.authNotifier,
           pinNotifier: pinNotifier,
-          cryptoRepository: cryptoRepository,
-          authModule: authModule,
-          activeSessionService: activeSessionService,
-          child: RootGate(
+          uploadMasterKey: authModule.uploadMasterKeyUseCase,
+          onComplete: onDone,
+        ),
+        child: AppGate(
+            pinNotifier: pinNotifier,
+            cryptoRepository: cryptoRepository,
+            authModule: authModule,
+            activeSessionService: activeSessionService,
+            child: RootGate(
         database: database,
         sessionsNotifier: sessionsNotifier,
         habitsNotifier: habitsNotifier,
@@ -264,6 +281,7 @@ class MyApp extends StatelessWidget {
         sessionRepository: sessionRepository,
         shrinkingReportUseCase: shrinkingReportUseCase,
         streakNotifier: streakNotifier,
+            ),
       ),
      ),
     );

@@ -7,6 +7,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/send_magic_link_usecase.dart';
 import '../../domain/usecases/sync_master_key_usecase.dart';
 import 'auth_state.dart';
+import 'package:dopamine_budget/core/crypto/presentation/state/pin_notifier.dart';
 
 final class AuthNotifier extends ChangeNotifier {
   final AuthRepository _authRepository;
@@ -14,6 +15,7 @@ final class AuthNotifier extends ChangeNotifier {
   final SyncMasterKeyUseCase _syncMasterKey;
   final FlutterSecureStorage _storage;
   final Future<void> Function()? onPullAll;
+  final Future<void> Function()? onAfterPull;
 
   static const _keyUserId = 'supabase_user_id';
 
@@ -27,7 +29,8 @@ final class AuthNotifier extends ChangeNotifier {
     required SendMagicLinkUseCase sendMagicLink,
     required SyncMasterKeyUseCase syncMasterKey,
     required FlutterSecureStorage storage,
-    this.onPullAll,
+       this.onPullAll,
+       this.onAfterPull,
   })  : _authRepository = authRepository,
         _sendMagicLink = sendMagicLink,
         _syncMasterKey = syncMasterKey,
@@ -63,6 +66,7 @@ final class AuthNotifier extends ChangeNotifier {
         debugPrint('PULLING ALL...');
         await onPullAll?.call();
         debugPrint('PULL DONE');
+        await onAfterPull?.call(); // ← добавить
       } catch (e) {
         debugPrint('PULL ERROR: $e');
       }
@@ -85,6 +89,19 @@ final class AuthNotifier extends ChangeNotifier {
       _emit(_state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: 'Не удалось отправить письмо. Проверьте email.',
+      ));
+    }
+  }
+  Future<void> signInWithGoogle() async {
+    _emit(_state.copyWith(status: AuthStatus.loading, errorMessage: null));
+    try {
+      await _authRepository.signInWithGoogle();
+      // Дальнейший флоу обрабатывает _onAuthStateChanged через Stream
+    } catch (e) {
+      debugPrint('GOOGLE SIGN-IN ERROR: $e');
+      _emit(_state.copyWith(
+        status: AuthStatus.unauthenticated,
+        errorMessage: 'Не удалось войти через Google.',
       ));
     }
   }

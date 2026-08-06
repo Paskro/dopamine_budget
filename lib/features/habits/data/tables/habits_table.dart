@@ -7,6 +7,7 @@ class HabitsTable extends Table {
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   TextColumn get updatedAt => text()();
   TextColumn get userId => text().nullable()();
+  TextColumn get titleNonce => text().withDefault(const Constant(''))();
 
   @override
   Set<Column> get primaryKey => {id};
