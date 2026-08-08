@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
@@ -9,12 +9,15 @@ import 'package:dopamine_budget/features/sessions/data/mappers/shrinking_period_
 import 'package:dopamine_budget/features/sessions/domain/entities/shrinking_period.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/day_stats.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/habit_click_log.dart';
-
+import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class SessionRepositoryImpl implements SessionRepository {
   final AppDatabase _db;
+  final SyncService? _sync;
+  SessionRepositoryImpl(this._db, {SyncService? sync}) : _sync = sync;
 
-  SessionRepositoryImpl(this._db);
 
   // === 1. РЕАЛИЗАЦИЯ МЕТОДОВ ДЛЯ ИНТЕРФЕЙСА ===
 
@@ -212,9 +215,11 @@ class SessionRepositoryImpl implements SessionRepository {
     }
     await _db.into(_db.habitLogsTable).insert(
       HabitLogsTableCompanion.insert(
-        habitId: int.parse(habitId),
+        id: const Uuid().v4(),
+        habitId: habitId, // уже String
         sessionId: sessionId,
         timestamp: createdAt,
+        updatedAt: TimeProvider.now.toIso8601String(),
       ),
     );
   }
@@ -310,21 +315,19 @@ class SessionRepositoryImpl implements SessionRepository {
     required String sessionId,
   }) async {
     final dateStr = DayLogMapper.dateToString(date);
-
     final existing = await (_db.select(_db.daysTable)
       ..where((t) => t.date.equals(dateStr)))
         .getSingleOrNull();
-
     if (existing != null) return DayLogMapper.fromDb(existing);
 
     final companion = DaysTableCompanion.insert(
       date: dateStr,
       sessionId: sessionId,
+      updatedAt: TimeProvider.now.toIso8601String(),
     );
-    final id = await _db.into(_db.daysTable).insert(companion);
+    await _db.into(_db.daysTable).insert(companion);
 
     return DayLog(
-      id: id,
       date: DateTime.parse(dateStr),
       sessionId: sessionId,
       isBrokenClicked: false,
@@ -343,6 +346,7 @@ class SessionRepositoryImpl implements SessionRepository {
       isBrokenClicked: Value(true), // deprecated alias, синхронизирован для совместимости
       dayStatus: Value('broken'),
     ));
+    _sync?.pushDays().catchError((_) {});
   }
 
   @override
@@ -366,6 +370,7 @@ class SessionRepositoryImpl implements SessionRepository {
         "markDayAsGoodBoy отклонён: день $dateStr уже зафиксирован как 'broken'.",
       );
     }
+    _sync?.pushDays().catchError((_) {});
   }
 
   @override
@@ -386,6 +391,8 @@ class SessionRepositoryImpl implements SessionRepository {
         throw StateError('Нет активной сессии для записи действия');
       }
 
+
+
       final dayRow = await (_db.select(_db.daysTable)
         ..where((t) => t.date.equals(dateStr)))
           .getSingleOrNull();
@@ -398,9 +405,11 @@ class SessionRepositoryImpl implements SessionRepository {
 
       await _db.into(_db.habitLogsTable).insert(
         HabitLogsTableCompanion.insert(
-          habitId: int.parse(habitId),
+          id: const Uuid().v4(),
+          habitId: habitId, // уже String
           sessionId: session.id,
           timestamp: timestamp,
+          updatedAt: TimeProvider.now.toIso8601String(),
         ),
       );
 
@@ -417,10 +426,18 @@ class SessionRepositoryImpl implements SessionRepository {
           DaysTableCompanion.insert(
             date: dateStr,
             sessionId: session.id,
+            updatedAt: TimeProvider.now.toIso8601String(),
           ),
         );
       }
+    }).onError((e, st) {
+      print('❌ logHabitClickWithStatusCheck transaction error: $e\n$st');
+      throw e!;
     });
+
+    _sync?.pushHabitLogs().catchError((_) {});
+    _sync?.pushDays().catchError((_) {});
+
   }
 
   // =========================================================================
@@ -451,14 +468,22 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<void> updateSessionPhase(String sessionId, int newPhase) async {
     await (_db.update(_db.sessionsTable)
       ..where((t) => t.id.equals(sessionId)))
-        .write(SessionsTableCompanion(phase: Value(newPhase)));
+        .write(SessionsTableCompanion(
+          phase: Value(newPhase),
+          updatedAt: Value(TimeProvider.now.toIso8601String()),
+        ));
+    _sync?.pushSessions().catchError((_) {});
   }
 
   @override
   Future<void> deleteSession(String sessionId) async {
-    await (_db.delete(_db.sessionsTable)
+    await (_db.update(_db.sessionsTable)
       ..where((t) => t.id.equals(sessionId)))
-        .go();
+        .write(SessionsTableCompanion(
+          isDeleted: const Value(true),
+          updatedAt: Value(TimeProvider.now.toIso8601String()),
+        ));
+    _sync?.pushSessions().catchError((_) {});
   }
 
   @override
@@ -473,11 +498,30 @@ class SessionRepositoryImpl implements SessionRepository {
   @override
   Future<void> markWeeklyReportAsReviewed(DateTime date) async {
     final dateStr = DayLogMapper.dateToString(date);
-    await (_db.update(_db.daysTable)
+
+    // Гарантируем существование строки перед UPDATE
+    final existing = await (_db.select(_db.daysTable)
       ..where((t) => t.date.equals(dateStr)))
-        .write(const DaysTableCompanion(
-      isWeeklyReportReviewed: Value(true),
-    ));
+        .getSingleOrNull();
+
+    if (existing == null) {
+      final session = await getActiveSession();
+      if (session == null) return;
+      await _db.into(_db.daysTable).insert(
+        DaysTableCompanion.insert(
+          date: dateStr,
+          sessionId: session.id,
+          isWeeklyReportReviewed: const Value(true),
+          updatedAt: TimeProvider.now.toIso8601String(),
+        ),
+      );
+    } else {
+      await (_db.update(_db.daysTable)
+        ..where((t) => t.date.equals(dateStr)))
+          .write(const DaysTableCompanion(
+        isWeeklyReportReviewed: Value(true),
+      ));
+    }
   }
 
   @override
@@ -498,7 +542,7 @@ class SessionRepositoryImpl implements SessionRepository {
 
   @override
   Future<void> closeShrinkingPeriod({
-    required int periodId,
+    required String periodId, // было int
     required String endedAt,
     required double shrunkenLimit,
   }) async {
@@ -541,9 +585,11 @@ class SessionRepositoryImpl implements SessionRepository {
     } else {
       await _db.into(_db.shrinkingReportsLogTable).insert(
         ShrinkingReportsLogTableCompanion.insert(
+          id: const Uuid().v4(),
           sessionId: sessionId,
           periodWeekStart: dateStr,
           isReviewed: const Value(true),
+          updatedAt: TimeProvider.now.toIso8601String(),
         ),
       );
     }
@@ -656,7 +702,7 @@ class SessionRepositoryImpl implements SessionRepository {
       final log = row.readTable(_db.habitLogsTable);
       final habit = row.readTable(_db.habitsTable);
       return HabitClickLog(
-        habitId: log.habitId.toString(),
+        habitId: log.habitId,
         habitTitle: habit.title,
         scoreCost: habit.scoreValue,
         timestamp: log.timestamp,

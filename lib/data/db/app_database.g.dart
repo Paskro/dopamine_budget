@@ -11,16 +11,12 @@ class $HabitsTableTable extends HabitsTable
   $HabitsTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
@@ -42,8 +38,63 @@ class $HabitsTableTable extends HabitsTable
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, title, scoreValue];
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleNonceMeta = const VerificationMeta(
+    'titleNonce',
+  );
+  @override
+  late final GeneratedColumn<String> titleNonce = GeneratedColumn<String>(
+    'title_nonce',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    scoreValue,
+    isArchived,
+    updatedAt,
+    userId,
+    titleNonce,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -58,6 +109,8 @@ class $HabitsTableTable extends HabitsTable
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -75,6 +128,32 @@ class $HabitsTableTable extends HabitsTable
     } else if (isInserting) {
       context.missing(_scoreValueMeta);
     }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
+    if (data.containsKey('title_nonce')) {
+      context.handle(
+        _titleNonceMeta,
+        titleNonce.isAcceptableOrUnknown(data['title_nonce']!, _titleNonceMeta),
+      );
+    }
     return context;
   }
 
@@ -85,7 +164,7 @@ class $HabitsTableTable extends HabitsTable
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return HabitsTableData(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       title: attachedDatabase.typeMapping.read(
@@ -95,6 +174,22 @@ class $HabitsTableTable extends HabitsTable
       scoreValue: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}score_value'],
+      )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
+      titleNonce: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title_nonce'],
       )!,
     );
   }
@@ -106,20 +201,34 @@ class $HabitsTableTable extends HabitsTable
 }
 
 class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
-  final int id;
+  final String id;
   final String title;
   final int scoreValue;
+  final bool isArchived;
+  final String updatedAt;
+  final String? userId;
+  final String titleNonce;
   const HabitsTableData({
     required this.id,
     required this.title,
     required this.scoreValue,
+    required this.isArchived,
+    required this.updatedAt,
+    this.userId,
+    required this.titleNonce,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['title'] = Variable<String>(title);
     map['score_value'] = Variable<int>(scoreValue);
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
+    map['title_nonce'] = Variable<String>(titleNonce);
     return map;
   }
 
@@ -128,6 +237,12 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       id: Value(id),
       title: Value(title),
       scoreValue: Value(scoreValue),
+      isArchived: Value(isArchived),
+      updatedAt: Value(updatedAt),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
+      titleNonce: Value(titleNonce),
     );
   }
 
@@ -137,27 +252,46 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HabitsTableData(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       scoreValue: serializer.fromJson<int>(json['scoreValue']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      userId: serializer.fromJson<String?>(json['userId']),
+      titleNonce: serializer.fromJson<String>(json['titleNonce']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'title': serializer.toJson<String>(title),
       'scoreValue': serializer.toJson<int>(scoreValue),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'userId': serializer.toJson<String?>(userId),
+      'titleNonce': serializer.toJson<String>(titleNonce),
     };
   }
 
-  HabitsTableData copyWith({int? id, String? title, int? scoreValue}) =>
-      HabitsTableData(
-        id: id ?? this.id,
-        title: title ?? this.title,
-        scoreValue: scoreValue ?? this.scoreValue,
-      );
+  HabitsTableData copyWith({
+    String? id,
+    String? title,
+    int? scoreValue,
+    bool? isArchived,
+    String? updatedAt,
+    Value<String?> userId = const Value.absent(),
+    String? titleNonce,
+  }) => HabitsTableData(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    scoreValue: scoreValue ?? this.scoreValue,
+    isArchived: isArchived ?? this.isArchived,
+    updatedAt: updatedAt ?? this.updatedAt,
+    userId: userId.present ? userId.value : this.userId,
+    titleNonce: titleNonce ?? this.titleNonce,
+  );
   HabitsTableData copyWithCompanion(HabitsTableCompanion data) {
     return HabitsTableData(
       id: data.id.present ? data.id.value : this.id,
@@ -165,6 +299,14 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       scoreValue: data.scoreValue.present
           ? data.scoreValue.value
           : this.scoreValue,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      titleNonce: data.titleNonce.present
+          ? data.titleNonce.value
+          : this.titleNonce,
     );
   }
 
@@ -173,58 +315,111 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     return (StringBuffer('HabitsTableData(')
           ..write('id: $id, ')
           ..write('title: $title, ')
-          ..write('scoreValue: $scoreValue')
+          ..write('scoreValue: $scoreValue, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('titleNonce: $titleNonce')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, title, scoreValue);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    scoreValue,
+    isArchived,
+    updatedAt,
+    userId,
+    titleNonce,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is HabitsTableData &&
           other.id == this.id &&
           other.title == this.title &&
-          other.scoreValue == this.scoreValue);
+          other.scoreValue == this.scoreValue &&
+          other.isArchived == this.isArchived &&
+          other.updatedAt == this.updatedAt &&
+          other.userId == this.userId &&
+          other.titleNonce == this.titleNonce);
 }
 
 class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> title;
   final Value<int> scoreValue;
+  final Value<bool> isArchived;
+  final Value<String> updatedAt;
+  final Value<String?> userId;
+  final Value<String> titleNonce;
+  final Value<int> rowid;
   const HabitsTableCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.scoreValue = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.titleNonce = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   HabitsTableCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String title,
     required int scoreValue,
-  }) : title = Value(title),
-       scoreValue = Value(scoreValue);
+    this.isArchived = const Value.absent(),
+    required String updatedAt,
+    this.userId = const Value.absent(),
+    this.titleNonce = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       scoreValue = Value(scoreValue),
+       updatedAt = Value(updatedAt);
   static Insertable<HabitsTableData> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? title,
     Expression<int>? scoreValue,
+    Expression<bool>? isArchived,
+    Expression<String>? updatedAt,
+    Expression<String>? userId,
+    Expression<String>? titleNonce,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (scoreValue != null) 'score_value': scoreValue,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (userId != null) 'user_id': userId,
+      if (titleNonce != null) 'title_nonce': titleNonce,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   HabitsTableCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? title,
     Value<int>? scoreValue,
+    Value<bool>? isArchived,
+    Value<String>? updatedAt,
+    Value<String?>? userId,
+    Value<String>? titleNonce,
+    Value<int>? rowid,
   }) {
     return HabitsTableCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
       scoreValue: scoreValue ?? this.scoreValue,
+      isArchived: isArchived ?? this.isArchived,
+      updatedAt: updatedAt ?? this.updatedAt,
+      userId: userId ?? this.userId,
+      titleNonce: titleNonce ?? this.titleNonce,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -232,13 +427,28 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
     }
     if (scoreValue.present) {
       map['score_value'] = Variable<int>(scoreValue.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (titleNonce.present) {
+      map['title_nonce'] = Variable<String>(titleNonce.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -248,7 +458,12 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     return (StringBuffer('HabitsTableCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
-          ..write('scoreValue: $scoreValue')
+          ..write('scoreValue: $scoreValue, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('titleNonce: $titleNonce, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -408,6 +623,42 @@ class $SessionsTableTable extends SessionsTable
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -423,6 +674,9 @@ class $SessionsTableTable extends SessionsTable
     decreasePercentage,
     decreaseIntervalDays,
     shrunkenLimit,
+    updatedAt,
+    isDeleted,
+    userId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -541,6 +795,24 @@ class $SessionsTableTable extends SessionsTable
         ),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
@@ -602,6 +874,18 @@ class $SessionsTableTable extends SessionsTable
         DriftSqlType.double,
         data['${effectivePrefix}shrunken_limit'],
       ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
     );
   }
 
@@ -626,6 +910,9 @@ class SessionsTableData extends DataClass
   final double? decreasePercentage;
   final int? decreaseIntervalDays;
   final double? shrunkenLimit;
+  final String updatedAt;
+  final bool isDeleted;
+  final String? userId;
   const SessionsTableData({
     required this.id,
     required this.createdAt,
@@ -640,6 +927,9 @@ class SessionsTableData extends DataClass
     this.decreasePercentage,
     this.decreaseIntervalDays,
     this.shrunkenLimit,
+    required this.updatedAt,
+    required this.isDeleted,
+    this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -670,6 +960,11 @@ class SessionsTableData extends DataClass
     }
     if (!nullToAbsent || shrunkenLimit != null) {
       map['shrunken_limit'] = Variable<double>(shrunkenLimit);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
     }
     return map;
   }
@@ -703,6 +998,11 @@ class SessionsTableData extends DataClass
       shrunkenLimit: shrunkenLimit == null && nullToAbsent
           ? const Value.absent()
           : Value(shrunkenLimit),
+      updatedAt: Value(updatedAt),
+      isDeleted: Value(isDeleted),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
     );
   }
 
@@ -735,6 +1035,9 @@ class SessionsTableData extends DataClass
         json['decreaseIntervalDays'],
       ),
       shrunkenLimit: serializer.fromJson<double?>(json['shrunkenLimit']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      userId: serializer.fromJson<String?>(json['userId']),
     );
   }
   @override
@@ -754,6 +1057,9 @@ class SessionsTableData extends DataClass
       'decreasePercentage': serializer.toJson<double?>(decreasePercentage),
       'decreaseIntervalDays': serializer.toJson<int?>(decreaseIntervalDays),
       'shrunkenLimit': serializer.toJson<double?>(shrunkenLimit),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'userId': serializer.toJson<String?>(userId),
     };
   }
 
@@ -771,6 +1077,9 @@ class SessionsTableData extends DataClass
     Value<double?> decreasePercentage = const Value.absent(),
     Value<int?> decreaseIntervalDays = const Value.absent(),
     Value<double?> shrunkenLimit = const Value.absent(),
+    String? updatedAt,
+    bool? isDeleted,
+    Value<String?> userId = const Value.absent(),
   }) => SessionsTableData(
     id: id ?? this.id,
     createdAt: createdAt ?? this.createdAt,
@@ -797,6 +1106,9 @@ class SessionsTableData extends DataClass
     shrunkenLimit: shrunkenLimit.present
         ? shrunkenLimit.value
         : this.shrunkenLimit,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    userId: userId.present ? userId.value : this.userId,
   );
   SessionsTableData copyWithCompanion(SessionsTableCompanion data) {
     return SessionsTableData(
@@ -831,6 +1143,9 @@ class SessionsTableData extends DataClass
       shrunkenLimit: data.shrunkenLimit.present
           ? data.shrunkenLimit.value
           : this.shrunkenLimit,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
@@ -849,7 +1164,10 @@ class SessionsTableData extends DataClass
           ..write('shrinkingStartedAt: $shrinkingStartedAt, ')
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseIntervalDays: $decreaseIntervalDays, ')
-          ..write('shrunkenLimit: $shrunkenLimit')
+          ..write('shrunkenLimit: $shrunkenLimit, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
@@ -869,6 +1187,9 @@ class SessionsTableData extends DataClass
     decreasePercentage,
     decreaseIntervalDays,
     shrunkenLimit,
+    updatedAt,
+    isDeleted,
+    userId,
   );
   @override
   bool operator ==(Object other) =>
@@ -886,7 +1207,10 @@ class SessionsTableData extends DataClass
           other.shrinkingStartedAt == this.shrinkingStartedAt &&
           other.decreasePercentage == this.decreasePercentage &&
           other.decreaseIntervalDays == this.decreaseIntervalDays &&
-          other.shrunkenLimit == this.shrunkenLimit);
+          other.shrunkenLimit == this.shrunkenLimit &&
+          other.updatedAt == this.updatedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.userId == this.userId);
 }
 
 class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
@@ -903,6 +1227,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
   final Value<double?> decreasePercentage;
   final Value<int?> decreaseIntervalDays;
   final Value<double?> shrunkenLimit;
+  final Value<String> updatedAt;
+  final Value<bool> isDeleted;
+  final Value<String?> userId;
   final Value<int> rowid;
   const SessionsTableCompanion({
     this.id = const Value.absent(),
@@ -918,6 +1245,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.decreasePercentage = const Value.absent(),
     this.decreaseIntervalDays = const Value.absent(),
     this.shrunkenLimit = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.userId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SessionsTableCompanion.insert({
@@ -934,6 +1264,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     this.decreasePercentage = const Value.absent(),
     this.decreaseIntervalDays = const Value.absent(),
     this.shrunkenLimit = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.userId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -952,6 +1285,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Expression<double>? decreasePercentage,
     Expression<int>? decreaseIntervalDays,
     Expression<double>? shrunkenLimit,
+    Expression<String>? updatedAt,
+    Expression<bool>? isDeleted,
+    Expression<String>? userId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -971,6 +1307,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       if (decreaseIntervalDays != null)
         'decrease_interval_days': decreaseIntervalDays,
       if (shrunkenLimit != null) 'shrunken_limit': shrunkenLimit,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (userId != null) 'user_id': userId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -989,6 +1328,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     Value<double?>? decreasePercentage,
     Value<int?>? decreaseIntervalDays,
     Value<double?>? shrunkenLimit,
+    Value<String>? updatedAt,
+    Value<bool>? isDeleted,
+    Value<String?>? userId,
     Value<int>? rowid,
   }) {
     return SessionsTableCompanion(
@@ -1005,6 +1347,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
       decreasePercentage: decreasePercentage ?? this.decreasePercentage,
       decreaseIntervalDays: decreaseIntervalDays ?? this.decreaseIntervalDays,
       shrunkenLimit: shrunkenLimit ?? this.shrunkenLimit,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      userId: userId ?? this.userId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1053,6 +1398,15 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
     if (shrunkenLimit.present) {
       map['shrunken_limit'] = Variable<double>(shrunkenLimit.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1075,6 +1429,9 @@ class SessionsTableCompanion extends UpdateCompanion<SessionsTableData> {
           ..write('decreasePercentage: $decreasePercentage, ')
           ..write('decreaseIntervalDays: $decreaseIntervalDays, ')
           ..write('shrunkenLimit: $shrunkenLimit, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('userId: $userId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1089,26 +1446,22 @@ class $HabitLogsTableTable extends HabitLogsTable
   $HabitLogsTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _habitIdMeta = const VerificationMeta(
     'habitId',
   );
   @override
-  late final GeneratedColumn<int> habitId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> habitId = GeneratedColumn<String>(
     'habit_id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES habits_table (id)',
@@ -1139,8 +1492,35 @@ class $HabitLogsTableTable extends HabitLogsTable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, habitId, sessionId, timestamp];
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    habitId,
+    sessionId,
+    timestamp,
+    updatedAt,
+    userId,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1155,6 +1535,8 @@ class $HabitLogsTableTable extends HabitLogsTable
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('habit_id')) {
       context.handle(
@@ -1180,6 +1562,20 @@ class $HabitLogsTableTable extends HabitLogsTable
     } else if (isInserting) {
       context.missing(_timestampMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1190,11 +1586,11 @@ class $HabitLogsTableTable extends HabitLogsTable
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return HabitLogsTableData(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       habitId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}habit_id'],
       )!,
       sessionId: attachedDatabase.typeMapping.read(
@@ -1205,6 +1601,14 @@ class $HabitLogsTableTable extends HabitLogsTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}timestamp'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
     );
   }
 
@@ -1216,23 +1620,31 @@ class $HabitLogsTableTable extends HabitLogsTable
 
 class HabitLogsTableData extends DataClass
     implements Insertable<HabitLogsTableData> {
-  final int id;
-  final int habitId;
+  final String id;
+  final String habitId;
   final String sessionId;
   final DateTime timestamp;
+  final String updatedAt;
+  final String? userId;
   const HabitLogsTableData({
     required this.id,
     required this.habitId,
     required this.sessionId,
     required this.timestamp,
+    required this.updatedAt,
+    this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
-    map['habit_id'] = Variable<int>(habitId);
+    map['id'] = Variable<String>(id);
+    map['habit_id'] = Variable<String>(habitId);
     map['session_id'] = Variable<String>(sessionId);
     map['timestamp'] = Variable<DateTime>(timestamp);
+    map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
     return map;
   }
 
@@ -1242,6 +1654,10 @@ class HabitLogsTableData extends DataClass
       habitId: Value(habitId),
       sessionId: Value(sessionId),
       timestamp: Value(timestamp),
+      updatedAt: Value(updatedAt),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
     );
   }
 
@@ -1251,33 +1667,41 @@ class HabitLogsTableData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HabitLogsTableData(
-      id: serializer.fromJson<int>(json['id']),
-      habitId: serializer.fromJson<int>(json['habitId']),
+      id: serializer.fromJson<String>(json['id']),
+      habitId: serializer.fromJson<String>(json['habitId']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
       timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      userId: serializer.fromJson<String?>(json['userId']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
-      'habitId': serializer.toJson<int>(habitId),
+      'id': serializer.toJson<String>(id),
+      'habitId': serializer.toJson<String>(habitId),
       'sessionId': serializer.toJson<String>(sessionId),
       'timestamp': serializer.toJson<DateTime>(timestamp),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'userId': serializer.toJson<String?>(userId),
     };
   }
 
   HabitLogsTableData copyWith({
-    int? id,
-    int? habitId,
+    String? id,
+    String? habitId,
     String? sessionId,
     DateTime? timestamp,
+    String? updatedAt,
+    Value<String?> userId = const Value.absent(),
   }) => HabitLogsTableData(
     id: id ?? this.id,
     habitId: habitId ?? this.habitId,
     sessionId: sessionId ?? this.sessionId,
     timestamp: timestamp ?? this.timestamp,
+    updatedAt: updatedAt ?? this.updatedAt,
+    userId: userId.present ? userId.value : this.userId,
   );
   HabitLogsTableData copyWithCompanion(HabitLogsTableCompanion data) {
     return HabitLogsTableData(
@@ -1285,6 +1709,8 @@ class HabitLogsTableData extends DataClass
       habitId: data.habitId.present ? data.habitId.value : this.habitId,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
@@ -1294,13 +1720,16 @@ class HabitLogsTableData extends DataClass
           ..write('id: $id, ')
           ..write('habitId: $habitId, ')
           ..write('sessionId: $sessionId, ')
-          ..write('timestamp: $timestamp')
+          ..write('timestamp: $timestamp, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, habitId, sessionId, timestamp);
+  int get hashCode =>
+      Object.hash(id, habitId, sessionId, timestamp, updatedAt, userId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1308,53 +1737,78 @@ class HabitLogsTableData extends DataClass
           other.id == this.id &&
           other.habitId == this.habitId &&
           other.sessionId == this.sessionId &&
-          other.timestamp == this.timestamp);
+          other.timestamp == this.timestamp &&
+          other.updatedAt == this.updatedAt &&
+          other.userId == this.userId);
 }
 
 class HabitLogsTableCompanion extends UpdateCompanion<HabitLogsTableData> {
-  final Value<int> id;
-  final Value<int> habitId;
+  final Value<String> id;
+  final Value<String> habitId;
   final Value<String> sessionId;
   final Value<DateTime> timestamp;
+  final Value<String> updatedAt;
+  final Value<String?> userId;
+  final Value<int> rowid;
   const HabitLogsTableCompanion({
     this.id = const Value.absent(),
     this.habitId = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.timestamp = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   HabitLogsTableCompanion.insert({
-    this.id = const Value.absent(),
-    required int habitId,
+    required String id,
+    required String habitId,
     required String sessionId,
     required DateTime timestamp,
-  }) : habitId = Value(habitId),
+    required String updatedAt,
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       habitId = Value(habitId),
        sessionId = Value(sessionId),
-       timestamp = Value(timestamp);
+       timestamp = Value(timestamp),
+       updatedAt = Value(updatedAt);
   static Insertable<HabitLogsTableData> custom({
-    Expression<int>? id,
-    Expression<int>? habitId,
+    Expression<String>? id,
+    Expression<String>? habitId,
     Expression<String>? sessionId,
     Expression<DateTime>? timestamp,
+    Expression<String>? updatedAt,
+    Expression<String>? userId,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (habitId != null) 'habit_id': habitId,
       if (sessionId != null) 'session_id': sessionId,
       if (timestamp != null) 'timestamp': timestamp,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (userId != null) 'user_id': userId,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   HabitLogsTableCompanion copyWith({
-    Value<int>? id,
-    Value<int>? habitId,
+    Value<String>? id,
+    Value<String>? habitId,
     Value<String>? sessionId,
     Value<DateTime>? timestamp,
+    Value<String>? updatedAt,
+    Value<String?>? userId,
+    Value<int>? rowid,
   }) {
     return HabitLogsTableCompanion(
       id: id ?? this.id,
       habitId: habitId ?? this.habitId,
       sessionId: sessionId ?? this.sessionId,
       timestamp: timestamp ?? this.timestamp,
+      updatedAt: updatedAt ?? this.updatedAt,
+      userId: userId ?? this.userId,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -1362,16 +1816,25 @@ class HabitLogsTableCompanion extends UpdateCompanion<HabitLogsTableData> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (habitId.present) {
-      map['habit_id'] = Variable<int>(habitId.value);
+      map['habit_id'] = Variable<String>(habitId.value);
     }
     if (sessionId.present) {
       map['session_id'] = Variable<String>(sessionId.value);
     }
     if (timestamp.present) {
       map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1382,7 +1845,10 @@ class HabitLogsTableCompanion extends UpdateCompanion<HabitLogsTableData> {
           ..write('id: $id, ')
           ..write('habitId: $habitId, ')
           ..write('sessionId: $sessionId, ')
-          ..write('timestamp: $timestamp')
+          ..write('timestamp: $timestamp, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -1396,16 +1862,12 @@ class $SessionHabitsTableTable extends SessionHabitsTable
   $SessionHabitsTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _sessionIdMeta = const VerificationMeta(
     'sessionId',
@@ -1422,15 +1884,41 @@ class $SessionHabitsTableTable extends SessionHabitsTable
     'habitId',
   );
   @override
-  late final GeneratedColumn<int> habitId = GeneratedColumn<int>(
+  late final GeneratedColumn<String> habitId = GeneratedColumn<String>(
     'habit_id',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, sessionId, habitId];
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    sessionId,
+    habitId,
+    updatedAt,
+    userId,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1445,6 +1933,8 @@ class $SessionHabitsTableTable extends SessionHabitsTable
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('session_id')) {
       context.handle(
@@ -1462,6 +1952,20 @@ class $SessionHabitsTableTable extends SessionHabitsTable
     } else if (isInserting) {
       context.missing(_habitIdMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1476,7 +1980,7 @@ class $SessionHabitsTableTable extends SessionHabitsTable
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SessionHabitsTableData(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       sessionId: attachedDatabase.typeMapping.read(
@@ -1484,9 +1988,17 @@ class $SessionHabitsTableTable extends SessionHabitsTable
         data['${effectivePrefix}session_id'],
       )!,
       habitId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}habit_id'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
     );
   }
 
@@ -1498,20 +2010,28 @@ class $SessionHabitsTableTable extends SessionHabitsTable
 
 class SessionHabitsTableData extends DataClass
     implements Insertable<SessionHabitsTableData> {
-  final int id;
+  final String id;
   final String sessionId;
-  final int habitId;
+  final String habitId;
+  final String updatedAt;
+  final String? userId;
   const SessionHabitsTableData({
     required this.id,
     required this.sessionId,
     required this.habitId,
+    required this.updatedAt,
+    this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['session_id'] = Variable<String>(sessionId);
-    map['habit_id'] = Variable<int>(habitId);
+    map['habit_id'] = Variable<String>(habitId);
+    map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
     return map;
   }
 
@@ -1520,6 +2040,10 @@ class SessionHabitsTableData extends DataClass
       id: Value(id),
       sessionId: Value(sessionId),
       habitId: Value(habitId),
+      updatedAt: Value(updatedAt),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
     );
   }
 
@@ -1529,32 +2053,45 @@ class SessionHabitsTableData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SessionHabitsTableData(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
-      habitId: serializer.fromJson<int>(json['habitId']),
+      habitId: serializer.fromJson<String>(json['habitId']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      userId: serializer.fromJson<String?>(json['userId']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'sessionId': serializer.toJson<String>(sessionId),
-      'habitId': serializer.toJson<int>(habitId),
+      'habitId': serializer.toJson<String>(habitId),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'userId': serializer.toJson<String?>(userId),
     };
   }
 
-  SessionHabitsTableData copyWith({int? id, String? sessionId, int? habitId}) =>
-      SessionHabitsTableData(
-        id: id ?? this.id,
-        sessionId: sessionId ?? this.sessionId,
-        habitId: habitId ?? this.habitId,
-      );
+  SessionHabitsTableData copyWith({
+    String? id,
+    String? sessionId,
+    String? habitId,
+    String? updatedAt,
+    Value<String?> userId = const Value.absent(),
+  }) => SessionHabitsTableData(
+    id: id ?? this.id,
+    sessionId: sessionId ?? this.sessionId,
+    habitId: habitId ?? this.habitId,
+    updatedAt: updatedAt ?? this.updatedAt,
+    userId: userId.present ? userId.value : this.userId,
+  );
   SessionHabitsTableData copyWithCompanion(SessionHabitsTableCompanion data) {
     return SessionHabitsTableData(
       id: data.id.present ? data.id.value : this.id,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       habitId: data.habitId.present ? data.habitId.value : this.habitId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
@@ -1563,59 +2100,86 @@ class SessionHabitsTableData extends DataClass
     return (StringBuffer('SessionHabitsTableData(')
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
-          ..write('habitId: $habitId')
+          ..write('habitId: $habitId, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sessionId, habitId);
+  int get hashCode => Object.hash(id, sessionId, habitId, updatedAt, userId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is SessionHabitsTableData &&
           other.id == this.id &&
           other.sessionId == this.sessionId &&
-          other.habitId == this.habitId);
+          other.habitId == this.habitId &&
+          other.updatedAt == this.updatedAt &&
+          other.userId == this.userId);
 }
 
 class SessionHabitsTableCompanion
     extends UpdateCompanion<SessionHabitsTableData> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> sessionId;
-  final Value<int> habitId;
+  final Value<String> habitId;
+  final Value<String> updatedAt;
+  final Value<String?> userId;
+  final Value<int> rowid;
   const SessionHabitsTableCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.habitId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   SessionHabitsTableCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String sessionId,
-    required int habitId,
-  }) : sessionId = Value(sessionId),
-       habitId = Value(habitId);
+    required String habitId,
+    required String updatedAt,
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       habitId = Value(habitId),
+       updatedAt = Value(updatedAt);
   static Insertable<SessionHabitsTableData> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? sessionId,
-    Expression<int>? habitId,
+    Expression<String>? habitId,
+    Expression<String>? updatedAt,
+    Expression<String>? userId,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (habitId != null) 'habit_id': habitId,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (userId != null) 'user_id': userId,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   SessionHabitsTableCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? sessionId,
-    Value<int>? habitId,
+    Value<String>? habitId,
+    Value<String>? updatedAt,
+    Value<String?>? userId,
+    Value<int>? rowid,
   }) {
     return SessionHabitsTableCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       habitId: habitId ?? this.habitId,
+      updatedAt: updatedAt ?? this.updatedAt,
+      userId: userId ?? this.userId,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -1623,13 +2187,22 @@ class SessionHabitsTableCompanion
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (sessionId.present) {
       map['session_id'] = Variable<String>(sessionId.value);
     }
     if (habitId.present) {
-      map['habit_id'] = Variable<int>(habitId.value);
+      map['habit_id'] = Variable<String>(habitId.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
     }
     return map;
   }
@@ -1639,7 +2212,10 @@ class SessionHabitsTableCompanion
     return (StringBuffer('SessionHabitsTableCompanion(')
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
-          ..write('habitId: $habitId')
+          ..write('habitId: $habitId, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -1651,19 +2227,6 @@ class $DaysTableTable extends DaysTable
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $DaysTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
-    'id',
-    aliasedName,
-    false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
-  );
   static const VerificationMeta _dateMeta = const VerificationMeta('date');
   @override
   late final GeneratedColumn<String> date = GeneratedColumn<String>(
@@ -1672,7 +2235,6 @@ class $DaysTableTable extends DaysTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    $customConstraints: 'UNIQUE NOT NULL',
   );
   static const VerificationMeta _sessionIdMeta = const VerificationMeta(
     'sessionId',
@@ -1745,15 +2307,36 @@ class $DaysTableTable extends DaysTable
         ),
         defaultValue: const Constant(false),
       );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
-    id,
     date,
     sessionId,
     isBrokenClicked,
     isGoodBoyClicked,
     dayStatus,
     isWeeklyReportReviewed,
+    updatedAt,
+    userId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1767,9 +2350,6 @@ class $DaysTableTable extends DaysTable
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    }
     if (data.containsKey('date')) {
       context.handle(
         _dateMeta,
@@ -1819,19 +2399,29 @@ class $DaysTableTable extends DaysTable
         ),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {id};
+  Set<GeneratedColumn> get $primaryKey => {date};
   @override
   DaysTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DaysTableData(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}id'],
-      )!,
       date: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}date'],
@@ -1856,6 +2446,14 @@ class $DaysTableTable extends DaysTable
         DriftSqlType.bool,
         data['${effectivePrefix}is_weekly_report_reviewed'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
     );
   }
 
@@ -1866,44 +2464,52 @@ class $DaysTableTable extends DaysTable
 }
 
 class DaysTableData extends DataClass implements Insertable<DaysTableData> {
-  final int id;
   final String date;
   final String sessionId;
   final bool isBrokenClicked;
   final bool isGoodBoyClicked;
   final String dayStatus;
   final bool isWeeklyReportReviewed;
+  final String updatedAt;
+  final String? userId;
   const DaysTableData({
-    required this.id,
     required this.date,
     required this.sessionId,
     required this.isBrokenClicked,
     required this.isGoodBoyClicked,
     required this.dayStatus,
     required this.isWeeklyReportReviewed,
+    required this.updatedAt,
+    this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
     map['date'] = Variable<String>(date);
     map['session_id'] = Variable<String>(sessionId);
     map['is_broken_clicked'] = Variable<bool>(isBrokenClicked);
     map['is_good_boy_clicked'] = Variable<bool>(isGoodBoyClicked);
     map['day_status'] = Variable<String>(dayStatus);
     map['is_weekly_report_reviewed'] = Variable<bool>(isWeeklyReportReviewed);
+    map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
     return map;
   }
 
   DaysTableCompanion toCompanion(bool nullToAbsent) {
     return DaysTableCompanion(
-      id: Value(id),
       date: Value(date),
       sessionId: Value(sessionId),
       isBrokenClicked: Value(isBrokenClicked),
       isGoodBoyClicked: Value(isGoodBoyClicked),
       dayStatus: Value(dayStatus),
       isWeeklyReportReviewed: Value(isWeeklyReportReviewed),
+      updatedAt: Value(updatedAt),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
     );
   }
 
@@ -1913,7 +2519,6 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DaysTableData(
-      id: serializer.fromJson<int>(json['id']),
       date: serializer.fromJson<String>(json['date']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
       isBrokenClicked: serializer.fromJson<bool>(json['isBrokenClicked']),
@@ -1922,32 +2527,35 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
       isWeeklyReportReviewed: serializer.fromJson<bool>(
         json['isWeeklyReportReviewed'],
       ),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      userId: serializer.fromJson<String?>(json['userId']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
       'date': serializer.toJson<String>(date),
       'sessionId': serializer.toJson<String>(sessionId),
       'isBrokenClicked': serializer.toJson<bool>(isBrokenClicked),
       'isGoodBoyClicked': serializer.toJson<bool>(isGoodBoyClicked),
       'dayStatus': serializer.toJson<String>(dayStatus),
       'isWeeklyReportReviewed': serializer.toJson<bool>(isWeeklyReportReviewed),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'userId': serializer.toJson<String?>(userId),
     };
   }
 
   DaysTableData copyWith({
-    int? id,
     String? date,
     String? sessionId,
     bool? isBrokenClicked,
     bool? isGoodBoyClicked,
     String? dayStatus,
     bool? isWeeklyReportReviewed,
+    String? updatedAt,
+    Value<String?> userId = const Value.absent(),
   }) => DaysTableData(
-    id: id ?? this.id,
     date: date ?? this.date,
     sessionId: sessionId ?? this.sessionId,
     isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,
@@ -1955,10 +2563,11 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
     dayStatus: dayStatus ?? this.dayStatus,
     isWeeklyReportReviewed:
         isWeeklyReportReviewed ?? this.isWeeklyReportReviewed,
+    updatedAt: updatedAt ?? this.updatedAt,
+    userId: userId.present ? userId.value : this.userId,
   );
   DaysTableData copyWithCompanion(DaysTableCompanion data) {
     return DaysTableData(
-      id: data.id.present ? data.id.value : this.id,
       date: data.date.present ? data.date.value : this.date,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       isBrokenClicked: data.isBrokenClicked.present
@@ -1971,84 +2580,97 @@ class DaysTableData extends DataClass implements Insertable<DaysTableData> {
       isWeeklyReportReviewed: data.isWeeklyReportReviewed.present
           ? data.isWeeklyReportReviewed.value
           : this.isWeeklyReportReviewed,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('DaysTableData(')
-          ..write('id: $id, ')
           ..write('date: $date, ')
           ..write('sessionId: $sessionId, ')
           ..write('isBrokenClicked: $isBrokenClicked, ')
           ..write('isGoodBoyClicked: $isGoodBoyClicked, ')
           ..write('dayStatus: $dayStatus, ')
-          ..write('isWeeklyReportReviewed: $isWeeklyReportReviewed')
+          ..write('isWeeklyReportReviewed: $isWeeklyReportReviewed, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(
-    id,
     date,
     sessionId,
     isBrokenClicked,
     isGoodBoyClicked,
     dayStatus,
     isWeeklyReportReviewed,
+    updatedAt,
+    userId,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DaysTableData &&
-          other.id == this.id &&
           other.date == this.date &&
           other.sessionId == this.sessionId &&
           other.isBrokenClicked == this.isBrokenClicked &&
           other.isGoodBoyClicked == this.isGoodBoyClicked &&
           other.dayStatus == this.dayStatus &&
-          other.isWeeklyReportReviewed == this.isWeeklyReportReviewed);
+          other.isWeeklyReportReviewed == this.isWeeklyReportReviewed &&
+          other.updatedAt == this.updatedAt &&
+          other.userId == this.userId);
 }
 
 class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
-  final Value<int> id;
   final Value<String> date;
   final Value<String> sessionId;
   final Value<bool> isBrokenClicked;
   final Value<bool> isGoodBoyClicked;
   final Value<String> dayStatus;
   final Value<bool> isWeeklyReportReviewed;
+  final Value<String> updatedAt;
+  final Value<String?> userId;
+  final Value<int> rowid;
   const DaysTableCompanion({
-    this.id = const Value.absent(),
     this.date = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.isBrokenClicked = const Value.absent(),
     this.isGoodBoyClicked = const Value.absent(),
     this.dayStatus = const Value.absent(),
     this.isWeeklyReportReviewed = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   DaysTableCompanion.insert({
-    this.id = const Value.absent(),
     required String date,
     required String sessionId,
     this.isBrokenClicked = const Value.absent(),
     this.isGoodBoyClicked = const Value.absent(),
     this.dayStatus = const Value.absent(),
     this.isWeeklyReportReviewed = const Value.absent(),
+    required String updatedAt,
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
   }) : date = Value(date),
-       sessionId = Value(sessionId);
+       sessionId = Value(sessionId),
+       updatedAt = Value(updatedAt);
   static Insertable<DaysTableData> custom({
-    Expression<int>? id,
     Expression<String>? date,
     Expression<String>? sessionId,
     Expression<bool>? isBrokenClicked,
     Expression<bool>? isGoodBoyClicked,
     Expression<String>? dayStatus,
     Expression<bool>? isWeeklyReportReviewed,
+    Expression<String>? updatedAt,
+    Expression<String>? userId,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (id != null) 'id': id,
       if (date != null) 'date': date,
       if (sessionId != null) 'session_id': sessionId,
       if (isBrokenClicked != null) 'is_broken_clicked': isBrokenClicked,
@@ -2056,20 +2678,24 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
       if (dayStatus != null) 'day_status': dayStatus,
       if (isWeeklyReportReviewed != null)
         'is_weekly_report_reviewed': isWeeklyReportReviewed,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (userId != null) 'user_id': userId,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   DaysTableCompanion copyWith({
-    Value<int>? id,
     Value<String>? date,
     Value<String>? sessionId,
     Value<bool>? isBrokenClicked,
     Value<bool>? isGoodBoyClicked,
     Value<String>? dayStatus,
     Value<bool>? isWeeklyReportReviewed,
+    Value<String>? updatedAt,
+    Value<String?>? userId,
+    Value<int>? rowid,
   }) {
     return DaysTableCompanion(
-      id: id ?? this.id,
       date: date ?? this.date,
       sessionId: sessionId ?? this.sessionId,
       isBrokenClicked: isBrokenClicked ?? this.isBrokenClicked,
@@ -2077,15 +2703,15 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
       dayStatus: dayStatus ?? this.dayStatus,
       isWeeklyReportReviewed:
           isWeeklyReportReviewed ?? this.isWeeklyReportReviewed,
+      updatedAt: updatedAt ?? this.updatedAt,
+      userId: userId ?? this.userId,
+      rowid: rowid ?? this.rowid,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<int>(id.value);
-    }
     if (date.present) {
       map['date'] = Variable<String>(date.value);
     }
@@ -2106,19 +2732,30 @@ class DaysTableCompanion extends UpdateCompanion<DaysTableData> {
         isWeeklyReportReviewed.value,
       );
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
   @override
   String toString() {
     return (StringBuffer('DaysTableCompanion(')
-          ..write('id: $id, ')
           ..write('date: $date, ')
           ..write('sessionId: $sessionId, ')
           ..write('isBrokenClicked: $isBrokenClicked, ')
           ..write('isGoodBoyClicked: $isGoodBoyClicked, ')
           ..write('dayStatus: $dayStatus, ')
-          ..write('isWeeklyReportReviewed: $isWeeklyReportReviewed')
+          ..write('isWeeklyReportReviewed: $isWeeklyReportReviewed, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -2132,16 +2769,12 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
   $ShrinkingPeriodsTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _sessionIdMeta = const VerificationMeta(
     'sessionId',
@@ -2209,6 +2842,26 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2218,6 +2871,8 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
     baseLimit,
     decreasePct,
     intervalDays,
+    updatedAt,
+    userId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2233,6 +2888,8 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('session_id')) {
       context.handle(
@@ -2286,6 +2943,20 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
     } else if (isInserting) {
       context.missing(_intervalDaysMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
@@ -2299,7 +2970,7 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ShrinkingPeriodsTableData(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       sessionId: attachedDatabase.typeMapping.read(
@@ -2326,6 +2997,14 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
         DriftSqlType.int,
         data['${effectivePrefix}interval_days'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
     );
   }
 
@@ -2337,13 +3016,15 @@ class $ShrinkingPeriodsTableTable extends ShrinkingPeriodsTable
 
 class ShrinkingPeriodsTableData extends DataClass
     implements Insertable<ShrinkingPeriodsTableData> {
-  final int id;
+  final String id;
   final String sessionId;
   final String startedAt;
   final String? endedAt;
   final double baseLimit;
   final double decreasePct;
   final int intervalDays;
+  final String updatedAt;
+  final String? userId;
   const ShrinkingPeriodsTableData({
     required this.id,
     required this.sessionId,
@@ -2352,11 +3033,13 @@ class ShrinkingPeriodsTableData extends DataClass
     required this.baseLimit,
     required this.decreasePct,
     required this.intervalDays,
+    required this.updatedAt,
+    this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['session_id'] = Variable<String>(sessionId);
     map['started_at'] = Variable<String>(startedAt);
     if (!nullToAbsent || endedAt != null) {
@@ -2365,6 +3048,10 @@ class ShrinkingPeriodsTableData extends DataClass
     map['base_limit'] = Variable<double>(baseLimit);
     map['decrease_pct'] = Variable<double>(decreasePct);
     map['interval_days'] = Variable<int>(intervalDays);
+    map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
     return map;
   }
 
@@ -2379,6 +3066,10 @@ class ShrinkingPeriodsTableData extends DataClass
       baseLimit: Value(baseLimit),
       decreasePct: Value(decreasePct),
       intervalDays: Value(intervalDays),
+      updatedAt: Value(updatedAt),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
     );
   }
 
@@ -2388,37 +3079,43 @@ class ShrinkingPeriodsTableData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ShrinkingPeriodsTableData(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
       startedAt: serializer.fromJson<String>(json['startedAt']),
       endedAt: serializer.fromJson<String?>(json['endedAt']),
       baseLimit: serializer.fromJson<double>(json['baseLimit']),
       decreasePct: serializer.fromJson<double>(json['decreasePct']),
       intervalDays: serializer.fromJson<int>(json['intervalDays']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      userId: serializer.fromJson<String?>(json['userId']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'sessionId': serializer.toJson<String>(sessionId),
       'startedAt': serializer.toJson<String>(startedAt),
       'endedAt': serializer.toJson<String?>(endedAt),
       'baseLimit': serializer.toJson<double>(baseLimit),
       'decreasePct': serializer.toJson<double>(decreasePct),
       'intervalDays': serializer.toJson<int>(intervalDays),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'userId': serializer.toJson<String?>(userId),
     };
   }
 
   ShrinkingPeriodsTableData copyWith({
-    int? id,
+    String? id,
     String? sessionId,
     String? startedAt,
     Value<String?> endedAt = const Value.absent(),
     double? baseLimit,
     double? decreasePct,
     int? intervalDays,
+    String? updatedAt,
+    Value<String?> userId = const Value.absent(),
   }) => ShrinkingPeriodsTableData(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
@@ -2427,6 +3124,8 @@ class ShrinkingPeriodsTableData extends DataClass
     baseLimit: baseLimit ?? this.baseLimit,
     decreasePct: decreasePct ?? this.decreasePct,
     intervalDays: intervalDays ?? this.intervalDays,
+    updatedAt: updatedAt ?? this.updatedAt,
+    userId: userId.present ? userId.value : this.userId,
   );
   ShrinkingPeriodsTableData copyWithCompanion(
     ShrinkingPeriodsTableCompanion data,
@@ -2443,6 +3142,8 @@ class ShrinkingPeriodsTableData extends DataClass
       intervalDays: data.intervalDays.present
           ? data.intervalDays.value
           : this.intervalDays,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
@@ -2455,7 +3156,9 @@ class ShrinkingPeriodsTableData extends DataClass
           ..write('endedAt: $endedAt, ')
           ..write('baseLimit: $baseLimit, ')
           ..write('decreasePct: $decreasePct, ')
-          ..write('intervalDays: $intervalDays')
+          ..write('intervalDays: $intervalDays, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
@@ -2469,6 +3172,8 @@ class ShrinkingPeriodsTableData extends DataClass
     baseLimit,
     decreasePct,
     intervalDays,
+    updatedAt,
+    userId,
   );
   @override
   bool operator ==(Object other) =>
@@ -2480,18 +3185,23 @@ class ShrinkingPeriodsTableData extends DataClass
           other.endedAt == this.endedAt &&
           other.baseLimit == this.baseLimit &&
           other.decreasePct == this.decreasePct &&
-          other.intervalDays == this.intervalDays);
+          other.intervalDays == this.intervalDays &&
+          other.updatedAt == this.updatedAt &&
+          other.userId == this.userId);
 }
 
 class ShrinkingPeriodsTableCompanion
     extends UpdateCompanion<ShrinkingPeriodsTableData> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> sessionId;
   final Value<String> startedAt;
   final Value<String?> endedAt;
   final Value<double> baseLimit;
   final Value<double> decreasePct;
   final Value<int> intervalDays;
+  final Value<String> updatedAt;
+  final Value<String?> userId;
+  final Value<int> rowid;
   const ShrinkingPeriodsTableCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
@@ -2500,28 +3210,39 @@ class ShrinkingPeriodsTableCompanion
     this.baseLimit = const Value.absent(),
     this.decreasePct = const Value.absent(),
     this.intervalDays = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   ShrinkingPeriodsTableCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String sessionId,
     required String startedAt,
     this.endedAt = const Value.absent(),
     required double baseLimit,
     required double decreasePct,
     required int intervalDays,
-  }) : sessionId = Value(sessionId),
+    required String updatedAt,
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
        startedAt = Value(startedAt),
        baseLimit = Value(baseLimit),
        decreasePct = Value(decreasePct),
-       intervalDays = Value(intervalDays);
+       intervalDays = Value(intervalDays),
+       updatedAt = Value(updatedAt);
   static Insertable<ShrinkingPeriodsTableData> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? sessionId,
     Expression<String>? startedAt,
     Expression<String>? endedAt,
     Expression<double>? baseLimit,
     Expression<double>? decreasePct,
     Expression<int>? intervalDays,
+    Expression<String>? updatedAt,
+    Expression<String>? userId,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2531,17 +3252,23 @@ class ShrinkingPeriodsTableCompanion
       if (baseLimit != null) 'base_limit': baseLimit,
       if (decreasePct != null) 'decrease_pct': decreasePct,
       if (intervalDays != null) 'interval_days': intervalDays,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (userId != null) 'user_id': userId,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   ShrinkingPeriodsTableCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? sessionId,
     Value<String>? startedAt,
     Value<String?>? endedAt,
     Value<double>? baseLimit,
     Value<double>? decreasePct,
     Value<int>? intervalDays,
+    Value<String>? updatedAt,
+    Value<String?>? userId,
+    Value<int>? rowid,
   }) {
     return ShrinkingPeriodsTableCompanion(
       id: id ?? this.id,
@@ -2551,6 +3278,9 @@ class ShrinkingPeriodsTableCompanion
       baseLimit: baseLimit ?? this.baseLimit,
       decreasePct: decreasePct ?? this.decreasePct,
       intervalDays: intervalDays ?? this.intervalDays,
+      updatedAt: updatedAt ?? this.updatedAt,
+      userId: userId ?? this.userId,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -2558,7 +3288,7 @@ class ShrinkingPeriodsTableCompanion
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (sessionId.present) {
       map['session_id'] = Variable<String>(sessionId.value);
@@ -2578,6 +3308,15 @@ class ShrinkingPeriodsTableCompanion
     if (intervalDays.present) {
       map['interval_days'] = Variable<int>(intervalDays.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -2590,7 +3329,10 @@ class ShrinkingPeriodsTableCompanion
           ..write('endedAt: $endedAt, ')
           ..write('baseLimit: $baseLimit, ')
           ..write('decreasePct: $decreasePct, ')
-          ..write('intervalDays: $intervalDays')
+          ..write('intervalDays: $intervalDays, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -2608,16 +3350,12 @@ class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
   $ShrinkingReportsLogTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
-  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
     'id',
     aliasedName,
     false,
-    hasAutoIncrement: true,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'PRIMARY KEY AUTOINCREMENT',
-    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _sessionIdMeta = const VerificationMeta(
     'sessionId',
@@ -2656,12 +3394,34 @@ class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     sessionId,
     periodWeekStart,
     isReviewed,
+    updatedAt,
+    userId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2677,6 +3437,8 @@ class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
     }
     if (data.containsKey('session_id')) {
       context.handle(
@@ -2703,6 +3465,20 @@ class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
         isReviewed.isAcceptableOrUnknown(data['is_reviewed']!, _isReviewedMeta),
       );
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
     return context;
   }
 
@@ -2716,7 +3492,7 @@ class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ShrinkingReportsLogTableData(
       id: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
       sessionId: attachedDatabase.typeMapping.read(
@@ -2731,6 +3507,14 @@ class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
         DriftSqlType.bool,
         data['${effectivePrefix}is_reviewed'],
       )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
     );
   }
 
@@ -2742,23 +3526,31 @@ class $ShrinkingReportsLogTableTable extends ShrinkingReportsLogTable
 
 class ShrinkingReportsLogTableData extends DataClass
     implements Insertable<ShrinkingReportsLogTableData> {
-  final int id;
+  final String id;
   final String sessionId;
   final String periodWeekStart;
   final bool isReviewed;
+  final String updatedAt;
+  final String? userId;
   const ShrinkingReportsLogTableData({
     required this.id,
     required this.sessionId,
     required this.periodWeekStart,
     required this.isReviewed,
+    required this.updatedAt,
+    this.userId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['id'] = Variable<int>(id);
+    map['id'] = Variable<String>(id);
     map['session_id'] = Variable<String>(sessionId);
     map['period_week_start'] = Variable<String>(periodWeekStart);
     map['is_reviewed'] = Variable<bool>(isReviewed);
+    map['updated_at'] = Variable<String>(updatedAt);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
     return map;
   }
 
@@ -2768,6 +3560,10 @@ class ShrinkingReportsLogTableData extends DataClass
       sessionId: Value(sessionId),
       periodWeekStart: Value(periodWeekStart),
       isReviewed: Value(isReviewed),
+      updatedAt: Value(updatedAt),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
     );
   }
 
@@ -2777,33 +3573,41 @@ class ShrinkingReportsLogTableData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ShrinkingReportsLogTableData(
-      id: serializer.fromJson<int>(json['id']),
+      id: serializer.fromJson<String>(json['id']),
       sessionId: serializer.fromJson<String>(json['sessionId']),
       periodWeekStart: serializer.fromJson<String>(json['periodWeekStart']),
       isReviewed: serializer.fromJson<bool>(json['isReviewed']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      userId: serializer.fromJson<String?>(json['userId']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'id': serializer.toJson<int>(id),
+      'id': serializer.toJson<String>(id),
       'sessionId': serializer.toJson<String>(sessionId),
       'periodWeekStart': serializer.toJson<String>(periodWeekStart),
       'isReviewed': serializer.toJson<bool>(isReviewed),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'userId': serializer.toJson<String?>(userId),
     };
   }
 
   ShrinkingReportsLogTableData copyWith({
-    int? id,
+    String? id,
     String? sessionId,
     String? periodWeekStart,
     bool? isReviewed,
+    String? updatedAt,
+    Value<String?> userId = const Value.absent(),
   }) => ShrinkingReportsLogTableData(
     id: id ?? this.id,
     sessionId: sessionId ?? this.sessionId,
     periodWeekStart: periodWeekStart ?? this.periodWeekStart,
     isReviewed: isReviewed ?? this.isReviewed,
+    updatedAt: updatedAt ?? this.updatedAt,
+    userId: userId.present ? userId.value : this.userId,
   );
   ShrinkingReportsLogTableData copyWithCompanion(
     ShrinkingReportsLogTableCompanion data,
@@ -2817,6 +3621,8 @@ class ShrinkingReportsLogTableData extends DataClass
       isReviewed: data.isReviewed.present
           ? data.isReviewed.value
           : this.isReviewed,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      userId: data.userId.present ? data.userId.value : this.userId,
     );
   }
 
@@ -2826,13 +3632,22 @@ class ShrinkingReportsLogTableData extends DataClass
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('periodWeekStart: $periodWeekStart, ')
-          ..write('isReviewed: $isReviewed')
+          ..write('isReviewed: $isReviewed, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, sessionId, periodWeekStart, isReviewed);
+  int get hashCode => Object.hash(
+    id,
+    sessionId,
+    periodWeekStart,
+    isReviewed,
+    updatedAt,
+    userId,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2840,53 +3655,78 @@ class ShrinkingReportsLogTableData extends DataClass
           other.id == this.id &&
           other.sessionId == this.sessionId &&
           other.periodWeekStart == this.periodWeekStart &&
-          other.isReviewed == this.isReviewed);
+          other.isReviewed == this.isReviewed &&
+          other.updatedAt == this.updatedAt &&
+          other.userId == this.userId);
 }
 
 class ShrinkingReportsLogTableCompanion
     extends UpdateCompanion<ShrinkingReportsLogTableData> {
-  final Value<int> id;
+  final Value<String> id;
   final Value<String> sessionId;
   final Value<String> periodWeekStart;
   final Value<bool> isReviewed;
+  final Value<String> updatedAt;
+  final Value<String?> userId;
+  final Value<int> rowid;
   const ShrinkingReportsLogTableCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.periodWeekStart = const Value.absent(),
     this.isReviewed = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
   });
   ShrinkingReportsLogTableCompanion.insert({
-    this.id = const Value.absent(),
+    required String id,
     required String sessionId,
     required String periodWeekStart,
     this.isReviewed = const Value.absent(),
-  }) : sessionId = Value(sessionId),
-       periodWeekStart = Value(periodWeekStart);
+    required String updatedAt,
+    this.userId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       sessionId = Value(sessionId),
+       periodWeekStart = Value(periodWeekStart),
+       updatedAt = Value(updatedAt);
   static Insertable<ShrinkingReportsLogTableData> custom({
-    Expression<int>? id,
+    Expression<String>? id,
     Expression<String>? sessionId,
     Expression<String>? periodWeekStart,
     Expression<bool>? isReviewed,
+    Expression<String>? updatedAt,
+    Expression<String>? userId,
+    Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (periodWeekStart != null) 'period_week_start': periodWeekStart,
       if (isReviewed != null) 'is_reviewed': isReviewed,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (userId != null) 'user_id': userId,
+      if (rowid != null) 'rowid': rowid,
     });
   }
 
   ShrinkingReportsLogTableCompanion copyWith({
-    Value<int>? id,
+    Value<String>? id,
     Value<String>? sessionId,
     Value<String>? periodWeekStart,
     Value<bool>? isReviewed,
+    Value<String>? updatedAt,
+    Value<String?>? userId,
+    Value<int>? rowid,
   }) {
     return ShrinkingReportsLogTableCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       periodWeekStart: periodWeekStart ?? this.periodWeekStart,
       isReviewed: isReviewed ?? this.isReviewed,
+      updatedAt: updatedAt ?? this.updatedAt,
+      userId: userId ?? this.userId,
+      rowid: rowid ?? this.rowid,
     );
   }
 
@@ -2894,7 +3734,7 @@ class ShrinkingReportsLogTableCompanion
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     if (id.present) {
-      map['id'] = Variable<int>(id.value);
+      map['id'] = Variable<String>(id.value);
     }
     if (sessionId.present) {
       map['session_id'] = Variable<String>(sessionId.value);
@@ -2905,6 +3745,15 @@ class ShrinkingReportsLogTableCompanion
     if (isReviewed.present) {
       map['is_reviewed'] = Variable<bool>(isReviewed.value);
     }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
     return map;
   }
 
@@ -2914,7 +3763,10 @@ class ShrinkingReportsLogTableCompanion
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('periodWeekStart: $periodWeekStart, ')
-          ..write('isReviewed: $isReviewed')
+          ..write('isReviewed: $isReviewed, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('userId: $userId, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -2926,6 +3778,19 @@ class $StreakTableTable extends StreakTable
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $StreakTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
   static const VerificationMeta _lastActiveDateMeta = const VerificationMeta(
     'lastActiveDate',
   );
@@ -2936,6 +3801,7 @@ class $StreakTableTable extends StreakTable
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
   static const VerificationMeta _currentMultiplierMeta = const VerificationMeta(
     'currentMultiplier',
@@ -2991,13 +3857,37 @@ class $StreakTableTable extends StreakTable
         requiredDuringInsert: false,
         defaultValue: const Constant(1.0),
       );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
+    id,
     lastActiveDate,
     currentMultiplier,
     isViewed,
     hadActivityYesterday,
     previousMultiplier,
+    userId,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3011,6 +3901,9 @@ class $StreakTableTable extends StreakTable
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
     if (data.containsKey('last_active_date')) {
       context.handle(
         _lastActiveDateMeta,
@@ -3055,15 +3948,31 @@ class $StreakTableTable extends StreakTable
         ),
       );
     }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
     return context;
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {lastActiveDate};
+  Set<GeneratedColumn> get $primaryKey => {id};
   @override
   StreakTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return StreakTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
       lastActiveDate: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}last_active_date'],
@@ -3084,6 +3993,14 @@ class $StreakTableTable extends StreakTable
         DriftSqlType.double,
         data['${effectivePrefix}previous_multiplier'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
     );
   }
 
@@ -3094,36 +4011,52 @@ class $StreakTableTable extends StreakTable
 }
 
 class StreakTableData extends DataClass implements Insertable<StreakTableData> {
+  final int id;
   final String lastActiveDate;
   final double currentMultiplier;
   final bool isViewed;
   final bool hadActivityYesterday;
   final double previousMultiplier;
+  final String? userId;
+  final String updatedAt;
   const StreakTableData({
+    required this.id,
     required this.lastActiveDate,
     required this.currentMultiplier,
     required this.isViewed,
     required this.hadActivityYesterday,
     required this.previousMultiplier,
+    this.userId,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
     map['last_active_date'] = Variable<String>(lastActiveDate);
     map['current_multiplier'] = Variable<double>(currentMultiplier);
     map['is_viewed'] = Variable<bool>(isViewed);
     map['had_activity_yesterday'] = Variable<bool>(hadActivityYesterday);
     map['previous_multiplier'] = Variable<double>(previousMultiplier);
+    if (!nullToAbsent || userId != null) {
+      map['user_id'] = Variable<String>(userId);
+    }
+    map['updated_at'] = Variable<String>(updatedAt);
     return map;
   }
 
   StreakTableCompanion toCompanion(bool nullToAbsent) {
     return StreakTableCompanion(
+      id: Value(id),
       lastActiveDate: Value(lastActiveDate),
       currentMultiplier: Value(currentMultiplier),
       isViewed: Value(isViewed),
       hadActivityYesterday: Value(hadActivityYesterday),
       previousMultiplier: Value(previousMultiplier),
+      userId: userId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(userId),
+      updatedAt: Value(updatedAt),
     );
   }
 
@@ -3133,6 +4066,7 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return StreakTableData(
+      id: serializer.fromJson<int>(json['id']),
       lastActiveDate: serializer.fromJson<String>(json['lastActiveDate']),
       currentMultiplier: serializer.fromJson<double>(json['currentMultiplier']),
       isViewed: serializer.fromJson<bool>(json['isViewed']),
@@ -3142,35 +4076,47 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
       previousMultiplier: serializer.fromJson<double>(
         json['previousMultiplier'],
       ),
+      userId: serializer.fromJson<String?>(json['userId']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
     );
   }
   @override
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
       'lastActiveDate': serializer.toJson<String>(lastActiveDate),
       'currentMultiplier': serializer.toJson<double>(currentMultiplier),
       'isViewed': serializer.toJson<bool>(isViewed),
       'hadActivityYesterday': serializer.toJson<bool>(hadActivityYesterday),
       'previousMultiplier': serializer.toJson<double>(previousMultiplier),
+      'userId': serializer.toJson<String?>(userId),
+      'updatedAt': serializer.toJson<String>(updatedAt),
     };
   }
 
   StreakTableData copyWith({
+    int? id,
     String? lastActiveDate,
     double? currentMultiplier,
     bool? isViewed,
     bool? hadActivityYesterday,
     double? previousMultiplier,
+    Value<String?> userId = const Value.absent(),
+    String? updatedAt,
   }) => StreakTableData(
+    id: id ?? this.id,
     lastActiveDate: lastActiveDate ?? this.lastActiveDate,
     currentMultiplier: currentMultiplier ?? this.currentMultiplier,
     isViewed: isViewed ?? this.isViewed,
     hadActivityYesterday: hadActivityYesterday ?? this.hadActivityYesterday,
     previousMultiplier: previousMultiplier ?? this.previousMultiplier,
+    userId: userId.present ? userId.value : this.userId,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
   StreakTableData copyWithCompanion(StreakTableCompanion data) {
     return StreakTableData(
+      id: data.id.present ? data.id.value : this.id,
       lastActiveDate: data.lastActiveDate.present
           ? data.lastActiveDate.value
           : this.lastActiveDate,
@@ -3184,103 +4130,131 @@ class StreakTableData extends DataClass implements Insertable<StreakTableData> {
       previousMultiplier: data.previousMultiplier.present
           ? data.previousMultiplier.value
           : this.previousMultiplier,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
   @override
   String toString() {
     return (StringBuffer('StreakTableData(')
+          ..write('id: $id, ')
           ..write('lastActiveDate: $lastActiveDate, ')
           ..write('currentMultiplier: $currentMultiplier, ')
           ..write('isViewed: $isViewed, ')
           ..write('hadActivityYesterday: $hadActivityYesterday, ')
-          ..write('previousMultiplier: $previousMultiplier')
+          ..write('previousMultiplier: $previousMultiplier, ')
+          ..write('userId: $userId, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(
+    id,
     lastActiveDate,
     currentMultiplier,
     isViewed,
     hadActivityYesterday,
     previousMultiplier,
+    userId,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is StreakTableData &&
+          other.id == this.id &&
           other.lastActiveDate == this.lastActiveDate &&
           other.currentMultiplier == this.currentMultiplier &&
           other.isViewed == this.isViewed &&
           other.hadActivityYesterday == this.hadActivityYesterday &&
-          other.previousMultiplier == this.previousMultiplier);
+          other.previousMultiplier == this.previousMultiplier &&
+          other.userId == this.userId &&
+          other.updatedAt == this.updatedAt);
 }
 
 class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
+  final Value<int> id;
   final Value<String> lastActiveDate;
   final Value<double> currentMultiplier;
   final Value<bool> isViewed;
   final Value<bool> hadActivityYesterday;
   final Value<double> previousMultiplier;
-  final Value<int> rowid;
+  final Value<String?> userId;
+  final Value<String> updatedAt;
   const StreakTableCompanion({
+    this.id = const Value.absent(),
     this.lastActiveDate = const Value.absent(),
     this.currentMultiplier = const Value.absent(),
     this.isViewed = const Value.absent(),
     this.hadActivityYesterday = const Value.absent(),
     this.previousMultiplier = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   StreakTableCompanion.insert({
+    this.id = const Value.absent(),
     required String lastActiveDate,
     this.currentMultiplier = const Value.absent(),
     this.isViewed = const Value.absent(),
     this.hadActivityYesterday = const Value.absent(),
     this.previousMultiplier = const Value.absent(),
-    this.rowid = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   }) : lastActiveDate = Value(lastActiveDate);
   static Insertable<StreakTableData> custom({
+    Expression<int>? id,
     Expression<String>? lastActiveDate,
     Expression<double>? currentMultiplier,
     Expression<bool>? isViewed,
     Expression<bool>? hadActivityYesterday,
     Expression<double>? previousMultiplier,
-    Expression<int>? rowid,
+    Expression<String>? userId,
+    Expression<String>? updatedAt,
   }) {
     return RawValuesInsertable({
+      if (id != null) 'id': id,
       if (lastActiveDate != null) 'last_active_date': lastActiveDate,
       if (currentMultiplier != null) 'current_multiplier': currentMultiplier,
       if (isViewed != null) 'is_viewed': isViewed,
       if (hadActivityYesterday != null)
         'had_activity_yesterday': hadActivityYesterday,
       if (previousMultiplier != null) 'previous_multiplier': previousMultiplier,
-      if (rowid != null) 'rowid': rowid,
+      if (userId != null) 'user_id': userId,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
   StreakTableCompanion copyWith({
+    Value<int>? id,
     Value<String>? lastActiveDate,
     Value<double>? currentMultiplier,
     Value<bool>? isViewed,
     Value<bool>? hadActivityYesterday,
     Value<double>? previousMultiplier,
-    Value<int>? rowid,
+    Value<String?>? userId,
+    Value<String>? updatedAt,
   }) {
     return StreakTableCompanion(
+      id: id ?? this.id,
       lastActiveDate: lastActiveDate ?? this.lastActiveDate,
       currentMultiplier: currentMultiplier ?? this.currentMultiplier,
       isViewed: isViewed ?? this.isViewed,
       hadActivityYesterday: hadActivityYesterday ?? this.hadActivityYesterday,
       previousMultiplier: previousMultiplier ?? this.previousMultiplier,
-      rowid: rowid ?? this.rowid,
+      userId: userId ?? this.userId,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
     if (lastActiveDate.present) {
       map['last_active_date'] = Variable<String>(lastActiveDate.value);
     }
@@ -3298,8 +4272,11 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
     if (previousMultiplier.present) {
       map['previous_multiplier'] = Variable<double>(previousMultiplier.value);
     }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
     }
     return map;
   }
@@ -3307,12 +4284,14 @@ class StreakTableCompanion extends UpdateCompanion<StreakTableData> {
   @override
   String toString() {
     return (StringBuffer('StreakTableCompanion(')
+          ..write('id: $id, ')
           ..write('lastActiveDate: $lastActiveDate, ')
           ..write('currentMultiplier: $currentMultiplier, ')
           ..write('isViewed: $isViewed, ')
           ..write('hadActivityYesterday: $hadActivityYesterday, ')
           ..write('previousMultiplier: $previousMultiplier, ')
-          ..write('rowid: $rowid')
+          ..write('userId: $userId, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -3367,15 +4346,25 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$HabitsTableTableCreateCompanionBuilder =
     HabitsTableCompanion Function({
-      Value<int> id,
+      required String id,
       required String title,
       required int scoreValue,
+      Value<bool> isArchived,
+      required String updatedAt,
+      Value<String?> userId,
+      Value<String> titleNonce,
+      Value<int> rowid,
     });
 typedef $$HabitsTableTableUpdateCompanionBuilder =
     HabitsTableCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> title,
       Value<int> scoreValue,
+      Value<bool> isArchived,
+      Value<String> updatedAt,
+      Value<String?> userId,
+      Value<String> titleNonce,
+      Value<int> rowid,
     });
 
 final class $$HabitsTableTableReferences
@@ -3395,7 +4384,7 @@ final class $$HabitsTableTableReferences
     final manager = $$HabitLogsTableTableTableManager(
       $_db,
       $_db.habitLogsTable,
-    ).filter((f) => f.habitId.id.sqlEquals($_itemColumn<int>('id')!));
+    ).filter((f) => f.habitId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_habitLogsTableRefsTable($_db));
     return ProcessedTableManager(
@@ -3413,7 +4402,7 @@ class $$HabitsTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -3425,6 +4414,26 @@ class $$HabitsTableTableFilterComposer
 
   ColumnFilters<int> get scoreValue => $composableBuilder(
     column: $table.scoreValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get titleNonce => $composableBuilder(
+    column: $table.titleNonce,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3463,7 +4472,7 @@ class $$HabitsTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -3477,6 +4486,26 @@ class $$HabitsTableTableOrderingComposer
     column: $table.scoreValue,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get titleNonce => $composableBuilder(
+    column: $table.titleNonce,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HabitsTableTableAnnotationComposer
@@ -3488,7 +4517,7 @@ class $$HabitsTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
@@ -3496,6 +4525,22 @@ class $$HabitsTableTableAnnotationComposer
 
   GeneratedColumn<int> get scoreValue => $composableBuilder(
     column: $table.scoreValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get titleNonce => $composableBuilder(
+    column: $table.titleNonce,
     builder: (column) => column,
   );
 
@@ -3553,23 +4598,43 @@ class $$HabitsTableTableTableManager
               $$HabitsTableTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<int> scoreValue = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<String> titleNonce = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => HabitsTableCompanion(
                 id: id,
                 title: title,
                 scoreValue: scoreValue,
+                isArchived: isArchived,
+                updatedAt: updatedAt,
+                userId: userId,
+                titleNonce: titleNonce,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                required String id,
                 required String title,
                 required int scoreValue,
+                Value<bool> isArchived = const Value.absent(),
+                required String updatedAt,
+                Value<String?> userId = const Value.absent(),
+                Value<String> titleNonce = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => HabitsTableCompanion.insert(
                 id: id,
                 title: title,
                 scoreValue: scoreValue,
+                isArchived: isArchived,
+                updatedAt: updatedAt,
+                userId: userId,
+                titleNonce: titleNonce,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -3644,6 +4709,9 @@ typedef $$SessionsTableTableCreateCompanionBuilder =
       Value<double?> decreasePercentage,
       Value<int?> decreaseIntervalDays,
       Value<double?> shrunkenLimit,
+      Value<String> updatedAt,
+      Value<bool> isDeleted,
+      Value<String?> userId,
       Value<int> rowid,
     });
 typedef $$SessionsTableTableUpdateCompanionBuilder =
@@ -3661,6 +4729,9 @@ typedef $$SessionsTableTableUpdateCompanionBuilder =
       Value<double?> decreasePercentage,
       Value<int?> decreaseIntervalDays,
       Value<double?> shrunkenLimit,
+      Value<String> updatedAt,
+      Value<bool> isDeleted,
+      Value<String?> userId,
       Value<int> rowid,
     });
 
@@ -3790,6 +4861,21 @@ class $$SessionsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> habitLogsTableRefs(
     Expression<bool> Function($$HabitLogsTableTableFilterComposer f) f,
   ) {
@@ -3914,6 +5000,21 @@ class $$SessionsTableTableOrderingComposer
     column: $table.shrunkenLimit,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SessionsTableTableAnnotationComposer
@@ -3981,6 +5082,15 @@ class $$SessionsTableTableAnnotationComposer
     column: $table.shrunkenLimit,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   Expression<T> habitLogsTableRefs<T extends Object>(
     Expression<T> Function($$HabitLogsTableTableAnnotationComposer a) f,
@@ -4074,6 +5184,9 @@ class $$SessionsTableTableTableManager
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<int?> decreaseIntervalDays = const Value.absent(),
                 Value<double?> shrunkenLimit = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion(
                 id: id,
@@ -4089,6 +5202,9 @@ class $$SessionsTableTableTableManager
                 decreasePercentage: decreasePercentage,
                 decreaseIntervalDays: decreaseIntervalDays,
                 shrunkenLimit: shrunkenLimit,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                userId: userId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4106,6 +5222,9 @@ class $$SessionsTableTableTableManager
                 Value<double?> decreasePercentage = const Value.absent(),
                 Value<int?> decreaseIntervalDays = const Value.absent(),
                 Value<double?> shrunkenLimit = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsTableCompanion.insert(
                 id: id,
@@ -4121,6 +5240,9 @@ class $$SessionsTableTableTableManager
                 decreasePercentage: decreasePercentage,
                 decreaseIntervalDays: decreaseIntervalDays,
                 shrunkenLimit: shrunkenLimit,
+                updatedAt: updatedAt,
+                isDeleted: isDeleted,
+                userId: userId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4208,17 +5330,23 @@ typedef $$SessionsTableTableProcessedTableManager =
     >;
 typedef $$HabitLogsTableTableCreateCompanionBuilder =
     HabitLogsTableCompanion Function({
-      Value<int> id,
-      required int habitId,
+      required String id,
+      required String habitId,
       required String sessionId,
       required DateTime timestamp,
+      required String updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 typedef $$HabitLogsTableTableUpdateCompanionBuilder =
     HabitLogsTableCompanion Function({
-      Value<int> id,
-      Value<int> habitId,
+      Value<String> id,
+      Value<String> habitId,
       Value<String> sessionId,
       Value<DateTime> timestamp,
+      Value<String> updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 
 final class $$HabitLogsTableTableReferences
@@ -4240,7 +5368,7 @@ final class $$HabitLogsTableTableReferences
       );
 
   $$HabitsTableTableProcessedTableManager get habitId {
-    final $_column = $_itemColumn<int>('habit_id')!;
+    final $_column = $_itemColumn<String>('habit_id')!;
 
     final manager = $$HabitsTableTableTableManager(
       $_db,
@@ -4282,13 +5410,23 @@ class $$HabitLogsTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<DateTime> get timestamp => $composableBuilder(
     column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4348,13 +5486,23 @@ class $$HabitLogsTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<DateTime> get timestamp => $composableBuilder(
     column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4414,11 +5562,17 @@ class $$HabitLogsTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<DateTime> get timestamp =>
       $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   $$HabitsTableTableAnnotationComposer get habitId {
     final $$HabitsTableTableAnnotationComposer composer = $composerBuilder(
@@ -4497,27 +5651,39 @@ class $$HabitLogsTableTableTableManager
               $$HabitLogsTableTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
-                Value<int> habitId = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> habitId = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
                 Value<DateTime> timestamp = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => HabitLogsTableCompanion(
                 id: id,
                 habitId: habitId,
                 sessionId: sessionId,
                 timestamp: timestamp,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
-                required int habitId,
+                required String id,
+                required String habitId,
                 required String sessionId,
                 required DateTime timestamp,
+                required String updatedAt,
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => HabitLogsTableCompanion.insert(
                 id: id,
                 habitId: habitId,
                 sessionId: sessionId,
                 timestamp: timestamp,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4603,15 +5769,21 @@ typedef $$HabitLogsTableTableProcessedTableManager =
     >;
 typedef $$SessionHabitsTableTableCreateCompanionBuilder =
     SessionHabitsTableCompanion Function({
-      Value<int> id,
+      required String id,
       required String sessionId,
-      required int habitId,
+      required String habitId,
+      required String updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 typedef $$SessionHabitsTableTableUpdateCompanionBuilder =
     SessionHabitsTableCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> sessionId,
-      Value<int> habitId,
+      Value<String> habitId,
+      Value<String> updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 
 class $$SessionHabitsTableTableFilterComposer
@@ -4623,7 +5795,7 @@ class $$SessionHabitsTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -4633,8 +5805,18 @@ class $$SessionHabitsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get habitId => $composableBuilder(
+  ColumnFilters<String> get habitId => $composableBuilder(
     column: $table.habitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4648,7 +5830,7 @@ class $$SessionHabitsTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -4658,8 +5840,18 @@ class $$SessionHabitsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get habitId => $composableBuilder(
+  ColumnOrderings<String> get habitId => $composableBuilder(
     column: $table.habitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -4673,14 +5865,20 @@ class $$SessionHabitsTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get sessionId =>
       $composableBuilder(column: $table.sessionId, builder: (column) => column);
 
-  GeneratedColumn<int> get habitId =>
+  GeneratedColumn<String> get habitId =>
       $composableBuilder(column: $table.habitId, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 }
 
 class $$SessionHabitsTableTableTableManager
@@ -4723,23 +5921,35 @@ class $$SessionHabitsTableTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
-                Value<int> habitId = const Value.absent(),
+                Value<String> habitId = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => SessionHabitsTableCompanion(
                 id: id,
                 sessionId: sessionId,
                 habitId: habitId,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                required String id,
                 required String sessionId,
-                required int habitId,
+                required String habitId,
+                required String updatedAt,
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => SessionHabitsTableCompanion.insert(
                 id: id,
                 sessionId: sessionId,
                 habitId: habitId,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -4772,23 +5982,27 @@ typedef $$SessionHabitsTableTableProcessedTableManager =
     >;
 typedef $$DaysTableTableCreateCompanionBuilder =
     DaysTableCompanion Function({
-      Value<int> id,
       required String date,
       required String sessionId,
       Value<bool> isBrokenClicked,
       Value<bool> isGoodBoyClicked,
       Value<String> dayStatus,
       Value<bool> isWeeklyReportReviewed,
+      required String updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 typedef $$DaysTableTableUpdateCompanionBuilder =
     DaysTableCompanion Function({
-      Value<int> id,
       Value<String> date,
       Value<String> sessionId,
       Value<bool> isBrokenClicked,
       Value<bool> isGoodBoyClicked,
       Value<String> dayStatus,
       Value<bool> isWeeklyReportReviewed,
+      Value<String> updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 
 final class $$DaysTableTableReferences
@@ -4824,11 +6038,6 @@ class $$DaysTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get date => $composableBuilder(
     column: $table.date,
     builder: (column) => ColumnFilters(column),
@@ -4851,6 +6060,16 @@ class $$DaysTableTableFilterComposer
 
   ColumnFilters<bool> get isWeeklyReportReviewed => $composableBuilder(
     column: $table.isWeeklyReportReviewed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4887,11 +6106,6 @@ class $$DaysTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get date => $composableBuilder(
     column: $table.date,
     builder: (column) => ColumnOrderings(column),
@@ -4914,6 +6128,16 @@ class $$DaysTableTableOrderingComposer
 
   ColumnOrderings<bool> get isWeeklyReportReviewed => $composableBuilder(
     column: $table.isWeeklyReportReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4950,9 +6174,6 @@ class $$DaysTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
   GeneratedColumn<String> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
 
@@ -4973,6 +6194,12 @@ class $$DaysTableTableAnnotationComposer
     column: $table.isWeeklyReportReviewed,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   $$SessionsTableTableAnnotationComposer get sessionId {
     final $$SessionsTableTableAnnotationComposer composer = $composerBuilder(
@@ -5026,39 +6253,47 @@ class $$DaysTableTableTableManager
               $$DaysTableTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
                 Value<String> date = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
                 Value<bool> isBrokenClicked = const Value.absent(),
                 Value<bool> isGoodBoyClicked = const Value.absent(),
                 Value<String> dayStatus = const Value.absent(),
                 Value<bool> isWeeklyReportReviewed = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => DaysTableCompanion(
-                id: id,
                 date: date,
                 sessionId: sessionId,
                 isBrokenClicked: isBrokenClicked,
                 isGoodBoyClicked: isGoodBoyClicked,
                 dayStatus: dayStatus,
                 isWeeklyReportReviewed: isWeeklyReportReviewed,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
                 required String date,
                 required String sessionId,
                 Value<bool> isBrokenClicked = const Value.absent(),
                 Value<bool> isGoodBoyClicked = const Value.absent(),
                 Value<String> dayStatus = const Value.absent(),
                 Value<bool> isWeeklyReportReviewed = const Value.absent(),
+                required String updatedAt,
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => DaysTableCompanion.insert(
-                id: id,
                 date: date,
                 sessionId: sessionId,
                 isBrokenClicked: isBrokenClicked,
                 isGoodBoyClicked: isGoodBoyClicked,
                 dayStatus: dayStatus,
                 isWeeklyReportReviewed: isWeeklyReportReviewed,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -5129,23 +6364,29 @@ typedef $$DaysTableTableProcessedTableManager =
     >;
 typedef $$ShrinkingPeriodsTableTableCreateCompanionBuilder =
     ShrinkingPeriodsTableCompanion Function({
-      Value<int> id,
+      required String id,
       required String sessionId,
       required String startedAt,
       Value<String?> endedAt,
       required double baseLimit,
       required double decreasePct,
       required int intervalDays,
+      required String updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 typedef $$ShrinkingPeriodsTableTableUpdateCompanionBuilder =
     ShrinkingPeriodsTableCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> sessionId,
       Value<String> startedAt,
       Value<String?> endedAt,
       Value<double> baseLimit,
       Value<double> decreasePct,
       Value<int> intervalDays,
+      Value<String> updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 
 class $$ShrinkingPeriodsTableTableFilterComposer
@@ -5157,7 +6398,7 @@ class $$ShrinkingPeriodsTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -5191,6 +6432,16 @@ class $$ShrinkingPeriodsTableTableFilterComposer
     column: $table.intervalDays,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$ShrinkingPeriodsTableTableOrderingComposer
@@ -5202,7 +6453,7 @@ class $$ShrinkingPeriodsTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -5236,6 +6487,16 @@ class $$ShrinkingPeriodsTableTableOrderingComposer
     column: $table.intervalDays,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ShrinkingPeriodsTableTableAnnotationComposer
@@ -5247,7 +6508,7 @@ class $$ShrinkingPeriodsTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get sessionId =>
@@ -5271,6 +6532,12 @@ class $$ShrinkingPeriodsTableTableAnnotationComposer
     column: $table.intervalDays,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 }
 
 class $$ShrinkingPeriodsTableTableTableManager
@@ -5319,13 +6586,16 @@ class $$ShrinkingPeriodsTableTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
                 Value<String> startedAt = const Value.absent(),
                 Value<String?> endedAt = const Value.absent(),
                 Value<double> baseLimit = const Value.absent(),
                 Value<double> decreasePct = const Value.absent(),
                 Value<int> intervalDays = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ShrinkingPeriodsTableCompanion(
                 id: id,
                 sessionId: sessionId,
@@ -5334,16 +6604,22 @@ class $$ShrinkingPeriodsTableTableTableManager
                 baseLimit: baseLimit,
                 decreasePct: decreasePct,
                 intervalDays: intervalDays,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                required String id,
                 required String sessionId,
                 required String startedAt,
                 Value<String?> endedAt = const Value.absent(),
                 required double baseLimit,
                 required double decreasePct,
                 required int intervalDays,
+                required String updatedAt,
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ShrinkingPeriodsTableCompanion.insert(
                 id: id,
                 sessionId: sessionId,
@@ -5352,6 +6628,9 @@ class $$ShrinkingPeriodsTableTableTableManager
                 baseLimit: baseLimit,
                 decreasePct: decreasePct,
                 intervalDays: intervalDays,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5384,17 +6663,23 @@ typedef $$ShrinkingPeriodsTableTableProcessedTableManager =
     >;
 typedef $$ShrinkingReportsLogTableTableCreateCompanionBuilder =
     ShrinkingReportsLogTableCompanion Function({
-      Value<int> id,
+      required String id,
       required String sessionId,
       required String periodWeekStart,
       Value<bool> isReviewed,
+      required String updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 typedef $$ShrinkingReportsLogTableTableUpdateCompanionBuilder =
     ShrinkingReportsLogTableCompanion Function({
-      Value<int> id,
+      Value<String> id,
       Value<String> sessionId,
       Value<String> periodWeekStart,
       Value<bool> isReviewed,
+      Value<String> updatedAt,
+      Value<String?> userId,
+      Value<int> rowid,
     });
 
 class $$ShrinkingReportsLogTableTableFilterComposer
@@ -5406,7 +6691,7 @@ class $$ShrinkingReportsLogTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnFilters<int> get id => $composableBuilder(
+  ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
   );
@@ -5425,6 +6710,16 @@ class $$ShrinkingReportsLogTableTableFilterComposer
     column: $table.isReviewed,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$ShrinkingReportsLogTableTableOrderingComposer
@@ -5436,7 +6731,7 @@ class $$ShrinkingReportsLogTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  ColumnOrderings<int> get id => $composableBuilder(
+  ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
   );
@@ -5455,6 +6750,16 @@ class $$ShrinkingReportsLogTableTableOrderingComposer
     column: $table.isReviewed,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ShrinkingReportsLogTableTableAnnotationComposer
@@ -5466,7 +6771,7 @@ class $$ShrinkingReportsLogTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
-  GeneratedColumn<int> get id =>
+  GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get sessionId =>
@@ -5481,6 +6786,12 @@ class $$ShrinkingReportsLogTableTableAnnotationComposer
     column: $table.isReviewed,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 }
 
 class $$ShrinkingReportsLogTableTableTableManager
@@ -5529,27 +6840,39 @@ class $$ShrinkingReportsLogTableTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                Value<String> id = const Value.absent(),
                 Value<String> sessionId = const Value.absent(),
                 Value<String> periodWeekStart = const Value.absent(),
                 Value<bool> isReviewed = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ShrinkingReportsLogTableCompanion(
                 id: id,
                 sessionId: sessionId,
                 periodWeekStart: periodWeekStart,
                 isReviewed: isReviewed,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           createCompanionCallback:
               ({
-                Value<int> id = const Value.absent(),
+                required String id,
                 required String sessionId,
                 required String periodWeekStart,
                 Value<bool> isReviewed = const Value.absent(),
+                required String updatedAt,
+                Value<String?> userId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
               }) => ShrinkingReportsLogTableCompanion.insert(
                 id: id,
                 sessionId: sessionId,
                 periodWeekStart: periodWeekStart,
                 isReviewed: isReviewed,
+                updatedAt: updatedAt,
+                userId: userId,
+                rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5582,21 +6905,25 @@ typedef $$ShrinkingReportsLogTableTableProcessedTableManager =
     >;
 typedef $$StreakTableTableCreateCompanionBuilder =
     StreakTableCompanion Function({
+      Value<int> id,
       required String lastActiveDate,
       Value<double> currentMultiplier,
       Value<bool> isViewed,
       Value<bool> hadActivityYesterday,
       Value<double> previousMultiplier,
-      Value<int> rowid,
+      Value<String?> userId,
+      Value<String> updatedAt,
     });
 typedef $$StreakTableTableUpdateCompanionBuilder =
     StreakTableCompanion Function({
+      Value<int> id,
       Value<String> lastActiveDate,
       Value<double> currentMultiplier,
       Value<bool> isViewed,
       Value<bool> hadActivityYesterday,
       Value<double> previousMultiplier,
-      Value<int> rowid,
+      Value<String?> userId,
+      Value<String> updatedAt,
     });
 
 class $$StreakTableTableFilterComposer
@@ -5608,6 +6935,11 @@ class $$StreakTableTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get lastActiveDate => $composableBuilder(
     column: $table.lastActiveDate,
     builder: (column) => ColumnFilters(column),
@@ -5632,6 +6964,16 @@ class $$StreakTableTableFilterComposer
     column: $table.previousMultiplier,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$StreakTableTableOrderingComposer
@@ -5643,6 +6985,11 @@ class $$StreakTableTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get lastActiveDate => $composableBuilder(
     column: $table.lastActiveDate,
     builder: (column) => ColumnOrderings(column),
@@ -5667,6 +7014,16 @@ class $$StreakTableTableOrderingComposer
     column: $table.previousMultiplier,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$StreakTableTableAnnotationComposer
@@ -5678,6 +7035,9 @@ class $$StreakTableTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
   GeneratedColumn<String> get lastActiveDate => $composableBuilder(
     column: $table.lastActiveDate,
     builder: (column) => column,
@@ -5700,6 +7060,12 @@ class $$StreakTableTableAnnotationComposer
     column: $table.previousMultiplier,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$StreakTableTableTableManager
@@ -5733,35 +7099,43 @@ class $$StreakTableTableTableManager
               $$StreakTableTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 Value<String> lastActiveDate = const Value.absent(),
                 Value<double> currentMultiplier = const Value.absent(),
                 Value<bool> isViewed = const Value.absent(),
                 Value<bool> hadActivityYesterday = const Value.absent(),
                 Value<double> previousMultiplier = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => StreakTableCompanion(
+                id: id,
                 lastActiveDate: lastActiveDate,
                 currentMultiplier: currentMultiplier,
                 isViewed: isViewed,
                 hadActivityYesterday: hadActivityYesterday,
                 previousMultiplier: previousMultiplier,
-                rowid: rowid,
+                userId: userId,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
+                Value<int> id = const Value.absent(),
                 required String lastActiveDate,
                 Value<double> currentMultiplier = const Value.absent(),
                 Value<bool> isViewed = const Value.absent(),
                 Value<bool> hadActivityYesterday = const Value.absent(),
                 Value<double> previousMultiplier = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
+                Value<String?> userId = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
               }) => StreakTableCompanion.insert(
+                id: id,
                 lastActiveDate: lastActiveDate,
                 currentMultiplier: currentMultiplier,
                 isViewed: isViewed,
                 hadActivityYesterday: hadActivityYesterday,
                 previousMultiplier: previousMultiplier,
-                rowid: rowid,
+                userId: userId,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

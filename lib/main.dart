@@ -1,15 +1,13 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/data/repositories/session_repository_impl.dart';
-import 'package:dopamine_budget/features/sessions/domain/usecases/get_sessions_by_day_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/initialize_session_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_usecase.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/sessions_notifier.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
 import 'package:dopamine_budget/features/scoring/data/repositories/scoring_repository_impl.dart';
 import 'package:dopamine_budget/features/scoring/presentation/state/scoring_notifier.dart';
-import 'package:dopamine_budget/features/scoring/domain/usecases/calculate_score_usecase.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_current_dopamine_balance_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
@@ -36,6 +34,20 @@ import 'package:dopamine_budget/features/streak/domain/usecases/sync_streak_usec
 import 'package:dopamine_budget/features/streak/presentation/state/streak_notifier.dart';
 import 'package:dopamine_budget/core/theme/app_theme.dart';
 import 'package:dopamine_budget/core/utils/haptic_service.dart';
+import 'package:dopamine_budget/core/crypto/data/repositories/crypto_repository_impl.dart';
+import 'package:dopamine_budget/core/crypto/data/services/crypto_session_service_impl.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:dopamine_budget/core/crypto/presentation/state/pin_notifier.dart';
+import 'package:dopamine_budget/presentation/app_gate.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dopamine_budget/features/auth/presentation/pages/deep_link_handler.dart';
+import 'package:dopamine_budget/features/auth/auth_module.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
+import 'package:dopamine_budget/core/sync/active_session_service.dart';
+import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
+import 'package:dopamine_budget/presentation/onboarding_gate.dart';
+import 'package:dopamine_budget/features/auth/presentation/pages/auth_flow_coordinator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,26 +60,56 @@ void main() async {
   await NotificationPermissionHelper.requestPermission();
   await NotificationPermissionHelper.requestExactAlarmPermission();
   await HapticService.init();
+  await Supabase.initialize(
+    url: 'https://iumeyfwzbgaxkfqsevzd.supabase.co',
+    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1bWV5Znd6YmdheGtmcXNldnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNDk5NDcsImV4cCI6MjEwMDcyNTk0N30.0eLBu35tCAr13rZLNnv4ACMMWLIh4tD6lxm0cDsLSfA',
+  );
+  await DeepLinkHandler.init();
+
+  final secureStorage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   final database = AppDatabase.instance;
+  final supabase = Supabase.instance.client;
+  final cryptoSessionService = CryptoSessionServiceImpl();
+  final cryptoRepository = CryptoRepositoryImpl(secureStorage);
+  final syncService = SyncService(supabase, database, cryptoRepository, cryptoSessionService);
+  const keyDeviceId = 'device_id';
+  String? storedDeviceId = await secureStorage.read(key: keyDeviceId);
+  if (storedDeviceId == null) {
+    storedDeviceId = const Uuid().v4();
+    await secureStorage.write(key: keyDeviceId, value: storedDeviceId);
+  }
+  final deviceId = storedDeviceId;
+  final activeSessionService = ActiveSessionService(supabase, deviceId: deviceId);
 
-  final streakRepository = StreakRepositoryImpl(database);
-  final syncStreakUseCase = SyncStreakUseCase(streakRepository);
-  final streakNotifier = StreakNotifier(
-    syncStreakUseCase: syncStreakUseCase,
-    repository: streakRepository,
+  HabitsNotifier? habitsNotifierRef;
+
+  final authModule = AuthModule.create(
+    secureStorage,
+    onPullAll: syncService.pullAll,
+    onAfterPull: () => habitsNotifierRef?.reloadHabits() ?? Future.value(),
+  );
+
+  final pinNotifier = PinNotifier(
+    cryptoRepository: cryptoRepository,
+    cryptoSessionService: cryptoSessionService,
+    onUnlocked: () async => habitsNotifierRef?.reloadHabits().catchError((_) {}),
   );
 
   // Репозитории
-  final sessionRepository = SessionRepositoryImpl(database);
-  final habitRepository = HabitRepositoryImpl(database);
+  final sessionRepository = SessionRepositoryImpl(database, sync: syncService);
+  final habitRepository = HabitRepositoryImpl(database, cryptoRepository, cryptoSessionService);
   final scoringRepository = ScoringRepositoryImpl(database);
 
   // Use Cases — сессии
-  final initializeSessionUseCase = InitializeSessionUseCase(database);
-  final startControlSessionUseCase = StartControlSessionUseCase(database);
-  final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database);
-  final getSessionsByDayUseCase = GetSessionsByDayUseCase(sessionRepository);
+  final initializeSessionUseCase = InitializeSessionUseCase(database, sync: syncService);
+  final startControlSessionUseCase = StartControlSessionUseCase(
+    database,
+    sync: syncService,
+  );
+  final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database, sync: syncService);
 
   final archiveSessionUseCase = ArchiveSessionUseCase(sessionRepository);
   final deleteSessionUseCase = DeleteSessionUseCase(sessionRepository);
@@ -76,11 +118,12 @@ void main() async {
   final toggleShrinkingModeUseCase = ToggleShrinkingModeUseCase(
     sessionRepository: sessionRepository,
     getDailyLimitUseCase: getDailyLimitUseCase,
+    sync: syncService,
   );
-  final calculateScoreUseCase = CalculateScoreUseCase(scoringRepository, getDailyLimitUseCase);
   final verifyCalibrationExpiryUseCase = VerifyCalibrationExpiryUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
+    sync: syncService,
   );
   final getDopamineBalanceUseCase = GetCurrentDopamineBalanceUseCase(
     sessionRepository: sessionRepository,
@@ -100,21 +143,33 @@ void main() async {
   final getWeeklyHabitsReportUseCase = GetWeeklyHabitsReportUseCase(scoringRepository);
 
   // Use Cases — привычки
-  final addActionUseCase = AddActionUseCase(database);
+  final addActionUseCase = AddActionUseCase(sessionRepository);
+
+  // Streak
+  final streakRepository = StreakRepositoryImpl(database, sync: syncService);
+  final syncStreakUseCase = SyncStreakUseCase(streakRepository);
+  final streakNotifier = StreakNotifier(
+    syncStreakUseCase: syncStreakUseCase,
+    repository: streakRepository,
+  );
 
   // Notifiers
-  final sessionsNotifier = SessionsNotifier(
-    sessionRepository: sessionRepository,
-    initializeSessionUseCase: initializeSessionUseCase,
-    startControlSessionUseCase: startControlSessionUseCase,
-    startControlSessionWithHabitsUseCase: startControlSessionWithHabitsUseCase,
-  );
 
   // HabitsNotifier теперь сам подписывается на sessionId через стрим сессии
   final habitsNotifier = HabitsNotifier(
     habitRepository: habitRepository,
     sessionRepository: sessionRepository,
     addActionUseCase: addActionUseCase,
+    sync: syncService,
+  );
+
+  habitsNotifierRef = habitsNotifier;
+
+  final sessionsNotifier = SessionsNotifier(
+    sessionRepository: sessionRepository,
+    initializeSessionUseCase: initializeSessionUseCase,
+    startControlSessionUseCase: startControlSessionUseCase,
+    startControlSessionWithHabitsUseCase: startControlSessionWithHabitsUseCase,
   );
 
   final scoringNotifier = ScoringNotifier(
@@ -134,7 +189,9 @@ void main() async {
   );
 
   runApp(MyApp(
-    database: database,
+        database: database,
+    pinNotifier: pinNotifier,
+    cryptoRepository: cryptoRepository,
     sessionsNotifier: sessionsNotifier,
     habitsNotifier: habitsNotifier,
     scoringNotifier: scoringNotifier,
@@ -146,6 +203,8 @@ void main() async {
     sessionRepository: sessionRepository,
     shrinkingReportUseCase: shrinkingReportUseCase,
     streakNotifier: streakNotifier,
+    authModule: authModule,
+    activeSessionService: activeSessionService,
   ));
 }
 
@@ -162,6 +221,10 @@ class MyApp extends StatelessWidget {
   final SessionRepository sessionRepository;
   final CheckAndGenerateShrinkingReportUseCase shrinkingReportUseCase;
   final StreakNotifier streakNotifier;
+  final PinNotifier pinNotifier;
+  final CryptoRepository cryptoRepository;
+  final AuthModule authModule;
+  final ActiveSessionService activeSessionService;
 
   const MyApp({
     super.key,
@@ -177,6 +240,10 @@ class MyApp extends StatelessWidget {
     required this.sessionRepository,
     required this.shrinkingReportUseCase,
     required this.streakNotifier,
+    required this.pinNotifier,
+    required this.cryptoRepository,
+    required this.authModule,
+    required this.activeSessionService
   });
 
   @override
@@ -185,7 +252,20 @@ class MyApp extends StatelessWidget {
       title: 'Dopamine Budget',
       theme: AppTheme.dark,
       debugShowCheckedModeBanner: false,
-      home: RootGate(
+      home: OnboardingGate(
+        authModule: authModule,
+        onNewUser: (onDone) => AuthFlowCoordinator(
+          authNotifier: authModule.authNotifier,
+          pinNotifier: pinNotifier,
+          uploadMasterKey: authModule.uploadMasterKeyUseCase,
+          onComplete: onDone,
+        ),
+        child: AppGate(
+            pinNotifier: pinNotifier,
+            cryptoRepository: cryptoRepository,
+            authModule: authModule,
+            activeSessionService: activeSessionService,
+            child: RootGate(
         database: database,
         sessionsNotifier: sessionsNotifier,
         habitsNotifier: habitsNotifier,
@@ -198,7 +278,9 @@ class MyApp extends StatelessWidget {
         sessionRepository: sessionRepository,
         shrinkingReportUseCase: shrinkingReportUseCase,
         streakNotifier: streakNotifier,
+            ),
       ),
+     ),
     );
   }
 }

@@ -1,12 +1,16 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:flutter/foundation.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class InitializeSessionUseCase {
   final AppDatabase _db;
+  final SyncService? _sync;
 
-  InitializeSessionUseCase(this._db);
+  InitializeSessionUseCase(this._db, {SyncService? sync}) : _sync = sync;
 
   Future<Session?> execute({bool forceRestart = false, int durationDays = 7}) async {
       try {
@@ -43,14 +47,8 @@ class InitializeSessionUseCase {
           }
         }
 
-        final now = DateTime.now();
-        final year = now.year;
-        final month = now.month.toString().padLeft(2, '0');
-        final day = now.day.toString().padLeft(2, '0');
-        final hour = now.hour.toString().padLeft(2, '0');
-        final minute = now.minute.toString().padLeft(2, '0');
-
-        final newId = 'S_$year$month$day\_$hour$minute';
+        final newId = const Uuid().v4();
+        final now = TimeProvider.now;
 
         final companion = SessionsTableCompanion(
           id: Value(newId),
@@ -64,6 +62,7 @@ class InitializeSessionUseCase {
         );
 
         await _db.into(_db.sessionsTable).insert(companion);
+        _sync?.pushSessions().catchError((_) {});
 
         print('=== Новая фаза калибровки создана на $durationDays дней! ===');
 

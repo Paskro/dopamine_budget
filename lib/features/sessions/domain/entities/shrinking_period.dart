@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 @immutable
 class ShrinkingPeriod {
-  final int? id;
+  final String? id;
   final String sessionId;
   final DateTime startedAt;
   final DateTime? endedAt;

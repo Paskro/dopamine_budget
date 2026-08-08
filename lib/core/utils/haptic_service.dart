@@ -1,4 +1,4 @@
-import 'package:vibration/vibration.dart';
+﻿import 'package:vibration/vibration.dart';
 import 'package:dopamine_budget/core/prefs/haptic_prefs.dart';
 
 class HapticService {

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/sessions_notifier.dart';
 import 'package:dopamine_budget/features/sessions/presentation/pages/session_onboarding_screen.dart';
@@ -18,6 +18,7 @@ import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_gene
 import 'package:dopamine_budget/features/sessions/presentation/pages/shrinking_report_page.dart';
 import 'package:dopamine_budget/features/streak/presentation/state/streak_notifier.dart';
 import 'package:dopamine_budget/features/streak/presentation/widgets/streak_popup.dart';
+import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 
 class RootGate extends StatefulWidget {
   final AppDatabase database;
@@ -56,6 +57,7 @@ class RootGate extends StatefulWidget {
 class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
   WeeklyReportData? _pendingWeeklyReport;
   ShrinkingReportData? _pendingShrinkingReport;
+  bool _markingWeeklyReportReviewed = false;
 
   Future<void> _checkShrinkingReport() async {
     final session = widget.sessionsNotifier.state.currentSession;
@@ -102,9 +104,6 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
   }
 
   Future<void> _markWeeklyReportReviewed() async {
-    final report = _pendingWeeklyReport;
-    if (report == null) return;
-    await widget.sessionRepository.markWeeklyReportAsReviewed(report.weekEnd);
     if (mounted) setState(() => _pendingWeeklyReport = null);
   }
 
@@ -129,7 +128,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
             onStartCalibration: (days) {
               widget.sessionsNotifier.restartCalibration(durationDays: days);
             },
-            onStartControlWithHabits: ({required limit, required habitIds}) async { // ДОБАВЛЕНО, заменяет onStartControl
+            onStartControlWithHabits: ({required limit, required habitIds}) async {
               await widget.sessionsNotifier.startManualControlWithHabits(
                 limit: limit,
                 habitIds: habitIds,
@@ -141,7 +140,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
 
           if (session.phase == 1 && session.isReviewed) {
             // Проверяем при первом построении ControlScreen
-            if (_pendingWeeklyReport == null) {
+            if (_pendingWeeklyReport == null && !_markingWeeklyReportReviewed) {
               WidgetsBinding.instance.addPostFrameCallback((_) => _checkWeeklyReport());
             }
             if (_pendingShrinkingReport == null) {
@@ -161,6 +160,7 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
               reportData: _pendingWeeklyReport!,
               onContinue: _markWeeklyReportReviewed,
               getWeeklyHabitsReportUseCase: widget.getWeeklyHabitsReportUseCase,
+              sessionRepository: widget.sessionRepository,
             )
                 : ControlScreen(
               controlNotifier: widget.controlScreenNotifier,
@@ -187,15 +187,15 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
           children: [
             content,
             StreakPopup(notifier: widget.streakNotifier),
-            DeveloperOverlay(
-              onTimeShifted: () async {
-                await widget.scoringNotifier.checkAndResetDayIfNeeded();
-                widget.controlScreenNotifier.checkAndResetDayIfNeeded();
-                await widget.streakNotifier.init();  // добавить
-                await _checkWeeklyReport();
-                await _checkShrinkingReport();
-              },
-            ),
+            //DeveloperOverlay(
+            //  onTimeShifted: () async {
+            //    await widget.scoringNotifier.checkAndResetDayIfNeeded();
+            //    widget.controlScreenNotifier.checkAndResetDayIfNeeded();
+            //    await widget.streakNotifier.init();  // добавить
+            //    await _checkWeeklyReport();
+            //    await _checkShrinkingReport();
+            //  },
+            //),
           ],
         );
       },

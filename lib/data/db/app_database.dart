@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 import 'package:dopamine_budget/features/habits/data/tables/habits_table.dart';
 import 'package:dopamine_budget/features/actions/data/tables/habit_logs_table.dart';
@@ -36,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration {
@@ -77,18 +78,72 @@ class AppDatabase extends _$AppDatabase {
         if (from < 12) {
           await m.addColumn(streakTable, streakTable.previousMultiplier as GeneratedColumn);
         }
+        if (from < 13) {
+          await m.drop(habitLogsTable);
+          await m.drop(sessionHabitsTable);
+          await m.drop(habitsTable);
+          await m.drop(daysTable);
+          await m.drop(shrinkingPeriodsTable);
+          await m.drop(shrinkingReportsLogTable);
+          await m.createTable(habitsTable);
+          await m.createTable(sessionHabitsTable);
+          await m.createTable(habitLogsTable);
+          await m.createTable(daysTable);
+          await m.createTable(shrinkingPeriodsTable);
+          await m.createTable(shrinkingReportsLogTable);
+          // Добавляем только если не существует
+          try {
+            await customStatement(
+              "ALTER TABLE sessions_table ADD COLUMN updated_at TEXT NOT NULL DEFAULT ''",
+            );
+          } catch (_) {}
+          try {
+            await customStatement(
+              "ALTER TABLE sessions_table ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0",
+            );
+          } catch (_) {}
+        }
+        if (from < 14) {
+          await m.drop(streakTable);
+          await m.createTable(streakTable);
+        }
+        if (from < 15) {
+          await m.drop(daysTable);
+          await m.createTable(daysTable);
+          for (final sql in [
+            'ALTER TABLE "habits_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "session_habits_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "habit_logs_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "sessions_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "shrinking_periods_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "shrinking_reports_log_table" ADD COLUMN "user_id" TEXT NULL',
+            'ALTER TABLE "streak_table" ADD COLUMN "user_id" TEXT NULL',
+            "ALTER TABLE \"streak_table\" ADD COLUMN \"updated_at\" TEXT NOT NULL DEFAULT ''",
+          ]) {
+            try {
+              await customStatement(sql);
+            } catch (_) {}
+          }
+        }
+        if (from < 16) {
+          try {
+            await customStatement(
+              "ALTER TABLE \"habits_table\" ADD COLUMN \"title_nonce\" TEXT NOT NULL DEFAULT ''",
+            );
+          } catch (_) {}
+        }
       },
     );
   }
 
-  Future<List<int>> getSelectedHabitIdsForSession(String sessionId) async {
+  Future<List<String>> getSelectedHabitIdsForSession(String sessionId) async {
     final query = select(sessionHabitsTable)
       ..where((t) => t.sessionId.equals(sessionId));
     final rows = await query.get();
     return rows.map((row) => row.habitId).toList();
   }
 
-  Future<void> toggleHabitSelection(String sessionId, int habitId) async {
+  Future<void> toggleHabitSelection(String sessionId, String habitId) async {
     final query = select(sessionHabitsTable)
       ..where((t) => t.sessionId.equals(sessionId) & t.habitId.equals(habitId));
     final existing = await query.getSingleOrNull();
@@ -98,17 +153,23 @@ class AppDatabase extends _$AppDatabase {
     } else {
       await into(sessionHabitsTable).insert(
         SessionHabitsTableCompanion.insert(
+          id: const Uuid().v4(),
           sessionId: sessionId,
           habitId: habitId,
+          updatedAt: DateTime.now().toIso8601String(),
         ),
       );
     }
   }
 
-  Future<void> deleteHabit(int habitId) async {
+  Future<void> archiveHabit(String habitId) async {
+    await (update(habitsTable)..where((t) => t.id.equals(habitId))).write(
+      HabitsTableCompanion(
+        isArchived: const Value(true),
+        updatedAt: Value(DateTime.now().toIso8601String()),
+      ),
+    );
     await (delete(sessionHabitsTable)..where((t) => t.habitId.equals(habitId))).go();
-    await (delete(habitLogsTable)..where((t) => t.habitId.equals(habitId))).go();
-    await (delete(habitsTable)..where((t) => t.id.equals(habitId))).go();
   }
 
   // ===========================================================================
@@ -136,15 +197,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   Stream<List<HabitsTableData>> watchHabits() {
-    return select(habitsTable).watch();
+    return (select(habitsTable)..where((t) => t.isArchived.equals(false))).watch();
   }
 
-  Stream<List<int>> watchSelectedHabitIds(String sessionId) {
+  Stream<List<String>> watchSelectedHabitIds(String sessionId) {
     final query = select(sessionHabitsTable)
       ..where((t) => t.sessionId.equals(sessionId));
     return query.watch().map(
           (rows) => rows.map((row) => row.habitId).toList(),
-        );
+    );
   }
 
   /// Наблюдает за записью дня по дате.

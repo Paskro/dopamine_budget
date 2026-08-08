@@ -1,18 +1,20 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/streak/domain/entities/streak_record.dart';
 import 'package:dopamine_budget/features/streak/domain/repositories/i_streak_repository.dart';
 import 'package:dopamine_budget/features/streak/data/mappers/streak_mapper.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class StreakRepositoryImpl implements IStreakRepository {
   final AppDatabase _db;
+  final SyncService? _sync;
 
-  StreakRepositoryImpl(this._db);
+  StreakRepositoryImpl(this._db, {SyncService? sync}) : _sync = sync;
 
   @override
   Future<StreakRecord?> getStreak() async {
-    final rows = await _db.select(_db.streakTable).get();
+    final rows = await (_db.select(_db.streakTable)..limit(1)).get();
     if (rows.isEmpty) return null;
     return StreakMapper.fromDb(rows.first);
   }
@@ -35,6 +37,7 @@ class StreakRepositoryImpl implements IStreakRepository {
             previousMultiplier: const Value(1.0),
             isViewed: const Value(true),
             hadActivityYesterday: Value(hadActivity),
+            updatedAt: Value(TimeProvider.now.toIso8601String()),
           ),
         );
         return;
@@ -61,24 +64,32 @@ class StreakRepositoryImpl implements IStreakRepository {
       }
 
       await (_db.update(_db.streakTable)
-        ..where((t) => t.lastActiveDate.equals(current.lastActiveDate)))
+        ..where((t) =>
+        t.lastActiveDate.equals(current.lastActiveDate)))
           .write(StreakTableCompanion(
         lastActiveDate: Value(yesterdayStr),
         currentMultiplier: Value(multiplier),
         previousMultiplier: Value(previousMultiplier),
         isViewed: const Value(false),
         hadActivityYesterday: Value(hadActivityYesterday),
+        updatedAt: Value(TimeProvider.now.toIso8601String()),
       ));
     });
+    _sync?.pushStreak().catchError((_) {});
   }
 
   @override
   Future<void> markViewed() async {
-    final rows = await _db.select(_db.streakTable).get();
+    final rows = await (_db.select(_db.streakTable)..limit(1)).get();
     if (rows.isEmpty) return;
     await (_db.update(_db.streakTable)
-      ..where((t) => t.lastActiveDate.equals(rows.first.lastActiveDate)))
-        .write(const StreakTableCompanion(isViewed: Value(true)));
+      ..where((t) =>
+      t.lastActiveDate.equals(rows.first.lastActiveDate)))
+        .write(StreakTableCompanion(
+      isViewed: Value(true),
+      updatedAt: Value(TimeProvider.now.toIso8601String()), // добавить
+    ));
+    _sync?.pushStreak().catchError((_) {});
   }
 
   Future<bool> _hasActivityOnDate(String dateStr) async {

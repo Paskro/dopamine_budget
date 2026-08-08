@@ -31,7 +31,7 @@ abstract class SessionRepository {
   Future<ShrinkingPeriod?> getActiveShrinkingPeriod(String sessionId);
   Future<void> insertShrinkingPeriod(ShrinkingPeriod period);
   Future<void> closeShrinkingPeriod({
-    required int periodId,
+    required String periodId,
     required String endedAt,
     required double shrunkenLimit,
   });

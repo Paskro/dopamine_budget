@@ -81,7 +81,7 @@ class SessionsNotifier extends ChangeNotifier {
 
   Future<void> startManualControlWithHabits({
     required double limit,
-    required Set<int> habitIds,
+    required Set<String> habitIds,
   }) async {
     await startControlSessionWithHabitsUseCase.execute(
       manualLimit: limit,

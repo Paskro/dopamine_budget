@@ -4,6 +4,7 @@ import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/features/habits/domain/repositories/habit_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 // lib/features/habits/presentation/state/habits_notifier.dart
 
@@ -20,6 +21,7 @@ class HabitsNotifier extends ChangeNotifier {
   final HabitRepository _habitRepository;
   final SessionRepository _sessionRepository;
   final AddActionUseCase _addActionUseCase;
+  final SyncService? _sync;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -27,23 +29,25 @@ class HabitsNotifier extends ChangeNotifier {
   List<Habit> _habits = [];
   List<Habit> get habits => _habits;
 
-  List<int> _selectedHabitIds = [];
-  List<int> get selectedHabitIds => _selectedHabitIds;
+  List<String> _selectedHabitIds = [];
+  List<String> get selectedHabitIds => _selectedHabitIds;
 
   String? _currentSessionId;
   String? get currentSessionId => _currentSessionId;
 
   StreamSubscription<List<Habit>>? _habitsSub;
   StreamSubscription? _sessionSub;
-  StreamSubscription<List<int>>? _selectedIdsSub;
+  StreamSubscription<List<String>>? _selectedIdsSub;
 
   HabitsNotifier({
     required HabitRepository habitRepository,
     required SessionRepository sessionRepository,
     required AddActionUseCase addActionUseCase,
+    SyncService? sync,
   })  : _habitRepository = habitRepository,
         _sessionRepository = sessionRepository,
-        _addActionUseCase = addActionUseCase {
+        _addActionUseCase = addActionUseCase,
+        _sync = sync {
     _habitsSub = _habitRepository.watchHabits().listen((habits) {
       _habits = habits;
       _isLoading = false;
@@ -88,37 +92,47 @@ class HabitsNotifier extends ChangeNotifier {
     // sessionId уже отслеживается через watchActiveSession() в конструкторе
   }
 
-  Future<void> toggleHabitSelection(String sessionId, int habitId) async {
+  Future<void> toggleHabitSelection(String sessionId, String habitId) async {
     await _habitRepository.toggleHabitSelection(sessionId, habitId);
-    // _selectedHabitIds обновится сам через watchSelectedHabitIds.
   }
 
-  Future<void> addHabit(String title, int scoreValue, {Set<int>? localSelectedIds, void Function(Set<int>)? onLocalSelectionChanged}) async {
-    final newHabit = Habit(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      title: title,
-      scoreValue: scoreValue,
-    );
+  Future<void> addHabit(
+      String title,
+      int scoreValue, {
+        Set<String>? localSelectedIds,
+        void Function(Set<String>)? onLocalSelectionChanged,
+      }) async {
+    final newHabit = Habit(id: '', title: title, scoreValue: scoreValue);
     final savedId = await _habitRepository.addHabitAndGetId(newHabit);
 
     if (savedId != null) {
       if (onLocalSelectionChanged != null && localSelectedIds != null) {
-        // Локальный режим визарда — авто-добавляем в локальный Set
         onLocalSelectionChanged({...localSelectedIds, savedId});
       } else if (_currentSessionId != null) {
         await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
       }
+      _sync?.pushHabits().catchError((_) {});
+      _sync?.pushSessionHabits().catchError((_) {});
     }
   }
 
   Future<void> updateHabit(Habit habit) async {
     await _habitRepository.updateHabit(habit);
+    _sync?.pushHabits().catchError((_) {});
   }
 
-  Future<void> deleteHabit(int habitId, {String? sessionId}) async {
-    await _habitRepository.deleteHabit(habitId);
-    // _habits и _selectedHabitIds обновятся сами через стримы
-    // (DELETE из SessionHabitsTable триггерит watchSelectedHabitIds).
+
+  Future<void> archiveHabit(String habitId) async {
+    await _habitRepository.archiveHabit(habitId);
+    _sync?.pushHabits().catchError((_) {});
+  }
+
+  Future<void> reloadHabits() async {
+    debugPrint('[reloadHabits] called, habits count before: ${_habits.length}');
+    final habits = await _habitRepository.getHabits();
+    debugPrint('[reloadHabits] loaded: ${habits.map((h) => h.title).toList()}');
+    _habits = habits;
+    notifyListeners();
   }
 
   Future<void> hitHabit(Habit habit, {dynamic scoringNotifier}) async {

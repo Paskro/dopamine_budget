@@ -15,7 +15,7 @@ class SessionOnboardingScreen extends StatefulWidget {
   final HabitsNotifier habitsNotifier;
   final Future<void> Function({
   required double limit,
-  required Set<int> habitIds,
+  required Set<String> habitIds,
   }) onStartControlWithHabits;
 
   const SessionOnboardingScreen({
@@ -36,7 +36,7 @@ class _SessionOnboardingScreenState extends State<SessionOnboardingScreen> {
   final _limitController = TextEditingController(text: '100');
 
   _OnboardingStep _step = _OnboardingStep.intro;
-  Set<int> _wizardSelectedHabitIds = {};
+  Set<String> _wizardSelectedHabitIds = {};
   bool _isStarting = false;
 
   @override

@@ -68,18 +68,17 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Удалить привычку?'),
-        content: Text('Удалить "${habit.title}" из глобального справочника?'),
+        title: const Text('Архивировать привычку?'),
+        content: Text('"${habit.title}" будет скрыта. История сохранится.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
           TextButton(
             onPressed: () {
-              final id = int.tryParse(habit.id) ?? 0;
-              if (id != 0) widget.habitsNotifier.deleteHabit(id, sessionId: widget.sessionId);
+              widget.habitsNotifier.archiveHabit(habit.id);
               if (_editingHabit?.id == habit.id) _resetForm();
               Navigator.pop(ctx);
             },
-            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+            child: const Text('Архивировать', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -157,15 +156,14 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
             itemBuilder: (context, index) {
               final habit = habits[index];
               final habitIdInt = int.tryParse(habit.id) ?? -1;
-              final isSelected = selectedIds.contains(habitIdInt);
+              final isSelected = selectedIds.contains(habit.id);
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 child: ListTile(
                   leading: Checkbox(
                     value: isSelected,
                     onChanged: isLoading ? null : (_) =>
-                        widget.habitsNotifier.toggleHabitSelection(
-                            widget.sessionId, int.parse(habit.id)),
+                        widget.habitsNotifier.toggleHabitSelection(widget.sessionId, habit.id),
                   ),
                   title: Text(habit.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${habit.scoreValue} б.'),

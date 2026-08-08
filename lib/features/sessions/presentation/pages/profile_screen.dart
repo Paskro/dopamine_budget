@@ -1,6 +1,4 @@
-// lib/features/sessions/presentation/pages/profile_screen.dart
-// ЗАМЕНИТЬ ВЕСЬ ФАЙЛ
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/delete_session_use_case.dart';
@@ -12,6 +10,7 @@ import 'past_sessions_screen.dart';
 import 'package:dopamine_budget/core/prefs/haptic_prefs.dart';
 import 'package:dopamine_budget/core/utils/haptic_service.dart';
 import 'package:flutter/services.dart';
+import 'package:dopamine_budget/features/auth/presentation/state/auth_notifier.dart';
 
 class ProfileScreen extends StatelessWidget {
   final SessionRepository sessionRepository;
@@ -19,6 +18,7 @@ class ProfileScreen extends StatelessWidget {
   final Session? activeSession;
   final HabitsNotifier? habitsNotifier;
   final ArchiveSessionUseCase? archiveSessionUseCase;
+  final AuthNotifier? authNotifier;
 
   const ProfileScreen({
     super.key,
@@ -27,6 +27,7 @@ class ProfileScreen extends StatelessWidget {
     this.activeSession,
     this.habitsNotifier,
     this.archiveSessionUseCase,
+    this.authNotifier,
   });
 
   @override
@@ -52,6 +53,11 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           _HapticToggleTile(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Выйти из аккаунта', style: TextStyle(color: Colors.red)),
+            onTap: () => _confirmSignOut(context),
+          ),
           ElevatedButton(
             onPressed: () async {
               final bool result = await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate', 'HapticFeedbackType.vibrate');
@@ -81,6 +87,26 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => _confirmEndSession(context),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  void _confirmSignOut(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Выйти из аккаунта?'),
+        content: const Text('Данные на устройстве сохранятся. Для повторного входа потребуется email.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await authNotifier?.signOut();
+            },
+            child: const Text('Выйти', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
