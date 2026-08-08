@@ -2,14 +2,12 @@
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/data/repositories/session_repository_impl.dart';
-import 'package:dopamine_budget/features/sessions/domain/usecases/get_sessions_by_day_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/initialize_session_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/start_control_session_usecase.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/sessions_notifier.dart';
 import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
 import 'package:dopamine_budget/features/scoring/data/repositories/scoring_repository_impl.dart';
 import 'package:dopamine_budget/features/scoring/presentation/state/scoring_notifier.dart';
-import 'package:dopamine_budget/features/scoring/domain/usecases/calculate_score_usecase.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_current_dopamine_balance_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/usecases/check_and_generate_weekly_report_usecase.dart';
@@ -48,7 +46,6 @@ import 'package:dopamine_budget/core/sync/sync_service.dart';
 import 'package:dopamine_budget/core/sync/active_session_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
-import 'package:dopamine_budget/core/sync/active_session_service.dart';
 import 'package:dopamine_budget/presentation/onboarding_gate.dart';
 import 'package:dopamine_budget/features/auth/presentation/pages/auth_flow_coordinator.dart';
 
@@ -65,7 +62,7 @@ void main() async {
   await HapticService.init();
   await Supabase.initialize(
     url: 'https://iumeyfwzbgaxkfqsevzd.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1bWV5Znd6YmdheGtmcXNldnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNDk5NDcsImV4cCI6MjEwMDcyNTk0N30.0eLBu35tCAr13rZLNnv4ACMMWLIh4tD6lxm0cDsLSfA',
+    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1bWV5Znd6YmdheGtmcXNldnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNDk5NDcsImV4cCI6MjEwMDcyNTk0N30.0eLBu35tCAr13rZLNnv4ACMMWLIh4tD6lxm0cDsLSfA',
   );
   await DeepLinkHandler.init();
 
@@ -78,11 +75,11 @@ void main() async {
   final cryptoSessionService = CryptoSessionServiceImpl();
   final cryptoRepository = CryptoRepositoryImpl(secureStorage);
   final syncService = SyncService(supabase, database, cryptoRepository, cryptoSessionService);
-  const _keyDeviceId = 'device_id';
-  String? storedDeviceId = await secureStorage.read(key: _keyDeviceId);
+  const keyDeviceId = 'device_id';
+  String? storedDeviceId = await secureStorage.read(key: keyDeviceId);
   if (storedDeviceId == null) {
     storedDeviceId = const Uuid().v4();
-    await secureStorage.write(key: _keyDeviceId, value: storedDeviceId);
+    await secureStorage.write(key: keyDeviceId, value: storedDeviceId);
   }
   final deviceId = storedDeviceId;
   final activeSessionService = ActiveSessionService(supabase, deviceId: deviceId);
@@ -113,7 +110,6 @@ void main() async {
     sync: syncService,
   );
   final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database);
-  final getSessionsByDayUseCase = GetSessionsByDayUseCase(sessionRepository);
 
   final archiveSessionUseCase = ArchiveSessionUseCase(sessionRepository);
   final deleteSessionUseCase = DeleteSessionUseCase(sessionRepository);
@@ -123,7 +119,6 @@ void main() async {
     sessionRepository: sessionRepository,
     getDailyLimitUseCase: getDailyLimitUseCase,
   );
-  final calculateScoreUseCase = CalculateScoreUseCase(scoringRepository, getDailyLimitUseCase);
   final verifyCalibrationExpiryUseCase = VerifyCalibrationExpiryUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
