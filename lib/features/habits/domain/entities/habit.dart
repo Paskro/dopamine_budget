@@ -1,24 +1,31 @@
 class Habit {
-  final String id;        // Уникальный номер привычки (например, '1', '2')
-  final String title;     // Название (например, 'Сигареты')
-  final int scoreValue;   // Сколько баллов забирает (например, 5 или 10)
+  final String id;
+  final String title;
+  final String emoji;
+  final int scoreValue;
+  final String? sessionId;
 
   const Habit({
     required this.id,
     required this.title,
+    required this.emoji,
     required this.scoreValue,
+    this.sessionId,
   });
 
-  // Удобный инструмент, чтобы быстро копировать и изменять привычку
   Habit copyWith({
     String? id,
     String? title,
+    String? emoji,
     int? scoreValue,
+    String? sessionId,
   }) {
     return Habit(
       id: id ?? this.id,
       title: title ?? this.title,
+      emoji: emoji ?? this.emoji,
       scoreValue: scoreValue ?? this.scoreValue,
+      sessionId: sessionId ?? this.sessionId,
     );
   }
 }

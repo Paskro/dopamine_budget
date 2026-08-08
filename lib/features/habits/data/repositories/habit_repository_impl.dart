@@ -47,6 +47,7 @@ class HabitRepositoryImpl implements HabitRepository {
           id: id,
           title: storedTitle,
           titleNonce: Value(storedNonce),
+          emoji: Value(habit.emoji),
           scoreValue: habit.scoreValue,
           updatedAt: DateTime.now().toIso8601String(),
         ),
@@ -84,6 +85,12 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   @override
+  Future<List<Habit>> getHabitsForSession(String sessionId) async {
+    final rows = await _db.getHabitsForSession(sessionId);
+    return Future.wait(rows.map(_fromRow));
+  }
+
+  @override
   Stream<List<Habit>> watchHabits() {
     return _db.watchHabits().asyncMap(
           (rows) => Future.wait(rows.map(_fromRow)),
@@ -111,7 +118,7 @@ class HabitRepositoryImpl implements HabitRepository {
         debugPrint('[_fromRow] DECRYPT ERROR: $e');
       }
     }
-    return Habit(id: row.id, title: title, scoreValue: row.scoreValue);
+    return Habit(id: row.id, title: title, emoji: row.emoji, scoreValue: row.scoreValue);
   }
 
 

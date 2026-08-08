@@ -85,6 +85,16 @@ class $HabitsTableTable extends HabitsTable
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _emojiMeta = const VerificationMeta('emoji');
+  @override
+  late final GeneratedColumn<String> emoji = GeneratedColumn<String>(
+    'emoji',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('❓'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -94,6 +104,7 @@ class $HabitsTableTable extends HabitsTable
     updatedAt,
     userId,
     titleNonce,
+    emoji,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -154,6 +165,12 @@ class $HabitsTableTable extends HabitsTable
         titleNonce.isAcceptableOrUnknown(data['title_nonce']!, _titleNonceMeta),
       );
     }
+    if (data.containsKey('emoji')) {
+      context.handle(
+        _emojiMeta,
+        emoji.isAcceptableOrUnknown(data['emoji']!, _emojiMeta),
+      );
+    }
     return context;
   }
 
@@ -191,6 +208,10 @@ class $HabitsTableTable extends HabitsTable
         DriftSqlType.string,
         data['${effectivePrefix}title_nonce'],
       )!,
+      emoji: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}emoji'],
+      )!,
     );
   }
 
@@ -208,6 +229,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
   final String updatedAt;
   final String? userId;
   final String titleNonce;
+  final String emoji;
   const HabitsTableData({
     required this.id,
     required this.title,
@@ -216,6 +238,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     required this.updatedAt,
     this.userId,
     required this.titleNonce,
+    required this.emoji,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -229,6 +252,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       map['user_id'] = Variable<String>(userId);
     }
     map['title_nonce'] = Variable<String>(titleNonce);
+    map['emoji'] = Variable<String>(emoji);
     return map;
   }
 
@@ -243,6 +267,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
           ? const Value.absent()
           : Value(userId),
       titleNonce: Value(titleNonce),
+      emoji: Value(emoji),
     );
   }
 
@@ -259,6 +284,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
       userId: serializer.fromJson<String?>(json['userId']),
       titleNonce: serializer.fromJson<String>(json['titleNonce']),
+      emoji: serializer.fromJson<String>(json['emoji']),
     );
   }
   @override
@@ -272,6 +298,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       'updatedAt': serializer.toJson<String>(updatedAt),
       'userId': serializer.toJson<String?>(userId),
       'titleNonce': serializer.toJson<String>(titleNonce),
+      'emoji': serializer.toJson<String>(emoji),
     };
   }
 
@@ -283,6 +310,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     String? updatedAt,
     Value<String?> userId = const Value.absent(),
     String? titleNonce,
+    String? emoji,
   }) => HabitsTableData(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -291,6 +319,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     updatedAt: updatedAt ?? this.updatedAt,
     userId: userId.present ? userId.value : this.userId,
     titleNonce: titleNonce ?? this.titleNonce,
+    emoji: emoji ?? this.emoji,
   );
   HabitsTableData copyWithCompanion(HabitsTableCompanion data) {
     return HabitsTableData(
@@ -307,6 +336,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
       titleNonce: data.titleNonce.present
           ? data.titleNonce.value
           : this.titleNonce,
+      emoji: data.emoji.present ? data.emoji.value : this.emoji,
     );
   }
 
@@ -319,7 +349,8 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
           ..write('isArchived: $isArchived, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('userId: $userId, ')
-          ..write('titleNonce: $titleNonce')
+          ..write('titleNonce: $titleNonce, ')
+          ..write('emoji: $emoji')
           ..write(')'))
         .toString();
   }
@@ -333,6 +364,7 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
     updatedAt,
     userId,
     titleNonce,
+    emoji,
   );
   @override
   bool operator ==(Object other) =>
@@ -344,7 +376,8 @@ class HabitsTableData extends DataClass implements Insertable<HabitsTableData> {
           other.isArchived == this.isArchived &&
           other.updatedAt == this.updatedAt &&
           other.userId == this.userId &&
-          other.titleNonce == this.titleNonce);
+          other.titleNonce == this.titleNonce &&
+          other.emoji == this.emoji);
 }
 
 class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
@@ -355,6 +388,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
   final Value<String> updatedAt;
   final Value<String?> userId;
   final Value<String> titleNonce;
+  final Value<String> emoji;
   final Value<int> rowid;
   const HabitsTableCompanion({
     this.id = const Value.absent(),
@@ -364,6 +398,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     this.updatedAt = const Value.absent(),
     this.userId = const Value.absent(),
     this.titleNonce = const Value.absent(),
+    this.emoji = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HabitsTableCompanion.insert({
@@ -374,6 +409,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     required String updatedAt,
     this.userId = const Value.absent(),
     this.titleNonce = const Value.absent(),
+    this.emoji = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        title = Value(title),
@@ -387,6 +423,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     Expression<String>? updatedAt,
     Expression<String>? userId,
     Expression<String>? titleNonce,
+    Expression<String>? emoji,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -397,6 +434,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (userId != null) 'user_id': userId,
       if (titleNonce != null) 'title_nonce': titleNonce,
+      if (emoji != null) 'emoji': emoji,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -409,6 +447,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     Value<String>? updatedAt,
     Value<String?>? userId,
     Value<String>? titleNonce,
+    Value<String>? emoji,
     Value<int>? rowid,
   }) {
     return HabitsTableCompanion(
@@ -419,6 +458,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
       updatedAt: updatedAt ?? this.updatedAt,
       userId: userId ?? this.userId,
       titleNonce: titleNonce ?? this.titleNonce,
+      emoji: emoji ?? this.emoji,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -447,6 +487,9 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
     if (titleNonce.present) {
       map['title_nonce'] = Variable<String>(titleNonce.value);
     }
+    if (emoji.present) {
+      map['emoji'] = Variable<String>(emoji.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -463,6 +506,7 @@ class HabitsTableCompanion extends UpdateCompanion<HabitsTableData> {
           ..write('updatedAt: $updatedAt, ')
           ..write('userId: $userId, ')
           ..write('titleNonce: $titleNonce, ')
+          ..write('emoji: $emoji, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4353,6 +4397,7 @@ typedef $$HabitsTableTableCreateCompanionBuilder =
       required String updatedAt,
       Value<String?> userId,
       Value<String> titleNonce,
+      Value<String> emoji,
       Value<int> rowid,
     });
 typedef $$HabitsTableTableUpdateCompanionBuilder =
@@ -4364,6 +4409,7 @@ typedef $$HabitsTableTableUpdateCompanionBuilder =
       Value<String> updatedAt,
       Value<String?> userId,
       Value<String> titleNonce,
+      Value<String> emoji,
       Value<int> rowid,
     });
 
@@ -4437,6 +4483,11 @@ class $$HabitsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> habitLogsTableRefs(
     Expression<bool> Function($$HabitLogsTableTableFilterComposer f) f,
   ) {
@@ -4506,6 +4557,11 @@ class $$HabitsTableTableOrderingComposer
     column: $table.titleNonce,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get emoji => $composableBuilder(
+    column: $table.emoji,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HabitsTableTableAnnotationComposer
@@ -4543,6 +4599,9 @@ class $$HabitsTableTableAnnotationComposer
     column: $table.titleNonce,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get emoji =>
+      $composableBuilder(column: $table.emoji, builder: (column) => column);
 
   Expression<T> habitLogsTableRefs<T extends Object>(
     Expression<T> Function($$HabitLogsTableTableAnnotationComposer a) f,
@@ -4605,6 +4664,7 @@ class $$HabitsTableTableTableManager
                 Value<String> updatedAt = const Value.absent(),
                 Value<String?> userId = const Value.absent(),
                 Value<String> titleNonce = const Value.absent(),
+                Value<String> emoji = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HabitsTableCompanion(
                 id: id,
@@ -4614,6 +4674,7 @@ class $$HabitsTableTableTableManager
                 updatedAt: updatedAt,
                 userId: userId,
                 titleNonce: titleNonce,
+                emoji: emoji,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4625,6 +4686,7 @@ class $$HabitsTableTableTableManager
                 required String updatedAt,
                 Value<String?> userId = const Value.absent(),
                 Value<String> titleNonce = const Value.absent(),
+                Value<String> emoji = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HabitsTableCompanion.insert(
                 id: id,
@@ -4634,6 +4696,7 @@ class $$HabitsTableTableTableManager
                 updatedAt: updatedAt,
                 userId: userId,
                 titleNonce: titleNonce,
+                emoji: emoji,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

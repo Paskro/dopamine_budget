@@ -8,6 +8,7 @@ abstract class HabitRepository {
   Future<void> archiveHabit(String habitId);
   Future<void> toggleHabitSelection(String sessionId, String habitId);
   Future<List<String>> getSelectedHabitIdsForSession(String sessionId);
+  Future<List<Habit>> getHabitsForSession(String sessionId);
   Stream<List<Habit>> watchHabits();
   Stream<List<String>> watchSelectedHabitIds(String sessionId);
 }

@@ -55,10 +55,10 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
     final title = _titleController.text.trim();
     if (_editingHabit != null) {
       widget.habitsNotifier.updateHabit(
-        Habit(id: _editingHabit!.id, title: title, scoreValue: _scoreValue),
+        Habit(id: _editingHabit!.id, title: title, emoji: '❓', scoreValue: _scoreValue),
       );
     } else {
-      widget.habitsNotifier.addHabit(title, _scoreValue);
+      widget.habitsNotifier.addHabit(title, _scoreValue, '❓');
     }
     _resetForm();
     FocusScope.of(context).unfocus();

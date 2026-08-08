@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration {
@@ -132,8 +132,23 @@ class AppDatabase extends _$AppDatabase {
             );
           } catch (_) {}
         }
+        if (from < 17) {
+          try {
+            await customStatement(
+              "ALTER TABLE \"habits_table\" ADD COLUMN \"emoji\" TEXT NOT NULL DEFAULT '❓'",
+            );
+          } catch (_) {}
+        }
       },
     );
+  }
+
+  Future<List<HabitsTableData>> getHabitsForSession(String sessionId) async {
+    final ids = await getSelectedHabitIdsForSession(sessionId);
+    if (ids.isEmpty) return [];
+    return (select(habitsTable)
+      ..where((t) => t.id.isIn(ids) & t.isArchived.equals(false)))
+        .get();
   }
 
   Future<List<String>> getSelectedHabitIdsForSession(String sessionId) async {

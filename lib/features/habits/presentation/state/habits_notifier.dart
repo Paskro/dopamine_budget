@@ -97,14 +97,20 @@ class HabitsNotifier extends ChangeNotifier {
   }
 
   Future<void> addHabit(
-      String title,
-      int scoreValue, {
-        Set<String>? localSelectedIds,
-        void Function(Set<String>)? onLocalSelectionChanged,
-      }) async {
-    final newHabit = Habit(id: '', title: title, scoreValue: scoreValue);
+    String title,
+    int scoreValue,
+    String emoji, {
+    Set<String>? localSelectedIds,
+    void Function(Set<String>)? onLocalSelectionChanged,
+  }) async {
+    final newHabit = Habit(
+      id: '',
+      title: title,
+      emoji: emoji,
+      scoreValue: scoreValue,
+      sessionId: _currentSessionId,
+    );
     final savedId = await _habitRepository.addHabitAndGetId(newHabit);
-
     if (savedId != null) {
       if (onLocalSelectionChanged != null && localSelectedIds != null) {
         onLocalSelectionChanged({...localSelectedIds, savedId});
@@ -161,7 +167,7 @@ class HabitsNotifier extends ChangeNotifier {
     try {
       final habit = _habits.firstWhere(
         (h) => h.id == habitId,
-        orElse: () => Habit(id: habitId, title: habitId, scoreValue: points),
+        orElse: () => Habit(id: habitId, title: habitId, emoji: '❓', scoreValue: points),
       );
       await _addActionUseCase.execute(habit);
     } catch (e) {
