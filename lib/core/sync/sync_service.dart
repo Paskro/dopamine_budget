@@ -166,6 +166,7 @@ class SyncService {
       _pullDays(),
       _pullShrinkingPeriods(),
       _pullShrinkingReportsLog(),
+      _pullStreak(),
       pullUserProfile(),
     ]);
   }
@@ -429,6 +430,40 @@ class SyncService {
       );
     }
   }
+  Future<void> _pullStreak() async {
+    final remote = await _client.from('streak').select().eq('user_id', _uid);
+
+    for (final r in remote) {
+      final lastActiveDate = r['last_active_date'] as String;
+      final localRow = await (_db.select(_db.streakTable)
+        ..where((t) => t.lastActiveDate.equals(lastActiveDate)))
+          .getSingleOrNull();
+
+      final remoteUpdatedAt = DateTime.tryParse(r['updated_at'] as String? ?? '');
+      final localUpdatedAt = localRow == null
+          ? null
+          : DateTime.tryParse(localRow.updatedAt);
+
+      if (localRow != null &&
+          remoteUpdatedAt != null &&
+          localUpdatedAt != null &&
+          !remoteUpdatedAt.isAfter(localUpdatedAt)) continue;
+
+      await _db.into(_db.streakTable).insertOnConflictUpdate(
+        StreakTableCompanion(
+          id: localRow == null ? const Value.absent() : Value(localRow.id),
+          lastActiveDate: Value(lastActiveDate),
+          currentMultiplier: Value((r['current_multiplier'] as num?)?.toDouble() ?? 1.0),
+          previousMultiplier: Value((r['previous_multiplier'] as num?)?.toDouble() ?? 1.0),
+          isViewed: Value(r['is_viewed'] as bool? ?? true),
+          hadActivityYesterday: Value(r['had_activity_yesterday'] as bool? ?? false),
+          updatedAt: Value(r['updated_at'] as String? ?? ''),
+          userId: Value(r['user_id'] as String?),
+        ),
+      );
+    }
+  }
+
   Future<void> pushUserProfile() async {
     final name = await SyncPrefs.getDisplayName();
     if (name == null) return;

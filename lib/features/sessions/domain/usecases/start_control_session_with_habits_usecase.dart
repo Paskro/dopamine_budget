@@ -3,12 +3,14 @@ import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/data/db/app_database.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class StartControlSessionWithHabitsUseCase {
   final AppDatabase _db;
+  final SyncService? _sync;
   final _uuid = const Uuid();
 
-  StartControlSessionWithHabitsUseCase(this._db);
+  StartControlSessionWithHabitsUseCase(this._db, {SyncService? sync}) : _sync = sync;
 
   Future<Session> execute({
     required double manualLimit,
@@ -42,6 +44,9 @@ class StartControlSessionWithHabitsUseCase {
         );
       }
     });
+
+    _sync?.pushSessions().catchError((_) {});
+    _sync?.pushSessionHabits().catchError((_) {});
 
     return Session(
       id: newId,

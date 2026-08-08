@@ -4,16 +4,20 @@ import 'package:dopamine_budget/features/sessions/domain/repositories/session_re
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
 import 'package:dopamine_budget/core/notifications/notification_scheduler.dart';
 import 'package:dopamine_budget/core/notifications/notification_prefs.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class ToggleShrinkingModeUseCase {
   final SessionRepository _sessionRepository;
   final GetDailyLimitUseCase _getDailyLimitUseCase;
+  final SyncService? _sync;
 
   ToggleShrinkingModeUseCase({
     required SessionRepository sessionRepository,
     required GetDailyLimitUseCase getDailyLimitUseCase,
+    SyncService? sync,
   })  : _sessionRepository = sessionRepository,
-        _getDailyLimitUseCase = getDailyLimitUseCase;
+        _getDailyLimitUseCase = getDailyLimitUseCase,
+        _sync = sync;
 
   Future<void> execute({
     required bool isEnabled,
@@ -43,6 +47,7 @@ class ToggleShrinkingModeUseCase {
         decreasePct: decreasePct,
         intervalDays: intervalDays,
       ));
+      _sync?.pushShrinkingPeriods().catchError((_) {});
       final notifyTime = await NotificationPrefs.getShrinkNotifyTime();
       final reportDay = today.add(Duration(days: intervalDays));
       await NotificationScheduler.scheduleNextShrinkPush(
@@ -62,6 +67,7 @@ class ToggleShrinkingModeUseCase {
         endedAt: todayStr,
         shrunkenLimit: currentLimit,
       );
+      _sync?.pushShrinkingPeriods().catchError((_) {});
       await NotificationScheduler.cancelShrinkPush();
     }
   }

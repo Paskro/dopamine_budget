@@ -4,11 +4,13 @@ import 'package:dopamine_budget/features/sessions/domain/entities/session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 class InitializeSessionUseCase {
   final AppDatabase _db;
+  final SyncService? _sync;
 
-  InitializeSessionUseCase(this._db);
+  InitializeSessionUseCase(this._db, {SyncService? sync}) : _sync = sync;
 
   Future<Session?> execute({bool forceRestart = false, int durationDays = 7}) async {
       try {
@@ -60,6 +62,7 @@ class InitializeSessionUseCase {
         );
 
         await _db.into(_db.sessionsTable).insert(companion);
+        _sync?.pushSessions().catchError((_) {});
 
         print('=== Новая фаза калибровки создана на $durationDays дней! ===');
 

@@ -430,6 +430,9 @@ class SessionRepositoryImpl implements SessionRepository {
           ),
         );
       }
+    }).onError((e, st) {
+      print('❌ logHabitClickWithStatusCheck transaction error: $e\n$st');
+      throw e!;
     });
 
     _sync?.pushHabitLogs().catchError((_) {});
@@ -465,14 +468,22 @@ class SessionRepositoryImpl implements SessionRepository {
   Future<void> updateSessionPhase(String sessionId, int newPhase) async {
     await (_db.update(_db.sessionsTable)
       ..where((t) => t.id.equals(sessionId)))
-        .write(SessionsTableCompanion(phase: Value(newPhase)));
+        .write(SessionsTableCompanion(
+          phase: Value(newPhase),
+          updatedAt: Value(TimeProvider.now.toIso8601String()),
+        ));
+    _sync?.pushSessions().catchError((_) {});
   }
 
   @override
   Future<void> deleteSession(String sessionId) async {
-    await (_db.delete(_db.sessionsTable)
+    await (_db.update(_db.sessionsTable)
       ..where((t) => t.id.equals(sessionId)))
-        .go();
+        .write(SessionsTableCompanion(
+          isDeleted: const Value(true),
+          updatedAt: Value(TimeProvider.now.toIso8601String()),
+        ));
+    _sync?.pushSessions().catchError((_) {});
   }
 
   @override

@@ -104,12 +104,12 @@ void main() async {
   final scoringRepository = ScoringRepositoryImpl(database);
 
   // Use Cases — сессии
-  final initializeSessionUseCase = InitializeSessionUseCase(database);
+  final initializeSessionUseCase = InitializeSessionUseCase(database, sync: syncService);
   final startControlSessionUseCase = StartControlSessionUseCase(
     database,
     sync: syncService,
   );
-  final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database);
+  final startControlSessionWithHabitsUseCase = StartControlSessionWithHabitsUseCase(database, sync: syncService);
 
   final archiveSessionUseCase = ArchiveSessionUseCase(sessionRepository);
   final deleteSessionUseCase = DeleteSessionUseCase(sessionRepository);
@@ -118,10 +118,12 @@ void main() async {
   final toggleShrinkingModeUseCase = ToggleShrinkingModeUseCase(
     sessionRepository: sessionRepository,
     getDailyLimitUseCase: getDailyLimitUseCase,
+    sync: syncService,
   );
   final verifyCalibrationExpiryUseCase = VerifyCalibrationExpiryUseCase(
     sessionRepository: sessionRepository,
     scoringRepository: scoringRepository,
+    sync: syncService,
   );
   final getDopamineBalanceUseCase = GetCurrentDopamineBalanceUseCase(
     sessionRepository: sessionRepository,
@@ -141,7 +143,7 @@ void main() async {
   final getWeeklyHabitsReportUseCase = GetWeeklyHabitsReportUseCase(scoringRepository);
 
   // Use Cases — привычки
-  final addActionUseCase = AddActionUseCase(database, sync: syncService);
+  final addActionUseCase = AddActionUseCase(sessionRepository);
 
   // Streak
   final streakRepository = StreakRepositoryImpl(database, sync: syncService);

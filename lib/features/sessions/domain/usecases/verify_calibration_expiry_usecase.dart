@@ -1,18 +1,22 @@
 ﻿import 'package:dopamine_budget/core/utils/time_provider.dart';
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/scoring/domain/repositories/scoring_repository.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 
 // lib/features/sessions/domain/usecases/verify_calibration_expiry_usecase.dart
 
 class VerifyCalibrationExpiryUseCase {
   final SessionRepository _sessionRepository;
   final ScoringRepository _scoringRepository;
+  final SyncService? _sync;
 
   VerifyCalibrationExpiryUseCase({
     required SessionRepository sessionRepository,
     required ScoringRepository scoringRepository,
+    SyncService? sync,
   })  : _sessionRepository = sessionRepository,
-        _scoringRepository = scoringRepository;
+        _scoringRepository = scoringRepository,
+        _sync = sync;
 
   Future<bool> execute() async {
     final currentSession = await _sessionRepository.getActiveSession();
@@ -66,6 +70,7 @@ class VerifyCalibrationExpiryUseCase {
     );
 
     await _sessionRepository.updateSession(updatedSession);
+    _sync?.pushSessions().catchError((_) {});
 
     print('🚀 [VerifyCalibrationExpiry] Калибровка завершена! avg=$avgScore, controlStartedAt=${updatedSession.controlStartedAt}');
     return true;
