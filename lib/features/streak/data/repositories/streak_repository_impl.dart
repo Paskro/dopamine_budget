@@ -20,7 +20,6 @@ class StreakRepositoryImpl implements IStreakRepository {
   }
 
   @override
-  @override
   Future<void> syncStreak() async {
     final now = TimeProvider.now;
     final yesterdayStr = _formatDate(now.subtract(const Duration(days: 1)));
@@ -47,7 +46,7 @@ class StreakRepositoryImpl implements IStreakRepository {
       if (current.lastActiveDate == yesterdayStr) return;
 
       var multiplier = current.currentMultiplier;
-      final previousMultiplier = multiplier; // snapshot ДО цикла
+      final previousMultiplier = multiplier;
       var cursor = DateTime.parse(current.lastActiveDate)
           .add(const Duration(days: 1));
       final target = DateTime.parse(yesterdayStr);
@@ -64,8 +63,7 @@ class StreakRepositoryImpl implements IStreakRepository {
       }
 
       await (_db.update(_db.streakTable)
-        ..where((t) =>
-        t.lastActiveDate.equals(current.lastActiveDate)))
+        ..where((t) => t.lastActiveDate.equals(current.lastActiveDate)))
           .write(StreakTableCompanion(
         lastActiveDate: Value(yesterdayStr),
         currentMultiplier: Value(multiplier),
@@ -75,6 +73,7 @@ class StreakRepositoryImpl implements IStreakRepository {
         updatedAt: Value(TimeProvider.now.toIso8601String()),
       ));
     });
+
     _sync?.pushStreak().catchError((_) {});
   }
 
@@ -83,17 +82,15 @@ class StreakRepositoryImpl implements IStreakRepository {
     final rows = await (_db.select(_db.streakTable)..limit(1)).get();
     if (rows.isEmpty) return;
     await (_db.update(_db.streakTable)
-      ..where((t) =>
-      t.lastActiveDate.equals(rows.first.lastActiveDate)))
+      ..where((t) => t.lastActiveDate.equals(rows.first.lastActiveDate)))
         .write(StreakTableCompanion(
-      isViewed: Value(true),
-      updatedAt: Value(TimeProvider.now.toIso8601String()), // добавить
+      isViewed: const Value(true),
+      updatedAt: Value(TimeProvider.now.toIso8601String()),
     ));
     _sync?.pushStreak().catchError((_) {});
   }
 
   Future<bool> _hasActivityOnDate(String dateStr) async {
-    // Проверка кликов привычек
     final dateExpr = CustomExpression<String>(
       "date(${_db.habitLogsTable.actualTableName}.timestamp)",
     );
@@ -104,7 +101,6 @@ class StreakRepositoryImpl implements IStreakRepository {
     final habitRows = await habitQuery.get();
     if (habitRows.isNotEmpty) return true;
 
-    // Проверка кнопок «Молодец» и «Сорвался» в DaysTable
     final dayQuery = _db.select(_db.daysTable)
       ..where((t) =>
       t.date.equals(dateStr) &

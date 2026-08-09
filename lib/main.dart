@@ -85,6 +85,7 @@ void main() async {
   final activeSessionService = ActiveSessionService(supabase, deviceId: deviceId);
 
   HabitsNotifier? habitsNotifierRef;
+  ControlScreenNotifier? controlScreenNotifierRef;
 
   final authModule = AuthModule.create(
     secureStorage,
@@ -95,7 +96,10 @@ void main() async {
   final pinNotifier = PinNotifier(
     cryptoRepository: cryptoRepository,
     cryptoSessionService: cryptoSessionService,
-    onUnlocked: () async => habitsNotifierRef?.reloadHabits().catchError((_) {}),
+    onUnlocked: () async {
+      await habitsNotifierRef?.reloadHabits().catchError((_) {});
+      controlScreenNotifierRef?.reloadHabits().catchError((_) {});
+    },
   );
 
   // Репозитории
@@ -187,6 +191,7 @@ void main() async {
     habitRepository: habitRepository,
     getDailyLimitUseCase: getDailyLimitUseCase,
   );
+  controlScreenNotifierRef = controlScreenNotifier;
 
   runApp(MyApp(
         database: database,

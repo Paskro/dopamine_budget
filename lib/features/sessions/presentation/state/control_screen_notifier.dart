@@ -161,6 +161,12 @@ class ControlScreenNotifier extends ChangeNotifier {
     _subscribeToToday();
   }
 
+  Future<void> reloadHabits() async {
+    final habits = await _habitRepository.getHabits();
+    _habits = habits;
+    _recompute();
+  }
+
   void _subscribeToToday() {
     final now = TimeProvider.now;
     final today = DateTime(now.year, now.month, now.day);

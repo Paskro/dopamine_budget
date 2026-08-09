@@ -140,7 +140,6 @@ class SyncService {
   Future<void> pushStreak() async {
     final rows = await _db.select(_db.streakTable).get();
     final payload = rows.map((r) => {
-      'id': r.id,
       'user_id': _uid,
       'last_active_date': r.lastActiveDate,
       'current_multiplier': r.currentMultiplier,
@@ -152,7 +151,10 @@ class SyncService {
           : r.updatedAt,
     }).toList();
     if (payload.isEmpty) return;
-    await _client.from('streak').upsert(payload);
+    await _client.from('streak').upsert(
+      payload,
+      onConflict: 'user_id,last_active_date',
+    );
   }
 
   // ─── PULL ─────────────────────────────────────────────────────────────────
