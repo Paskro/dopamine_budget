@@ -11,6 +11,7 @@ import 'package:dopamine_budget/features/auth/presentation/pages/auth_flow_coord
 import 'package:dopamine_budget/core/crypto/data/sync_prefs.dart';
 import 'package:dopamine_budget/core/fcm/fcm_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:home_widget/home_widget.dart';
 class AppGate extends StatefulWidget {
   final PinNotifier pinNotifier;
   final CryptoRepository cryptoRepository;
@@ -44,8 +45,14 @@ class _AppGateState extends State<AppGate> {
     widget.authModule.authNotifier.addListener(_onAuthChanged);
     FirebaseMessaging.onMessage.listen((message) {
       if (message.data['type'] == 'widget_refresh') {
-        // TODO Stage 3: trigger widget data refresh
+        HomeWidget.updateWidget(
+          name:        'DopamineWidgetProvider',
+          androidName: 'DopamineWidgetProvider',
+        );
       }
+    });
+    HomeWidget.widgetClicked.listen((uri) {
+      // TODO Stage 4: route to screen based on uri
     });
   }
 

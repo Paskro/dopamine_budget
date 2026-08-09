@@ -5,6 +5,7 @@ import 'package:dopamine_budget/features/habits/domain/repositories/habit_reposi
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
 import 'package:dopamine_budget/core/sync/sync_service.dart';
+import 'package:dopamine_budget/core/widget/widget_data_service.dart';
 
 // lib/features/habits/presentation/state/habits_notifier.dart
 
@@ -34,6 +35,12 @@ class HabitsNotifier extends ChangeNotifier {
 
   String? _currentSessionId;
   String? get currentSessionId => _currentSessionId;
+
+  int _sessionPhase = 0;
+
+  void setSessionPhase(int phase) {
+    _sessionPhase = phase;
+  }
 
   StreamSubscription<List<Habit>>? _habitsSub;
   StreamSubscription? _sessionSub;
@@ -73,8 +80,20 @@ class HabitsNotifier extends ChangeNotifier {
           .listen((ids) {
         _selectedHabitIds = ids;
         notifyListeners();
+        _triggerWidgetUpdate();
       });
     });
+  }
+
+  void _triggerWidgetUpdate() {
+    WidgetDataService.updateWidgetData(
+      activeHabits:     _habits.where((h) => _selectedHabitIds.contains(h.id)).toList(),
+      dayStatus:        'regular',
+      hasActiveSession: _currentSessionId != null,
+      balance:          0,
+      dailyLimit:       0,
+      sessionPhase:     _sessionPhase,
+    ).catchError((_) {});
   }
 
   @override

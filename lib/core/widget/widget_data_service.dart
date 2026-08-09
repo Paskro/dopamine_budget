@@ -10,26 +10,28 @@ class WidgetDataService {
     required bool hasActiveSession,
     required double balance,
     required double dailyLimit,
+    required int sessionPhase,
   }) async {
     await HomeWidget.setAppGroupId(_appGroupId);
 
-    final ids = activeHabits.map((h) => h.id).join(',');
+    final ids    = activeHabits.map((h) => h.id).join(',');
     final emojis = activeHabits.map((h) => h.emoji).join(',');
-    final costs = activeHabits.map((h) => h.scoreValue.toString()).join(',');
+    final costs  = activeHabits.map((h) => h.scoreValue.toString()).join(',');
 
     await Future.wait([
-      HomeWidget.saveWidgetData('habit_ids', ids),
-      HomeWidget.saveWidgetData('habit_emojis', emojis),
-      HomeWidget.saveWidgetData('habit_costs', costs),
-      HomeWidget.saveWidgetData('day_status', dayStatus),
+      HomeWidget.saveWidgetData('habit_ids',          ids),
+      HomeWidget.saveWidgetData('habit_emojis',       emojis),
+      HomeWidget.saveWidgetData('habit_costs',        costs),
+      HomeWidget.saveWidgetData('day_status',         dayStatus),
       HomeWidget.saveWidgetData('has_active_session', hasActiveSession ? '1' : '0'),
-      HomeWidget.saveWidgetData('balance', balance.toStringAsFixed(1)),
-      HomeWidget.saveWidgetData('daily_limit', dailyLimit.toStringAsFixed(1)),
-      HomeWidget.saveWidgetData('widget_date', DateTime.now().toIso8601String().substring(0, 10)),
+      HomeWidget.saveWidgetData('balance',            balance.toStringAsFixed(1)),
+      HomeWidget.saveWidgetData('daily_limit',        dailyLimit.toStringAsFixed(1)),
+      HomeWidget.saveWidgetData('session_phase',      sessionPhase.toString()),
+      HomeWidget.saveWidgetData('widget_date',        DateTime.now().toIso8601String().substring(0, 10)),
     ]);
 
     await HomeWidget.updateWidget(
-      name: 'DopamineWidgetProvider',
+      name:        'DopamineWidgetProvider',
       androidName: 'DopamineWidgetProvider',
     );
   }
@@ -37,12 +39,13 @@ class WidgetDataService {
   static Future<void> clearWidgetData() async {
     await HomeWidget.setAppGroupId(_appGroupId);
     await Future.wait([
-      HomeWidget.saveWidgetData('habit_ids', ''),
+      HomeWidget.saveWidgetData('habit_ids',          ''),
       HomeWidget.saveWidgetData('has_active_session', '0'),
-      HomeWidget.saveWidgetData('day_status', 'regular'),
+      HomeWidget.saveWidgetData('day_status',         'regular'),
+      HomeWidget.saveWidgetData('session_phase',      '0'),
     ]);
     await HomeWidget.updateWidget(
-      name: 'DopamineWidgetProvider',
+      name:        'DopamineWidgetProvider',
       androidName: 'DopamineWidgetProvider',
     );
   }

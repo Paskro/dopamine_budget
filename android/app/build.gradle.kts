@@ -3,6 +3,7 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -25,13 +26,13 @@ android {
 
     defaultConfig {
         applicationId = "com.example.dopamine_budget"
-
-        // Гарантирует стабильную работу flutter_local_notifications и десугаризации
         minSdk = flutter.minSdkVersion
-
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     buildTypes {
@@ -46,7 +47,6 @@ flutter {
 }
 
 dependencies {
-
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-
+    implementation("com.google.firebase:firebase-messaging-ktx:24.1.1")
 }

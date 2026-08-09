@@ -18,6 +18,19 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".DopamineWidgetProvider"
+            android:exported="true"
+            android:label="Dopamine Budget Widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.dopamine_budget.HABIT_CLICK" />
+                <action android:name="com.example.dopamine_budget.OPEN_APP" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/dopamine_widget_info" />
+        </receiver>
         <activity
             android:name=".MainActivity"
             android:exported="true"
