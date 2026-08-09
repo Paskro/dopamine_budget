@@ -9,11 +9,14 @@ import 'package:dopamine_budget/features/auth/presentation/state/auth_state.dart
 import 'package:dopamine_budget/features/auth/presentation/pages/magic_link_email_screen.dart';
 import 'package:dopamine_budget/features/auth/presentation/pages/auth_flow_coordinator.dart';
 import 'package:dopamine_budget/core/crypto/data/sync_prefs.dart';
+import 'package:dopamine_budget/core/fcm/fcm_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 class AppGate extends StatefulWidget {
   final PinNotifier pinNotifier;
   final CryptoRepository cryptoRepository;
   final AuthModule authModule;
   final ActiveSessionService activeSessionService;
+  final FcmService fcmService;
   final Widget child;
 
   const AppGate({
@@ -22,6 +25,7 @@ class AppGate extends StatefulWidget {
     required this.cryptoRepository,
     required this.authModule,
     required this.activeSessionService,
+    required this.fcmService,
     required this.child,
   });
 
@@ -38,6 +42,11 @@ class _AppGateState extends State<AppGate> {
     super.initState();
     _loadSyncEnabled();
     widget.authModule.authNotifier.addListener(_onAuthChanged);
+    FirebaseMessaging.onMessage.listen((message) {
+      if (message.data['type'] == 'widget_refresh') {
+        // TODO Stage 3: trigger widget data refresh
+      }
+    });
   }
 
   Future<void> _loadSyncEnabled() async {
@@ -61,6 +70,7 @@ class _AppGateState extends State<AppGate> {
     if (_sessionActivated) return;
     _sessionActivated = true;
     await widget.activeSessionService.activate();
+    await widget.fcmService.init();
     if (mounted) {
       widget.activeSessionService.startListening(context);
     }

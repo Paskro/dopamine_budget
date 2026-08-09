@@ -56,6 +56,7 @@ class SyncService {
         'title_nonce': r.titleNonce, // уже есть в Drift
         'score_value': r.scoreValue,
         'is_archived': r.isArchived,
+        'emoji': r.emoji,
         'updated_at': r.updatedAt,
       });
     }
@@ -251,6 +252,7 @@ class SyncService {
           titleNonce: Value(nonce),              // сохраняем nonce
           scoreValue: Value(r['score_value'] as int),
           isArchived: Value(r['is_archived'] as bool? ?? false),
+          emoji: Value(r['emoji'] as String? ?? '❓'),
           updatedAt: Value(r['updated_at'] as String? ?? ''),
           userId: Value(r['user_id'] as String?),
         ),

@@ -40,6 +40,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dopamine_budget/core/crypto/presentation/state/pin_notifier.dart';
 import 'package:dopamine_budget/presentation/app_gate.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:dopamine_budget/core/fcm/fcm_service.dart';
+import 'package:dopamine_budget/core/fcm/fcm_background_handler.dart';
 import 'package:dopamine_budget/features/auth/presentation/pages/deep_link_handler.dart';
 import 'package:dopamine_budget/features/auth/auth_module.dart';
 import 'package:dopamine_budget/core/sync/sync_service.dart';
@@ -60,6 +64,8 @@ void main() async {
   await NotificationPermissionHelper.requestPermission();
   await NotificationPermissionHelper.requestExactAlarmPermission();
   await HapticService.init();
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await Supabase.initialize(
     url: 'https://iumeyfwzbgaxkfqsevzd.supabase.co',
     publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1bWV5Znd6YmdheGtmcXNldnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxNDk5NDcsImV4cCI6MjEwMDcyNTk0N30.0eLBu35tCAr13rZLNnv4ACMMWLIh4tD6lxm0cDsLSfA',
@@ -82,6 +88,7 @@ void main() async {
     await secureStorage.write(key: keyDeviceId, value: storedDeviceId);
   }
   final deviceId = storedDeviceId;
+  final fcmService = FcmService(secureStorage, Supabase.instance.client);
   final activeSessionService = ActiveSessionService(supabase, deviceId: deviceId);
 
   HabitsNotifier? habitsNotifierRef;
@@ -147,7 +154,7 @@ void main() async {
   final getWeeklyHabitsReportUseCase = GetWeeklyHabitsReportUseCase(scoringRepository);
 
   // Use Cases — привычки
-  final addActionUseCase = AddActionUseCase(sessionRepository);
+  final addActionUseCase = AddActionUseCase(sessionRepository, fcmService: fcmService);
 
   // Streak
   final streakRepository = StreakRepositoryImpl(database, sync: syncService);
@@ -210,6 +217,7 @@ void main() async {
     streakNotifier: streakNotifier,
     authModule: authModule,
     activeSessionService: activeSessionService,
+    fcmService: fcmService,
   ));
 }
 
@@ -230,6 +238,7 @@ class MyApp extends StatelessWidget {
   final CryptoRepository cryptoRepository;
   final AuthModule authModule;
   final ActiveSessionService activeSessionService;
+  final FcmService fcmService;
 
   const MyApp({
     super.key,
@@ -248,7 +257,8 @@ class MyApp extends StatelessWidget {
     required this.pinNotifier,
     required this.cryptoRepository,
     required this.authModule,
-    required this.activeSessionService
+    required this.activeSessionService,
+    required this.fcmService,
   });
 
   @override
@@ -270,6 +280,7 @@ class MyApp extends StatelessWidget {
             cryptoRepository: cryptoRepository,
             authModule: authModule,
             activeSessionService: activeSessionService,
+            fcmService: fcmService,
             child: RootGate(
         database: database,
         sessionsNotifier: sessionsNotifier,
