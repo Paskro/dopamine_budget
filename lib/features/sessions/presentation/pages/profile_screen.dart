@@ -76,7 +76,7 @@ class ProfileScreen extends StatelessWidget {
                   builder: (_) => HabitManagementPage(
                     habitsNotifier: habitsNotifier!,
                     sessionId: activeSession!.id,
-                    readOnly: activeSession!.phase != 1,
+                    readOnly: false,
                   ),
                 ),
               ),

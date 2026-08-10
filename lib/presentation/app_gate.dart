@@ -13,12 +13,16 @@ import 'package:dopamine_budget/core/fcm/fcm_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:dopamine_budget/core/widget/widget_data_service.dart';
+import 'package:dopamine_budget/features/sessions/presentation/state/control_screen_notifier.dart';
+import 'package:dopamine_budget/core/sync/sync_service.dart';
 class AppGate extends StatefulWidget {
   final PinNotifier pinNotifier;
   final CryptoRepository cryptoRepository;
   final AuthModule authModule;
   final ActiveSessionService activeSessionService;
   final FcmService fcmService;
+  final ControlScreenNotifier controlScreenNotifier;
+  final SyncService? syncService;
   final Widget child;
 
   const AppGate({
@@ -28,6 +32,8 @@ class AppGate extends StatefulWidget {
     required this.authModule,
     required this.activeSessionService,
     required this.fcmService,
+    required this.controlScreenNotifier,
+    this.syncService,
     required this.child,
   });
 
@@ -90,10 +96,22 @@ class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       WidgetDataService.setAppActive(true).catchError((_) {});
+      // Always force refresh on resume to pick up any widget-tap DB writes
+      widget.controlScreenNotifier.forceRefreshStreams();
+      _checkAndPushPendingHabitLogs();
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       WidgetDataService.setAppActive(false).catchError((_) {});
     }
+  }
+
+  Future<void> _checkAndPushPendingHabitLogs() async {
+    try {
+      final result = await HomeWidget.getWidgetData<bool>('pending_habit_log_push');
+      if (result != true) return;
+      await HomeWidget.saveWidgetData('pending_habit_log_push', false);
+      widget.syncService?.pushHabitLogs().catchError((_) {});
+    } catch (_) {}
   }
 
   @override

@@ -240,16 +240,19 @@ class AppDatabase extends _$AppDatabase {
   // ЗАМЕНИТЬ метод целиком:
   Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive) {
     final end = endExclusive.subtract(const Duration(microseconds: 1));
+
     final query = select(habitLogsTable).join([
       innerJoin(habitsTable, habitsTable.id.equalsExp(habitLogsTable.habitId)),
     ])
       ..where(habitLogsTable.timestamp.isBetweenValues(start, end));
 
     return query.watch().map(
-          (rows) => rows.fold<int>(
-        0,
-            (sum, row) => sum + row.readTable(habitsTable).scoreValue,
-      ),
+      (rows) {
+        return rows.fold<int>(
+          0,
+          (sum, row) => sum + row.readTable(habitsTable).scoreValue,
+        );
+      },
     );
   }
 }

@@ -52,7 +52,6 @@ import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
 import 'package:dopamine_budget/presentation/onboarding_gate.dart';
 import 'package:dopamine_budget/features/auth/presentation/pages/auth_flow_coordinator.dart';
-import 'package:dopamine_budget/core/widget/widget_click_entrypoint.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,7 +97,10 @@ void main() async {
   final authModule = AuthModule.create(
     secureStorage,
     onPullAll: syncService.pullAll,
-    onAfterPull: () => habitsNotifierRef?.reloadHabits() ?? Future.value(),
+    onAfterPull: () async {
+      await habitsNotifierRef?.reloadHabits().catchError((_) {});
+      controlScreenNotifierRef?.forceRefreshStreams();
+    },
   );
 
   final pinNotifier = PinNotifier(
@@ -219,6 +221,7 @@ void main() async {
     authModule: authModule,
     activeSessionService: activeSessionService,
     fcmService: fcmService,
+    syncService: syncService,
   ));
 }
 
@@ -240,6 +243,7 @@ class MyApp extends StatelessWidget {
   final AuthModule authModule;
   final ActiveSessionService activeSessionService;
   final FcmService fcmService;
+  final SyncService syncService;
 
   const MyApp({
     super.key,
@@ -260,6 +264,7 @@ class MyApp extends StatelessWidget {
     required this.authModule,
     required this.activeSessionService,
     required this.fcmService,
+    required this.syncService,
   });
 
   @override
@@ -282,6 +287,8 @@ class MyApp extends StatelessWidget {
             authModule: authModule,
             activeSessionService: activeSessionService,
             fcmService: fcmService,
+            controlScreenNotifier: controlScreenNotifier,
+            syncService: syncService,
             child: RootGate(
         database: database,
         sessionsNotifier: sessionsNotifier,

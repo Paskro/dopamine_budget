@@ -230,6 +230,18 @@ class DopamineWidgetProvider : AppWidgetProvider() {
                     )
                     views.setOnClickPendingIntent(btnId, pi)
                 }
+
+                val openAppIntent = context.packageManager
+                    .getLaunchIntentForPackage(context.packageName)?.apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    }
+                if (openAppIntent != null) {
+                    val openPi = PendingIntent.getActivity(
+                        context, 999, openAppIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                    views.setOnClickPendingIntent(R.id.widget_canvas_view, openPi)
+                }
             }
         }
 

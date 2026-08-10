@@ -223,6 +223,13 @@ class ControlScreenNotifier extends ChangeNotifier {
   /// Псевдоним для control_screen.dart
   void checkAndResetDayIfNeeded() => checkForNewDay();
 
+  /// Called after a full data pull to force stream re-subscription.
+  /// Ensures watchScoreForDay re-emits with current DB state.
+  void forceRefreshStreams() {
+    _subscribeToToday();
+    _subscribeToScore();
+  }
+
   bool _isRecomputing = false;
   bool _recomputeQueued = false;
 

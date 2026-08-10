@@ -8,4 +8,5 @@
     android:initialLayout="@layout/dopamine_widget"
     android:resizeMode="none"
     android:widgetCategory="home_screen"
+    android:previewImage="@android:color/transparent"
     android:description="@string/widget_description" />
