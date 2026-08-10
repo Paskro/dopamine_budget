@@ -26,11 +26,17 @@
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.dopamine_budget.HABIT_CLICK" />
                 <action android:name="com.example.dopamine_budget.OPEN_APP" />
+                <action android:name="com.example.dopamine_budget.MIDNIGHT_RESET" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/dopamine_widget_info" />
         </receiver>
+        <activity
+            android:name=".TransparentTapActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
+            android:excludeFromRecents="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

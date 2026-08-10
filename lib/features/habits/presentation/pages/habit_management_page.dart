@@ -260,10 +260,36 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           onChanged: isLoading ? null : (bool? checked) {
                             if (isLocalMode) {
                               final updated = Set<String>.from(widget.localSelectedIds!);
-                              updated.contains(habit.id) ? updated.remove(habit.id) : updated.add(habit.id);
-                              widget.onLocalSelectionChanged!(updated);
+                              if (updated.contains(habit.id)) {
+                                updated.remove(habit.id);
+                                widget.onLocalSelectionChanged!(updated);
+                              } else {
+                                if (updated.length >= 6) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Максимум 6 привычек в сессии'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                updated.add(habit.id);
+                                widget.onLocalSelectionChanged!(updated);
+                              }
                             } else {
-                              widget.habitsNotifier.toggleHabitSelection(widget.sessionId, habit.id);
+                              if (!isSelected && selectedIds.length >= 6) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Максимум 6 привычек в сессии'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
+                              widget.habitsNotifier.toggleHabitSelection(
+                                widget.sessionId,
+                                habit.id,
+                              );
                             }
                           },
                         ),

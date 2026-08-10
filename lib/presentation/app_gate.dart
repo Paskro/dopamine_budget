@@ -12,6 +12,7 @@ import 'package:dopamine_budget/core/crypto/data/sync_prefs.dart';
 import 'package:dopamine_budget/core/fcm/fcm_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:dopamine_budget/core/widget/widget_data_service.dart';
 class AppGate extends StatefulWidget {
   final PinNotifier pinNotifier;
   final CryptoRepository cryptoRepository;
@@ -34,13 +35,14 @@ class AppGate extends StatefulWidget {
   State<AppGate> createState() => _AppGateState();
 }
 
-class _AppGateState extends State<AppGate> {
+class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
   bool _sessionActivated = false;
   bool? _syncEnabled;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadSyncEnabled();
     widget.authModule.authNotifier.addListener(_onAuthChanged);
     FirebaseMessaging.onMessage.listen((message) {
@@ -78,13 +80,25 @@ class _AppGateState extends State<AppGate> {
     _sessionActivated = true;
     await widget.activeSessionService.activate();
     await widget.fcmService.init();
+    WidgetDataService.setAppActive(true).catchError((_) {});
     if (mounted) {
       widget.activeSessionService.startListening(context);
     }
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      WidgetDataService.setAppActive(true).catchError((_) {});
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      WidgetDataService.setAppActive(false).catchError((_) {});
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.authModule.authNotifier.removeListener(_onAuthChanged);
     widget.activeSessionService.dispose();
     super.dispose();

@@ -273,12 +273,14 @@ class ControlScreenNotifier extends ChangeNotifier {
 
   void _updateWidget() {
     WidgetDataService.updateWidgetData(
-      activeHabits:     _state.sessionHabits,
-      dayStatus:        _state.dayStatus,
+      activeHabits:    _state.sessionHabits,
+      dayStatus:       _state.dayStatus,
       hasActiveSession: true,
-      balance:          _state.balance.toDouble(),
-      dailyLimit:       _state.dailyLimit.toDouble(),
-      sessionPhase:     1,
+      balance:         _state.balance.toDouble(),
+      dailyLimit:      _state.dailyLimit.toDouble(),
+      sessionPhase:    1,
+      sessionId:       _session?.id ?? '',
+      spentToday:      _spentToday,
     ).catchError((_) {});
   }
 

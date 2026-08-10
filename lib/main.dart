@@ -52,6 +52,7 @@ import 'package:uuid/uuid.dart';
 import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repository.dart';
 import 'package:dopamine_budget/presentation/onboarding_gate.dart';
 import 'package:dopamine_budget/features/auth/presentation/pages/auth_flow_coordinator.dart';
+import 'package:dopamine_budget/core/widget/widget_click_entrypoint.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

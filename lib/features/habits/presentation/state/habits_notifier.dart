@@ -87,12 +87,14 @@ class HabitsNotifier extends ChangeNotifier {
 
   void _triggerWidgetUpdate() {
     WidgetDataService.updateWidgetData(
-      activeHabits:     _habits.where((h) => _selectedHabitIds.contains(h.id)).toList(),
-      dayStatus:        'regular',
+      activeHabits:    _habits.where((h) => _selectedHabitIds.contains(h.id)).toList(),
+      dayStatus:       'regular',
       hasActiveSession: _currentSessionId != null,
-      balance:          0,
-      dailyLimit:       0,
-      sessionPhase:     _sessionPhase,
+      balance:         0,
+      dailyLimit:      0,
+      sessionPhase:    _sessionPhase,
+      sessionId:       _currentSessionId ?? '',
+      spentToday:      0,
     ).catchError((_) {});
   }
 
@@ -132,9 +134,16 @@ class HabitsNotifier extends ChangeNotifier {
     final savedId = await _habitRepository.addHabitAndGetId(newHabit);
     if (savedId != null) {
       if (onLocalSelectionChanged != null && localSelectedIds != null) {
-        onLocalSelectionChanged({...localSelectedIds, savedId});
+        if (localSelectedIds.length < 6) {
+          onLocalSelectionChanged({...localSelectedIds, savedId});
+        }
+        // If already 6 — habit created in catalog but not auto-selected
+        // UI will show SnackBar from HabitManagementPage
       } else if (_currentSessionId != null) {
-        await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
+        final currentSelected = _selectedHabitIds;
+        if (currentSelected.length < 6) {
+          await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
+        }
       }
       _sync?.pushHabits().catchError((_) {});
       _sync?.pushSessionHabits().catchError((_) {});
