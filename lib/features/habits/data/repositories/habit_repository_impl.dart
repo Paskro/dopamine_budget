@@ -7,6 +7,7 @@ import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_repositor
 import 'package:dopamine_budget/core/crypto/domain/repositories/crypto_session_service.dart';
 import 'package:dopamine_budget/core/crypto/domain/entities/encrypted_data_dto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:dopamine_budget/core/utils/time_provider.dart';
 
 class HabitRepositoryImpl implements HabitRepository {
   final AppDatabase _db;
@@ -47,6 +48,7 @@ class HabitRepositoryImpl implements HabitRepository {
           id: id,
           title: storedTitle,
           titleNonce: Value(storedNonce),
+          emoji: Value(habit.emoji),
           scoreValue: habit.scoreValue,
           updatedAt: DateTime.now().toIso8601String(),
         ),
@@ -59,12 +61,22 @@ class HabitRepositoryImpl implements HabitRepository {
 
   @override
   Future<void> updateHabit(Habit habit) async {
+    final key = _session.currentKey;
+    String storedTitle = habit.title;
+    String storedNonce = '';
+    if (key != null) {
+      final dto = await _crypto.encryptText(habit.title, key);
+      storedTitle = dto.ciphertextBase64;
+      storedNonce = dto.nonceBase64;
+    }
     await (_db.update(_db.habitsTable)
       ..where((t) => t.id.equals(habit.id)))
         .write(HabitsTableCompanion(
-      title: Value(habit.title),
+      title: Value(storedTitle),
+      titleNonce: Value(storedNonce),
       scoreValue: Value(habit.scoreValue),
-      updatedAt: Value(DateTime.now().toIso8601String()),
+      emoji: Value(habit.emoji),
+      updatedAt: Value(TimeProvider.now.toIso8601String()),
     ));
   }
 
@@ -81,6 +93,12 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<List<String>> getSelectedHabitIdsForSession(String sessionId) async {
     return _db.getSelectedHabitIdsForSession(sessionId);
+  }
+
+  @override
+  Future<List<Habit>> getHabitsForSession(String sessionId) async {
+    final rows = await _db.getHabitsForSession(sessionId);
+    return Future.wait(rows.map(_fromRow));
   }
 
   @override
@@ -111,7 +129,7 @@ class HabitRepositoryImpl implements HabitRepository {
         debugPrint('[_fromRow] DECRYPT ERROR: $e');
       }
     }
-    return Habit(id: row.id, title: title, scoreValue: row.scoreValue);
+    return Habit(id: row.id, title: title, emoji: row.emoji, scoreValue: row.scoreValue);
   }
 
 

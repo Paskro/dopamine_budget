@@ -19,10 +19,12 @@ class StreakNotifier extends ChangeNotifier {
         _repository = repository;
 
   Future<void> init() async {
+    print('🔄 StreakNotifier.init() called');
     _state = _state.copyWith(isLoading: true);
     notifyListeners();
-
+    try {
     final record = await _syncStreakUseCase.execute();
+    print('🔄 StreakNotifier.init() done, record=$record');
     _state = StreakState(
       record: record,
       displayCase: record != null
@@ -30,7 +32,11 @@ class StreakNotifier extends ChangeNotifier {
           : StreakDisplayCase.silence,
       isLoading: false,
     );
-    notifyListeners();
+  } catch (e, st) {
+  print('❌ StreakNotifier.init() error: $e\n$st');
+  _state = _state.copyWith(isLoading: false);
+}
+notifyListeners();
   }
 
   Future<void> markViewed() async {

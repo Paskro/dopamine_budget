@@ -5,6 +5,7 @@ import 'package:dopamine_budget/features/habits/domain/repositories/habit_reposi
 import 'package:dopamine_budget/features/sessions/domain/repositories/session_repository.dart';
 import 'package:dopamine_budget/features/actions/domain/usecases/add_action_usecase.dart';
 import 'package:dopamine_budget/core/sync/sync_service.dart';
+import 'package:dopamine_budget/core/widget/widget_data_service.dart';
 
 // lib/features/habits/presentation/state/habits_notifier.dart
 
@@ -34,6 +35,12 @@ class HabitsNotifier extends ChangeNotifier {
 
   String? _currentSessionId;
   String? get currentSessionId => _currentSessionId;
+
+  int _sessionPhase = 0;
+
+  void setSessionPhase(int phase) {
+    _sessionPhase = phase;
+  }
 
   StreamSubscription<List<Habit>>? _habitsSub;
   StreamSubscription? _sessionSub;
@@ -73,8 +80,22 @@ class HabitsNotifier extends ChangeNotifier {
           .listen((ids) {
         _selectedHabitIds = ids;
         notifyListeners();
+        _triggerWidgetUpdate();
       });
     });
+  }
+
+  void _triggerWidgetUpdate() {
+    WidgetDataService.updateWidgetData(
+      activeHabits:    _habits.where((h) => _selectedHabitIds.contains(h.id)).toList(),
+      dayStatus:       'regular',
+      hasActiveSession: _currentSessionId != null,
+      balance:         0,
+      dailyLimit:      0,
+      sessionPhase:    _sessionPhase,
+      sessionId:       _currentSessionId ?? '',
+      spentToday:      0,
+    ).catchError((_) {});
   }
 
   @override
@@ -97,19 +118,32 @@ class HabitsNotifier extends ChangeNotifier {
   }
 
   Future<void> addHabit(
-      String title,
-      int scoreValue, {
-        Set<String>? localSelectedIds,
-        void Function(Set<String>)? onLocalSelectionChanged,
-      }) async {
-    final newHabit = Habit(id: '', title: title, scoreValue: scoreValue);
+    String title,
+    int scoreValue,
+    String emoji, {
+    Set<String>? localSelectedIds,
+    void Function(Set<String>)? onLocalSelectionChanged,
+  }) async {
+    final newHabit = Habit(
+      id: '',
+      title: title,
+      emoji: emoji,
+      scoreValue: scoreValue,
+      sessionId: _currentSessionId,
+    );
     final savedId = await _habitRepository.addHabitAndGetId(newHabit);
-
     if (savedId != null) {
       if (onLocalSelectionChanged != null && localSelectedIds != null) {
-        onLocalSelectionChanged({...localSelectedIds, savedId});
+        if (localSelectedIds.length < 6) {
+          onLocalSelectionChanged({...localSelectedIds, savedId});
+        }
+        // If already 6 — habit created in catalog but not auto-selected
+        // UI will show SnackBar from HabitManagementPage
       } else if (_currentSessionId != null) {
-        await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
+        final currentSelected = _selectedHabitIds;
+        if (currentSelected.length < 6) {
+          await _habitRepository.toggleHabitSelection(_currentSessionId!, savedId);
+        }
       }
       _sync?.pushHabits().catchError((_) {});
       _sync?.pushSessionHabits().catchError((_) {});
@@ -161,7 +195,7 @@ class HabitsNotifier extends ChangeNotifier {
     try {
       final habit = _habits.firstWhere(
         (h) => h.id == habitId,
-        orElse: () => Habit(id: habitId, title: habitId, scoreValue: points),
+        orElse: () => Habit(id: habitId, title: habitId, emoji: '❓', scoreValue: points),
       );
       await _addActionUseCase.execute(habit);
     } catch (e) {

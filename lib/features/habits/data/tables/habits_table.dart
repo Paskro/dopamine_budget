@@ -8,6 +8,7 @@ class HabitsTable extends Table {
   TextColumn get updatedAt => text()();
   TextColumn get userId => text().nullable()();
   TextColumn get titleNonce => text().withDefault(const Constant(''))();
+  TextColumn get emoji => text().withDefault(const Constant('❓'))();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../state/habits_notifier.dart';
 import '../../domain/entities/habit.dart';
 
@@ -28,6 +29,8 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   int _scoreValue = 5;
+  String _selectedEmoji = '❓';
+  bool _showEmojiPicker = false;
 
   Habit? _editingHabit;
 
@@ -56,14 +59,18 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
     setState(() {
       _scoreValue = 5;
       _editingHabit = null;
+      _selectedEmoji = '❓';
+      _showEmojiPicker = false;
     });
   }
 
   void _startEditing(Habit habit) {
-    _titleController.text = habit.title;          // было: habit.name
+    _titleController.text = habit.title;
     setState(() {
-      _scoreValue = habit.scoreValue.clamp(1, 10); // было: habit.score
+      _scoreValue = habit.scoreValue.clamp(1, 10);
+      _selectedEmoji = habit.emoji;
       _editingHabit = habit;
+      _showEmojiPicker = false;
     });
   }
 
@@ -77,6 +84,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       final updatedHabit = Habit(
         id: _editingHabit!.id,
         title: title,
+        emoji: _selectedEmoji,
         scoreValue: _scoreValue,
       );
       widget.habitsNotifier.updateHabit(updatedHabit);
@@ -84,6 +92,7 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
       widget.habitsNotifier.addHabit(
         title,
         _scoreValue,
+        _selectedEmoji,
         localSelectedIds: widget.localSelectedIds,
         onLocalSelectionChanged: widget.onLocalSelectionChanged,
       );
@@ -144,6 +153,42 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
                           },
                         ),
                         const SizedBox(height: 12),
+                        GestureDetector(
+                          onTap: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(_selectedEmoji, style: const TextStyle(fontSize: 24)),
+                                const SizedBox(width: 8),
+                                const Text('Выберите эмодзи', style: TextStyle(fontSize: 14)),
+                                const Spacer(),
+                                Icon(_showEmojiPicker ? Icons.expand_less : Icons.expand_more),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_showEmojiPicker)
+                          SizedBox(
+                            height: 250,
+                            child: EmojiPicker(
+                              onEmojiSelected: (category, emoji) {
+                                setState(() {
+                                  _selectedEmoji = emoji.emoji;
+                                  _showEmojiPicker = false;
+                                });
+                              },
+                              config: const Config(
+                                height: 250,
+                                emojiViewConfig: EmojiViewConfig(columns: 8),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 12),
                         Row(
                           children: [
                             Text('Стоимость: $_scoreValue баллов', style: const TextStyle(fontSize: 15)),
@@ -200,28 +245,55 @@ class _HabitManagementPageState extends State<HabitManagementPage> {
             delegate: SliverChildBuilderDelegate(
                   (context, index) {
                 final habit = habits[index];
-                final habitIdInt = int.tryParse(habit.id) ?? -1;
                 final isSelected = selectedIds.contains(habit.id);
 
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: ListTile(
-                    leading: Checkbox(
-                      value: isSelected,
-                      onChanged: isLoading ? null : (bool? checked) {
-                        if (isLocalMode) {
-                          final updated = Set<String>.from(widget.localSelectedIds!);
-                          updated.contains(habit.id)
-                              ? updated.remove(habit.id)
-                              : updated.add(habit.id);
-                          widget.onLocalSelectionChanged!(updated);
-                        } else {
-                          widget.habitsNotifier.toggleHabitSelection(
-                            widget.sessionId,
-                            habit.id,
-                          );
-                        }
-                      },
+                    leading: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(habit.emoji, style: const TextStyle(fontSize: 20)),
+                        const SizedBox(width: 4),
+                        Checkbox(
+                          value: isSelected,
+                          onChanged: isLoading ? null : (bool? checked) {
+                            if (isLocalMode) {
+                              final updated = Set<String>.from(widget.localSelectedIds!);
+                              if (updated.contains(habit.id)) {
+                                updated.remove(habit.id);
+                                widget.onLocalSelectionChanged!(updated);
+                              } else {
+                                if (updated.length >= 6) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Максимум 6 привычек в сессии'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                updated.add(habit.id);
+                                widget.onLocalSelectionChanged!(updated);
+                              }
+                            } else {
+                              if (!isSelected && selectedIds.length >= 6) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Максимум 6 привычек в сессии'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
+                              widget.habitsNotifier.toggleHabitSelection(
+                                widget.sessionId,
+                                habit.id,
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     ),
                     title: Text(habit.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('Стоимость: ${habit.scoreValue} б.'),

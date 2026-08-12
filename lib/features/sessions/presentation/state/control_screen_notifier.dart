@@ -8,6 +8,7 @@ import 'package:dopamine_budget/features/habits/domain/repositories/habit_reposi
 import 'package:dopamine_budget/features/habits/domain/entities/habit.dart';
 import 'package:dopamine_budget/features/scoring/domain/usecases/get_daily_limit_usecase.dart';
 import 'package:dopamine_budget/features/sessions/domain/entities/habit_click_log.dart';
+import 'package:dopamine_budget/core/widget/widget_data_service.dart';
 
 enum ControlScreenStatus { active, brokenLocked }
 
@@ -161,6 +162,12 @@ class ControlScreenNotifier extends ChangeNotifier {
     _subscribeToToday();
   }
 
+  Future<void> reloadHabits() async {
+    final habits = await _habitRepository.getHabits();
+    _habits = habits;
+    _recompute();
+  }
+
   void _subscribeToToday() {
     final now = TimeProvider.now;
     final today = DateTime(now.year, now.month, now.day);
@@ -216,6 +223,13 @@ class ControlScreenNotifier extends ChangeNotifier {
   /// Псевдоним для control_screen.dart
   void checkAndResetDayIfNeeded() => checkForNewDay();
 
+  /// Called after a full data pull to force stream re-subscription.
+  /// Ensures watchScoreForDay re-emits with current DB state.
+  void forceRefreshStreams() {
+    _subscribeToToday();
+    _subscribeToScore();
+  }
+
   bool _isRecomputing = false;
   bool _recomputeQueued = false;
 
@@ -229,7 +243,6 @@ class ControlScreenNotifier extends ChangeNotifier {
     try {
       final session = _session;
       if (session == null) return;
-
       final String dayStatus = _dayLog?.dayStatus ?? 'regular';
       final bool isBroken = dayStatus == 'broken';
 
@@ -255,6 +268,7 @@ class ControlScreenNotifier extends ChangeNotifier {
         todayLogs: _todayLogs,
       );
       notifyListeners();
+      _updateWidget();
     } finally {
       _isRecomputing = false;
       if (_recomputeQueued) {
@@ -262,6 +276,19 @@ class ControlScreenNotifier extends ChangeNotifier {
         await _recompute();
       }
     }
+  }
+
+  void _updateWidget() {
+    WidgetDataService.updateWidgetData(
+      activeHabits:    _state.sessionHabits,
+      dayStatus:       _state.dayStatus,
+      hasActiveSession: true,
+      balance:         _state.balance.toDouble(),
+      dailyLimit:      _state.dailyLimit.toDouble(),
+      sessionPhase:    1,
+      sessionId:       _session?.id ?? '',
+      spentToday:      _spentToday,
+    ).catchError((_) {});
   }
 
   @override

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import '../state/habits_notifier.dart';
 import '../../domain/entities/habit.dart';
 
@@ -20,6 +21,8 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   int _scoreValue = 5;
+  String _selectedEmoji = '❓';
+  bool _showEmojiPicker = false;
   Habit? _editingHabit;
 
   @override
@@ -42,12 +45,22 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
 
   void _resetForm() {
     _titleController.clear();
-    setState(() { _scoreValue = 5; _editingHabit = null; });
+    setState(() {
+      _scoreValue = 5;
+      _editingHabit = null;
+      _selectedEmoji = '❓';
+      _showEmojiPicker = false;
+    });
   }
 
   void _startEditing(Habit habit) {
     _titleController.text = habit.title;
-    setState(() { _scoreValue = habit.scoreValue.clamp(1, 10); _editingHabit = habit; });
+    setState(() {
+      _scoreValue = habit.scoreValue.clamp(1, 10);
+      _editingHabit = habit;
+      _selectedEmoji = habit.emoji;
+      _showEmojiPicker = false;
+    });
   }
 
   void _onSavePressed() {
@@ -55,10 +68,10 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
     final title = _titleController.text.trim();
     if (_editingHabit != null) {
       widget.habitsNotifier.updateHabit(
-        Habit(id: _editingHabit!.id, title: title, scoreValue: _scoreValue),
+        Habit(id: _editingHabit!.id, title: title, emoji: _selectedEmoji, scoreValue: _scoreValue),
       );
     } else {
-      widget.habitsNotifier.addHabit(title, _scoreValue);
+      widget.habitsNotifier.addHabit(title, _scoreValue, _selectedEmoji);
     }
     _resetForm();
     FocusScope.of(context).unfocus();
@@ -120,6 +133,42 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
                       validator: (v) => (v == null || v.trim().isEmpty) ? 'Введите название' : null,
                     ),
                     const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: () => setState(() => _showEmojiPicker = !_showEmojiPicker),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(_selectedEmoji, style: const TextStyle(fontSize: 24)),
+                            const SizedBox(width: 8),
+                            const Text('Выберите эмодзи', style: TextStyle(fontSize: 14)),
+                            const Spacer(),
+                            Icon(_showEmojiPicker ? Icons.expand_less : Icons.expand_more),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (_showEmojiPicker)
+                      SizedBox(
+                        height: 250,
+                        child: EmojiPicker(
+                          onEmojiSelected: (category, emoji) {
+                            setState(() {
+                              _selectedEmoji = emoji.emoji;
+                              _showEmojiPicker = false;
+                            });
+                          },
+                          config: const Config(
+                            height: 250,
+                            emojiViewConfig: EmojiViewConfig(columns: 8),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Text('Стоимость: $_scoreValue б.'),
@@ -162,8 +211,18 @@ class _HabitManagementBodyState extends State<HabitManagementBody> {
                 child: ListTile(
                   leading: Checkbox(
                     value: isSelected,
-                    onChanged: isLoading ? null : (_) =>
-                        widget.habitsNotifier.toggleHabitSelection(widget.sessionId, habit.id),
+                    onChanged: isLoading ? null : (_) {
+                      if (!isSelected && selectedIds.length >= 6) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Максимум 6 привычек в сессии'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        return;
+                      }
+                      widget.habitsNotifier.toggleHabitSelection(widget.sessionId, habit.id);
+                    },
                   ),
                   title: Text(habit.title, style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: Text('${habit.scoreValue} б.'),

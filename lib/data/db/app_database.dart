@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
       const DriftDatabaseOptions(storeDateTimeAsText: true);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration {
@@ -132,8 +132,23 @@ class AppDatabase extends _$AppDatabase {
             );
           } catch (_) {}
         }
+        if (from < 17) {
+          try {
+            await customStatement(
+              "ALTER TABLE \"habits_table\" ADD COLUMN \"emoji\" TEXT NOT NULL DEFAULT '❓'",
+            );
+          } catch (_) {}
+        }
       },
     );
+  }
+
+  Future<List<HabitsTableData>> getHabitsForSession(String sessionId) async {
+    final ids = await getSelectedHabitIdsForSession(sessionId);
+    if (ids.isEmpty) return [];
+    return (select(habitsTable)
+      ..where((t) => t.id.isIn(ids) & t.isArchived.equals(false)))
+        .get();
   }
 
   Future<List<String>> getSelectedHabitIdsForSession(String sessionId) async {
@@ -225,16 +240,19 @@ class AppDatabase extends _$AppDatabase {
   // ЗАМЕНИТЬ метод целиком:
   Stream<int> watchScoreForDay(DateTime start, DateTime endExclusive) {
     final end = endExclusive.subtract(const Duration(microseconds: 1));
+
     final query = select(habitLogsTable).join([
       innerJoin(habitsTable, habitsTable.id.equalsExp(habitLogsTable.habitId)),
     ])
       ..where(habitLogsTable.timestamp.isBetweenValues(start, end));
 
     return query.watch().map(
-          (rows) => rows.fold<int>(
-        0,
-            (sum, row) => sum + row.readTable(habitsTable).scoreValue,
-      ),
+      (rows) {
+        return rows.fold<int>(
+          0,
+          (sum, row) => sum + row.readTable(habitsTable).scoreValue,
+        );
+      },
     );
   }
 }

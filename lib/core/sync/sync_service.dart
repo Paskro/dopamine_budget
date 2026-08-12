@@ -56,6 +56,7 @@ class SyncService {
         'title_nonce': r.titleNonce, // уже есть в Drift
         'score_value': r.scoreValue,
         'is_archived': r.isArchived,
+        'emoji': r.emoji,
         'updated_at': r.updatedAt,
       });
     }
@@ -140,7 +141,6 @@ class SyncService {
   Future<void> pushStreak() async {
     final rows = await _db.select(_db.streakTable).get();
     final payload = rows.map((r) => {
-      'id': r.id,
       'user_id': _uid,
       'last_active_date': r.lastActiveDate,
       'current_multiplier': r.currentMultiplier,
@@ -152,7 +152,10 @@ class SyncService {
           : r.updatedAt,
     }).toList();
     if (payload.isEmpty) return;
-    await _client.from('streak').upsert(payload);
+    await _client.from('streak').upsert(
+      payload,
+      onConflict: 'user_id,last_active_date',
+    );
   }
 
   // ─── PULL ─────────────────────────────────────────────────────────────────
@@ -249,6 +252,7 @@ class SyncService {
           titleNonce: Value(nonce),              // сохраняем nonce
           scoreValue: Value(r['score_value'] as int),
           isArchived: Value(r['is_archived'] as bool? ?? false),
+          emoji: Value(r['emoji'] as String? ?? '❓'),
           updatedAt: Value(r['updated_at'] as String? ?? ''),
           userId: Value(r['user_id'] as String?),
         ),

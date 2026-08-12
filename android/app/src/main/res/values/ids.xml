@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="habit_btn_0" type="id" />
+    <item name="habit_btn_1" type="id" />
+    <item name="habit_btn_2" type="id" />
+    <item name="habit_btn_3" type="id" />
+    <item name="habit_btn_4" type="id" />
+    <item name="habit_btn_5" type="id" />
+</resources>
